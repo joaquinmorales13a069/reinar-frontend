@@ -65,6 +65,9 @@ function LoginStep({ onMfaRequired }: Step1Props) {
 
   return (
     <form className="auth__form auth__form--fade" onSubmit={handleSubmit(onSubmit)}>
+      <div className="auth__form-logo">
+        <Image src="/logo-reinar.png" alt="Reinar" width={120} height={30} priority />
+      </div>
       <h2 className="auth__form-title">Iniciar sesión</h2>
       <p className="auth__form-sub">Ingresá con tu cuenta corporativa de Reinar.</p>
 
@@ -174,6 +177,9 @@ function MfaStep({ sessionToken, onBack }: Step2Props) {
 
   return (
     <div className="auth__form auth__form--fade">
+      <div className="auth__form-logo">
+        <Image src="/logo-reinar.png" alt="Reinar" width={120} height={30} />
+      </div>
       <div style={{ display: 'grid', placeItems: 'center', marginBottom: 18 }}>
         <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--yellow-soft)', display: 'grid', placeItems: 'center', color: 'var(--yellow-dim)' }}>
           <Icon name="shield" size={36} />
@@ -281,10 +287,6 @@ export default function LoginPage() {
       </div>
 
       <div className="auth__right">
-        {/* Solo visible en móvil, donde auth__left está oculto */}
-        <div className="auth__form-logo">
-          <Image src="/logo-reinar.png" alt="Reinar" width={120} height={30} priority />
-        </div>
         {sessionToken === null ? (
           <LoginStep onMfaRequired={setSessionToken} />
         ) : (
