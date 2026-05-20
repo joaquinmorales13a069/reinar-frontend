@@ -65,7 +65,7 @@ export function useMfaMutation() {
       setAuth(res.data.accessToken, res.data.user);
       // Conectar socket solo después de autenticarse para no exponer eventos anónimos
       socket.connect();
-      toast.success(`Bienvenido, ${res.data.user.nombre} ${res.data.user.apellido}.`);
+      toast.success(`Bienvenido, ${res.data.user.nombre}.`);
       router.replace('/dashboard');
     },
     onError: () => {
