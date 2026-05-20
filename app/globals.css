@@ -783,7 +783,7 @@ body {
   .auth { grid-template-columns: 1fr; }
   .auth__left { display: none !important; }
   /* flex-direction column para que el logo y el form se apilen verticalmente */
-  .auth__right { padding: var(--s-6) var(--s-5); flex-direction: column; align-items: center; justify-content: center; }
+  .auth__right { padding: var(--s-6) var(--s-5); flex-direction: column; align-items: center; justify-content: center; background: var(--bg); }
   .auth__form { border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s-6); }
   .auth__form-logo { display: block; }
   .app { grid-template-columns: 1fr; }
