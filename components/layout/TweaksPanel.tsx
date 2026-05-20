@@ -15,31 +15,39 @@ const ACCENTS = [
   { id: 'red',    color: '#C23B3B' },
 ] as const;
 
+const segBase =
+  'flex-1 h-7 inline-flex items-center justify-center gap-1.5 px-2.5 text-xs font-medium text-tx-2 rounded-sm cursor-pointer';
+const segActive = 'bg-surface text-tx shadow-sm';
+
 export function TweaksPanel({ onClose }: TweaksPanelProps) {
-  const tweaks = useUiStore((s) => s.tweaks);
+  const tweaks  = useUiStore((s) => s.tweaks);
   const setTweak = useUiStore((s) => s.setTweak);
 
   return (
-    <div className="tweaks">
-      <div className="tweaks__head">
-        <span className="tweaks__title">Tweaks</span>
-        <button className="icon-btn" style={{ width: 24, height: 24 }} onClick={onClose} aria-label="Cerrar panel">
+    <div className="fixed right-4 bottom-4 w-72 bg-surface border border-bd-strong rounded shadow-2xl z-panel text-xs">
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-bd">
+        <span className="text-2xs font-semibold tracking-widest uppercase text-tx-2">Tweaks</span>
+        <button
+          className="size-6 grid place-items-center rounded text-tx-2 hover:bg-bg-sunken hover:text-tx transition-colors"
+          onClick={onClose}
+          aria-label="Cerrar panel"
+        >
           <Icon name="x" size={14} />
         </button>
       </div>
 
-      <div className="tweaks__body">
-        <div className="tweaks__row">
-          <div className="tweaks__row-label">Tema</div>
-          <div className="seg">
+      <div className="p-3 flex flex-col gap-3">
+        <div className="flex flex-col gap-1.5">
+          <div className="text-2xs tracking-widest uppercase text-tx-3 font-semibold">Tema</div>
+          <div className="flex bg-bg-sunken border border-bd rounded p-0.5 gap-0.5">
             <div
-              className={`seg__opt ${tweaks.theme === 'light' ? 'is-active' : ''}`}
+              className={`${segBase} ${tweaks.theme === 'light' ? segActive : ''}`}
               onClick={() => setTweak('theme', 'light')}
             >
               <Icon name="sun" size={13} /> Claro
             </div>
             <div
-              className={`seg__opt ${tweaks.theme === 'dark' ? 'is-active' : ''}`}
+              className={`${segBase} ${tweaks.theme === 'dark' ? segActive : ''}`}
               onClick={() => setTweak('theme', 'dark')}
             >
               <Icon name="moon" size={13} /> Oscuro
@@ -47,17 +55,17 @@ export function TweaksPanel({ onClose }: TweaksPanelProps) {
           </div>
         </div>
 
-        <div className="tweaks__row">
-          <div className="tweaks__row-label">Densidad</div>
-          <div className="seg">
+        <div className="flex flex-col gap-1.5">
+          <div className="text-2xs tracking-widest uppercase text-tx-3 font-semibold">Densidad</div>
+          <div className="flex bg-bg-sunken border border-bd rounded p-0.5 gap-0.5">
             <div
-              className={`seg__opt ${tweaks.density === 'comfortable' ? 'is-active' : ''}`}
+              className={`${segBase} ${tweaks.density === 'comfortable' ? segActive : ''}`}
               onClick={() => setTweak('density', 'comfortable')}
             >
               Cómodo
             </div>
             <div
-              className={`seg__opt ${tweaks.density === 'compact' ? 'is-active' : ''}`}
+              className={`${segBase} ${tweaks.density === 'compact' ? segActive : ''}`}
               onClick={() => setTweak('density', 'compact')}
             >
               Compacto
@@ -65,17 +73,17 @@ export function TweaksPanel({ onClose }: TweaksPanelProps) {
           </div>
         </div>
 
-        <div className="tweaks__row">
-          <div className="tweaks__row-label">Sidebar</div>
-          <div className="seg">
+        <div className="flex flex-col gap-1.5">
+          <div className="text-2xs tracking-widest uppercase text-tx-3 font-semibold">Sidebar</div>
+          <div className="flex bg-bg-sunken border border-bd rounded p-0.5 gap-0.5">
             <div
-              className={`seg__opt ${tweaks.sidebar === 'full' ? 'is-active' : ''}`}
+              className={`${segBase} ${tweaks.sidebar === 'full' ? segActive : ''}`}
               onClick={() => setTweak('sidebar', 'full')}
             >
               Completo
             </div>
             <div
-              className={`seg__opt ${tweaks.sidebar === 'mini' ? 'is-active' : ''}`}
+              className={`${segBase} ${tweaks.sidebar === 'mini' ? segActive : ''}`}
               onClick={() => setTweak('sidebar', 'mini')}
             >
               Íconos
@@ -83,13 +91,15 @@ export function TweaksPanel({ onClose }: TweaksPanelProps) {
           </div>
         </div>
 
-        <div className="tweaks__row">
-          <div className="tweaks__row-label">Color de acento</div>
-          <div className="swatches">
+        <div className="flex flex-col gap-1.5">
+          <div className="text-2xs tracking-widest uppercase text-tx-3 font-semibold">Color de acento</div>
+          <div className="flex gap-1.5">
             {ACCENTS.map((a) => (
               <div
                 key={a.id}
-                className={`swatch ${tweaks.accent === a.id ? 'is-active' : ''}`}
+                className={`size-6.5 rounded cursor-pointer border-2 transition-colors ${
+                  tweaks.accent === a.id ? 'border-tx' : 'border-transparent'
+                }`}
                 style={{ background: a.color }}
                 onClick={() => setTweak('accent', a.id)}
                 title={a.id}

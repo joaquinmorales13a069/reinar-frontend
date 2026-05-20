@@ -18,26 +18,30 @@ type TopbarProps = {
 // Resuelve la info de navegación desde el pathname actual para construir el breadcrumb
 function useNavInfo() {
   const pathname = usePathname();
-  // Compara cada href contra el inicio del pathname para soportar rutas anidadas
-  return NAV_ITEMS_FLAT.find(
-    (item) => pathname === item.href || pathname.startsWith(item.href + '/'),
-  ) ?? null;
+  return (
+    NAV_ITEMS_FLAT.find(
+      (item) => pathname === item.href || pathname.startsWith(item.href + '/'),
+    ) ?? null
+  );
 }
+
+const iconBtn =
+  'size-8 grid place-items-center rounded text-tx-2 hover:bg-bg-sunken hover:text-tx transition-colors';
 
 export function Topbar({ onMenuClick, onTweaksOpen }: TopbarProps) {
   const [notifOpen, setNotifOpen] = useState(false);
-  const [userOpen, setUserOpen] = useState(false);
+  const [userOpen,  setUserOpen]  = useState(false);
 
-  const user = useAuthStore((s) => s.user);
+  const user          = useAuthStore((s) => s.user);
   const logoutMutation = useLogoutMutation();
 
   const { data: notifData, isLoading: notifLoading } = useNotificaciones();
   const marcarLeida = useMarcarLeida();
   const marcarTodas = useMarcarTodasLeidas();
 
-  const navInfo = useNavInfo();
+  const navInfo       = useNavInfo();
   const notificaciones = notifData?.data ?? [];
-  const unread = notificaciones.filter((n) => !n.leida).length;
+  const unread        = notificaciones.filter((n) => !n.leida).length;
 
   function closeAll() {
     setNotifOpen(false);
@@ -45,47 +49,48 @@ export function Topbar({ onMenuClick, onTweaksOpen }: TopbarProps) {
   }
 
   return (
-    <header className="topbar">
-      {/* El botón de menú móvil se muestra via CSS solo en pantallas pequeñas */}
-      <button className="icon-btn" onClick={onMenuClick} aria-label="Abrir menú">
+    <header className="sticky top-0 z-20 h-14 bg-topbar-bg border-b border-bd flex items-center gap-4 px-5">
+      <button className={iconBtn} onClick={onMenuClick} aria-label="Abrir menú">
         <Icon name="menu" size={18} />
       </button>
 
-      <div className="crumbs">
+      <div className="flex items-center gap-2 text-xs text-tx-3 shrink-0">
         <span>Reinar</span>
         {navInfo && (
           <>
-            <span className="crumbs__sep">/</span>
-            <span className="crumbs__leaf">{navInfo.label}</span>
+            <span className="text-tx-muted">/</span>
+            <span className="text-tx font-medium">{navInfo.label}</span>
           </>
         )}
       </div>
 
-      <div className="topbar__right">
-        <button className="icon-btn" title="Tweaks" onClick={onTweaksOpen} aria-label="Configuración visual">
+      <div className="flex items-center gap-2 ml-auto">
+        <button className={iconBtn} title="Tweaks" onClick={onTweaksOpen} aria-label="Configuración visual">
           <Icon name="gear" size={16} />
         </button>
 
         {/* Notificaciones */}
-        <div style={{ position: 'relative' }}>
+        <div className="relative">
           <button
-            className="icon-btn"
+            className={`${iconBtn} relative`}
             onClick={() => { setNotifOpen((o) => !o); setUserOpen(false); }}
             aria-label="Notificaciones"
           >
             <Icon name="bell" size={16} />
-            {unread > 0 && <span className="icon-btn__dot" />}
+            {unread > 0 && (
+              <span className="absolute top-1.5 right-1.5 size-2 bg-danger rounded-full border-2 border-topbar-bg" />
+            )}
           </button>
 
           {notifOpen && (
             <>
-              <div style={{ position: 'fixed', inset: 0, zIndex: 50 }} onClick={closeAll} />
-              <div className="dropdown" style={{ minWidth: 320, zIndex: 100 }}>
-                <div className="dropdown__head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="fixed inset-0 z-40" onClick={closeAll} />
+              <div className="absolute top-full translate-y-1.5 right-0 min-w-80 bg-surface border border-bd rounded shadow-lg z-50 overflow-hidden">
+                <div className="flex justify-between items-center px-3 py-2 text-2xs font-semibold tracking-widest uppercase text-tx-muted border-b border-bd">
                   <span>Notificaciones</span>
                   {unread > 0 && (
                     <span
-                      style={{ color: 'var(--info)', cursor: 'pointer', fontSize: 10 }}
+                      className="text-info cursor-pointer"
                       onClick={() => marcarTodas.mutate()}
                     >
                       Marcar todo como leído
@@ -94,7 +99,7 @@ export function Topbar({ onMenuClick, onTweaksOpen }: TopbarProps) {
                 </div>
 
                 {notifLoading && (
-                  <div className="dropdown__item">
+                  <div className="flex items-center gap-2 px-3 py-2 text-xs">
                     <Spinner size={14} />
                   </div>
                 )}
@@ -102,27 +107,24 @@ export function Topbar({ onMenuClick, onTweaksOpen }: TopbarProps) {
                 {notificaciones.map((n) => (
                   <div
                     key={n.id}
-                    className="dropdown__item"
-                    style={{ alignItems: 'flex-start', padding: '8px 10px', cursor: n.leida ? 'default' : 'pointer' }}
+                    className={`flex items-start gap-2 px-2.5 py-2 hover:bg-bg-sunken ${!n.leida ? 'cursor-pointer' : ''}`}
                     onClick={() => { if (!n.leida) marcarLeida.mutate(n.id); }}
                   >
-                    <span className="activity__dot" style={{ width: 22, height: 22, flexShrink: 0 }}>
+                    <span className="size-6 shrink-0 grid place-items-center text-tx-3">
                       {n.icono && <Icon name={n.icono as never} size={11} />}
                     </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: n.leida ? 400 : 500 }}>{n.texto}</div>
-                      <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{n.meta}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-xs ${n.leida ? 'font-normal' : 'font-medium'}`}>{n.texto}</div>
+                      <div className="text-2xs text-tx-muted font-mono">{n.meta}</div>
                     </div>
                     {!n.leida && (
-                      <span style={{ width: 6, height: 6, background: 'var(--yellow)', borderRadius: '50%', marginTop: 4, flexShrink: 0 }} />
+                      <span className="size-1.5 bg-accent rounded-full mt-1 shrink-0" />
                     )}
                   </div>
                 ))}
 
                 {!notifLoading && notificaciones.length === 0 && (
-                  <div className="dropdown__item" style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-                    Sin notificaciones
-                  </div>
+                  <div className="px-3 py-2 text-xs text-tx-muted">Sin notificaciones</div>
                 )}
               </div>
             </>
@@ -130,32 +132,35 @@ export function Topbar({ onMenuClick, onTweaksOpen }: TopbarProps) {
         </div>
 
         {/* Usuario */}
-        <div style={{ position: 'relative' }}>
+        <div className="relative">
           <div
-            className="user-chip"
+            className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-bg-sunken transition-colors"
             onClick={() => { setUserOpen((o) => !o); setNotifOpen(false); }}
             role="button"
             tabIndex={0}
           >
-            <div className="avatar">{user ? getInitials(user.nombre) : '?'}</div>
+            <div className="size-8 rounded-full bg-accent text-navy flex items-center justify-center font-semibold text-xs shrink-0">
+              {user ? getInitials(user.nombre) : '?'}
+            </div>
             {user && (
               <div>
-                <div className="user-chip__name">{user.nombre}</div>
-                <div className="user-chip__role">{user.rol}</div>
+                <div className="text-sm font-medium">{user.nombre}</div>
+                <div className="text-2xs text-tx-muted uppercase tracking-wider">{user.rol}</div>
               </div>
             )}
-            <Icon name="chevronDown" size={14} color="var(--text-3)" />
+            <Icon name="chevronDown" size={14} />
           </div>
 
           {userOpen && (
             <>
-              <div style={{ position: 'fixed', inset: 0, zIndex: 50 }} onClick={closeAll} />
-              <div className="dropdown" style={{ zIndex: 100 }}>
-                <div className="dropdown__head">{user?.email}</div>
-                <div className="dropdown__sep" />
+              <div className="fixed inset-0 z-40" onClick={closeAll} />
+              <div className="absolute top-full translate-y-1.5 right-0 min-w-48 bg-surface border border-bd rounded shadow-lg z-50 overflow-hidden">
+                <div className="px-3 py-2 text-2xs font-semibold tracking-widest uppercase text-tx-muted border-b border-bd">
+                  {user?.email}
+                </div>
+                <div className="h-px bg-bd my-1" />
                 <div
-                  className="dropdown__item"
-                  style={{ color: 'var(--danger)' }}
+                  className="flex items-center gap-2 px-3 py-2 text-xs text-danger cursor-pointer hover:bg-bg-sunken"
                   onClick={() => { logoutMutation.mutate(); closeAll(); }}
                 >
                   {logoutMutation.isPending ? <Spinner size={12} /> : <Icon name="logout" size={14} />}

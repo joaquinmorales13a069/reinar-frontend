@@ -1,17 +1,10 @@
 type SpinnerProps = { size?: number; className?: string };
 
-// Wrapper del spinner para poder usarlo tipado en JSX sin escribir el estilo inline cada vez.
 export function Spinner({ size = 14, className = '' }: SpinnerProps) {
   return (
     <span
-      className={`spin ${className}`}
-      style={{
-        width: size,
-        height: size,
-        border: '2px solid currentColor',
-        borderTopColor: 'transparent',
-        borderRadius: '50%',
-      }}
+      className={`inline-block animate-spin rounded-full border-2 border-current border-t-transparent ${className}`}
+      style={{ width: size, height: size }}
       aria-hidden="true"
     />
   );
