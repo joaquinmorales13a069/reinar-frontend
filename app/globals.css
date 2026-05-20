@@ -1,26 +1,148 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+@theme {
+  /* Brand palette */
+  --navy:        #0A1A2A;
+  --navy-med:    #1F3B55;
+  --navy-soft:   #2C4D6E;
+  --yellow:      #F2C037;
+  --yellow-dim:  #D9A820;
+  --yellow-soft: #FFF1C2;
+  --white:       #FFFFFF;
+  --gray-light:  #E0E0E0;
+  --gray-lighter:#F5F5F5;
+  --black:       #111111;
+  --ok:          #2E8C5A;
+  --warn:        #E08A1A;
+  --danger:      #C23B3B;
+  --info:        #2F6CB7;
+
+  /* Fonts */
+  --font-sans: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Layout */
+  --sidebar-w-full: 240px;
+  --sidebar-w-mini: 64px;
+  --topbar-h: 56px;
+}
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light theme (default) */
+  --bg:          #F7F8FA;
+  --bg-elev:     #FFFFFF;
+  --bg-sunken:   #EFF1F4;
+  --surface:     #FFFFFF;
+  --surface-2:   #FAFBFC;
+  --border:      rgba(10, 26, 42, 0.10);
+  --border-soft: rgba(10, 26, 42, 0.06);
+  --border-strong: rgba(10, 26, 42, 0.16);
+  --text:        #0A1A2A;
+  --text-2:      #44546A;
+  --text-3:      #6B7B8E;
+  --text-muted:  #8A98AB;
+  --accent:      var(--yellow);
+  --accent-ink:  #0A1A2A;
+  --sidebar-bg:  #0A1A2A;
+  --sidebar-fg:  #C8D2DE;
+  --sidebar-fg-strong: #FFFFFF;
+  --sidebar-active-bg: rgba(242, 192, 55, 0.10);
+  --topbar-bg:   #FFFFFF;
+  --focus:       rgba(242, 192, 55, 0.45);
+  --row-hover:   #F5F7FA;
+
+  /* Density — comfortable */
+  --row-h:    40px;
+  --cell-px:  14px;
+  --field-h:  36px;
+  --btn-h:    36px;
+
+  /* Type scale */
+  --t-xs:   11px;
+  --t-sm:   12px;
+  --t-base: 13px;
+  --t-md:   14px;
+  --t-lg:   16px;
+  --t-xl:   20px;
+  --t-2xl:  28px;
+  --t-3xl:  36px;
+
+  /* Spacing (4px base) */
+  --s-1:  4px;
+  --s-2:  8px;
+  --s-3:  12px;
+  --s-4:  16px;
+  --s-5:  20px;
+  --s-6:  24px;
+  --s-7:  32px;
+  --s-8:  40px;
+  --s-9:  48px;
+  --s-10: 64px;
+
+  /* Radius */
+  --r-xs: 2px;
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Compact density */
+[data-density="compact"] {
+  --row-h:   34px;
+  --cell-px: 10px;
+  --field-h: 32px;
+  --btn-h:   32px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Dark theme */
+[data-theme="dark"] {
+  --bg:          #0B141F;
+  --bg-elev:     #122033;
+  --bg-sunken:   #07101A;
+  --surface:     #122033;
+  --surface-2:   #16263C;
+  --border:      rgba(255, 255, 255, 0.08);
+  --border-soft: rgba(255, 255, 255, 0.04);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --text:        #E6ECF3;
+  --text-2:      #A8B5C5;
+  --text-3:      #7E8DA1;
+  --text-muted:  #5E6E83;
+  --sidebar-bg:  #07101A;
+  --sidebar-fg:  #93A2B7;
+  --sidebar-fg-strong: #FFFFFF;
+  --sidebar-active-bg: rgba(242, 192, 55, 0.14);
+  --topbar-bg:   #0F1B2B;
+  --row-hover:   #16263C;
 }
+
+/* Reset */
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-size: var(--t-base);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv11";
+}
+
+::selection { background: rgba(242, 192, 55, 0.35); }
+
+/* Scrollbar */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
