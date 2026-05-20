@@ -2,10 +2,10 @@
 // KPIs y actividad reciente en la siguiente rama.
 export default function DashboardPage() {
   return (
-    <div className="page-header">
+    <div className="flex items-start justify-between gap-4 mb-5">
       <div>
-        <h1 className="page-header__title">Inicio</h1>
-        <p className="page-header__sub">Resumen de operaciones — próximamente en RAMA 3.</p>
+        <h1 className="text-title font-semibold tracking-tight">Inicio</h1>
+        <p className="text-sm text-tx-2 mt-1">Resumen de operaciones — próximamente en RAMA 3.</p>
       </div>
     </div>
   );

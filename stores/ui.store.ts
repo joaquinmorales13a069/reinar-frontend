@@ -60,9 +60,9 @@ function applyTweaks(tweaks: Tweaks) {
   // Sobreescribimos las custom properties de CSS directamente para que el color de
   // acento cascadee a todos los componentes sin que cada uno necesite conocer los acentos.
   const accent = ACCENT_COLORS[tweaks.accent] ?? ACCENT_COLORS.yellow;
-  root.style.setProperty('--yellow', accent.main);
-  root.style.setProperty('--yellow-dim', accent.dim);
-  root.style.setProperty('--yellow-soft', accent.soft);
+  root.style.setProperty('--accent', accent.main);
+  root.style.setProperty('--accent-dim', accent.dim);
+  root.style.setProperty('--accent-soft', accent.soft);
 }
 
 type UiState = {
