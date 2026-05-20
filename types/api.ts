@@ -21,3 +21,13 @@ export type User = {
   email: string;
   rol: 'ADMIN' | 'GERENTE' | 'OPERADOR' | 'LOGISTICA' | 'VISUALIZADOR';
 };
+
+// Notificaciones del usuario autenticado — mostradas en el dropdown del topbar.
+export type Notificacion = {
+  id: string;
+  texto: string;
+  meta: string;
+  leida: boolean;
+  creadoEn: string;
+  icono?: string;
+};
