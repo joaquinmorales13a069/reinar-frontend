@@ -18,6 +18,7 @@ export type PaginatedResponse<T> = {
 export type User = {
   id: string;
   nombre: string;
+  apellido: string;
   email: string;
   rol: 'ADMIN' | 'GERENTE' | 'OPERADOR' | 'LOGISTICA' | 'VISUALIZADOR';
 };

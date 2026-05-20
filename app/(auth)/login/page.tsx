@@ -55,7 +55,7 @@ function LoginStep({ onMfaRequired }: Step1Props) {
     if ('accessToken' in res.data) {
       setAuth(res.data.accessToken, res.data.user);
       socket.connect();
-      toast.success(`Bienvenido, ${res.data.user.nombre.split(' ')[0]}.`);
+      toast.success(`Bienvenido, ${res.data.user.nombre} ${res.data.user.apellido}.`);
       router.replace('/dashboard');
       return;
     }
