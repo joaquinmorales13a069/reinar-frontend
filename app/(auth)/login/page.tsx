@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'sonner';
 import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { useLoginMutation, useMfaMutation } from '@/hooks/use-auth';
@@ -35,7 +36,6 @@ function LoginStep({ onMfaRequired }: Step1Props) {
   const {
     register,
     handleSubmit,
-    setError,
     formState: { errors },
   } = useForm<LoginFields>({ resolver: zodResolver(loginSchema) });
 
@@ -43,8 +43,7 @@ function LoginStep({ onMfaRequired }: Step1Props) {
     const res = await loginMutation.mutateAsync(data).catch(() => null);
     if (!res) return;
     if (!res.success) {
-      // Mostrar error del servidor en el campo correspondiente
-      setError('email', { message: res.error.message });
+      toast.error(res.error.message);
       return;
     }
     onMfaRequired(res.data.mfaToken);
@@ -129,7 +128,6 @@ function MfaStep({ mfaToken, onBack }: Step2Props) {
     handleSubmit,
     setValue,
     watch,
-    setError,
     formState: { errors },
   } = useForm<MfaFields>({ resolver: zodResolver(mfaSchema) });
 
@@ -142,7 +140,7 @@ function MfaStep({ mfaToken, onBack }: Step2Props) {
     const res = await mfaMutation.mutateAsync({ mfaToken, codigo: val }).catch(() => null);
     if (!res) return;
     if (!res.success) {
-      setError('codigo', { message: res.error.message });
+      toast.error(res.error.message);
       setShake(true);
       setValue('codigo', '');
       setTimeout(() => {
@@ -192,11 +190,6 @@ function MfaStep({ mfaToken, onBack }: Step2Props) {
             onChange={(e) => onChange(e.target.value)}
             value={codigo}
           />
-          {errors.codigo && (
-            <div className="field__error" style={{ justifyContent: 'center', marginTop: 10, textAlign: 'center' }}>
-              <Icon name="alertTriangle" size={12} /> {errors.codigo.message}
-            </div>
-          )}
         </div>
 
         <button
