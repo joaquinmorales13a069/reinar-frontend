@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,6 +10,8 @@ import { toast } from 'sonner';
 import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { useLoginMutation, useMfaMutation } from '@/hooks/use-auth';
+import { useAuthStore } from '@/stores/auth.store';
+import { socket } from '@/lib/socket';
 
 // Validaciones mínimas en cliente — el servidor es la fuente de verdad para errores detallados
 const loginSchema = z.object({
@@ -26,12 +29,14 @@ type MfaFields = z.infer<typeof mfaSchema>;
 // ─── Paso 1: credenciales ───────────────────────────────────────────────────
 
 type Step1Props = {
-  onMfaRequired: (mfaToken: string) => void;
+  onMfaRequired: (sessionToken: string) => void;
 };
 
 function LoginStep({ onMfaRequired }: Step1Props) {
   const [showPwd, setShowPwd] = useState(false);
   const loginMutation = useLoginMutation();
+  const setAuth = useAuthStore((s) => s.setAuth);
+  const router = useRouter();
 
   const {
     register,
@@ -46,7 +51,16 @@ function LoginStep({ onMfaRequired }: Step1Props) {
       toast.error(res.error.message);
       return;
     }
-    onMfaRequired(res.data.mfaToken);
+    // Login directo sin MFA: el backend devuelve tokens inmediatamente
+    if ('accessToken' in res.data) {
+      setAuth(res.data.accessToken, res.data.user);
+      socket.connect();
+      toast.success(`Bienvenido, ${res.data.user.nombre.split(' ')[0]}.`);
+      router.replace('/dashboard');
+      return;
+    }
+    // Con MFA activo: pasar al segundo paso con el sessionToken
+    onMfaRequired(res.data.sessionToken);
   }
 
   return (
@@ -111,11 +125,11 @@ function LoginStep({ onMfaRequired }: Step1Props) {
 // ─── Paso 2: código TOTP ────────────────────────────────────────────────────
 
 type Step2Props = {
-  mfaToken: string;
+  sessionToken: string;
   onBack: () => void;
 };
 
-function MfaStep({ mfaToken, onBack }: Step2Props) {
+function MfaStep({ sessionToken, onBack }: Step2Props) {
   const [shake, setShake] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const mfaMutation = useMfaMutation();
@@ -137,7 +151,7 @@ function MfaStep({ mfaToken, onBack }: Step2Props) {
   const { ref: rhfRef, ...rhfProps } = register('codigo');
 
   async function verificar(val: string) {
-    const res = await mfaMutation.mutateAsync({ mfaToken, codigo: val }).catch(() => null);
+    const res = await mfaMutation.mutateAsync({ sessionToken, totpCode: val }).catch(() => null);
     if (!res) return;
     if (!res.success) {
       toast.error(res.error.message);
@@ -214,7 +228,7 @@ function MfaStep({ mfaToken, onBack }: Step2Props) {
       </div>
 
       <div className="auth__form-foot">
-        Sesión MFA: <span className="mono">{mfaToken}</span>
+        Sesión MFA: <span className="mono">{sessionToken.slice(0, 20)}…</span>
       </div>
     </div>
   );
@@ -223,7 +237,7 @@ function MfaStep({ mfaToken, onBack }: Step2Props) {
 // ─── Página de login ────────────────────────────────────────────────────────
 
 export default function LoginPage() {
-  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
 
   return (
     <div className="auth">
@@ -268,10 +282,10 @@ export default function LoginPage() {
       </div>
 
       <div className="auth__right">
-        {mfaToken === null ? (
-          <LoginStep onMfaRequired={setMfaToken} />
+        {sessionToken === null ? (
+          <LoginStep onMfaRequired={setSessionToken} />
         ) : (
-          <MfaStep mfaToken={mfaToken} onBack={() => setMfaToken(null)} />
+          <MfaStep sessionToken={sessionToken} onBack={() => setSessionToken(null)} />
         )}
       </div>
     </div>

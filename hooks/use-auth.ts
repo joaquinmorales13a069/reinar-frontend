@@ -22,15 +22,18 @@ function normalizeAxiosError<T>(err: unknown): ApiResponse<T> {
 // Payload del primer paso del login (credenciales)
 type LoginPayload = { email: string; password: string };
 
-// El backend devuelve un token temporal que identifica la sesión MFA pendiente;
-// nunca es un access token completo — solo sirve para el segundo paso.
-type LoginStep1Response = { mfaToken: string; nombre: string };
+// El backend tiene dos caminos en el paso 1:
+// - Sin MFA configurado → devuelve tokens directamente (login completo)
+// - Con MFA activo     → devuelve sessionToken para el segundo paso
+type LoginStep1Response =
+  | { mfaRequired: true; sessionToken: string }
+  | { accessToken: string; refreshToken: string; user: User };
 
-// Payload del segundo paso (código TOTP de 6 dígitos)
-type MfaPayload = { mfaToken: string; codigo: string };
+// Payload del segundo paso — campo `totpCode` según contrato del backend
+type MfaPayload = { sessionToken: string; totpCode: string };
 
-// Respuesta exitosa tras confirmar MFA — a partir de aquí el usuario está autenticado.
-type MfaResponse = { accessToken: string; usuario: User };
+// Respuesta exitosa tras confirmar MFA — igual que el login directo sin MFA
+type MfaResponse = { accessToken: string; refreshToken: string; user: User };
 
 export function useLoginMutation() {
   return useMutation<ApiResponse<LoginStep1Response>, Error, LoginPayload>({
@@ -51,18 +54,18 @@ export function useMfaMutation() {
   const router = useRouter();
 
   return useMutation<ApiResponse<MfaResponse>, Error, MfaPayload>({
-    mutationFn: (payload) =>
+    mutationFn: ({ sessionToken, totpCode }) =>
       api
-        .post<ApiResponse<MfaResponse>>('/auth/mfa/confirmar', payload)
+        .post<ApiResponse<MfaResponse>>('/auth/mfa/confirmar', { sessionToken, totpCode })
         .then((r) => r.data)
         .catch((err) => normalizeAxiosError<MfaResponse>(err)),
     onSuccess: (res) => {
       if (!res.success) return;
       // Guardar token en memoria (no localStorage) — decisión de seguridad XSS
-      setAuth(res.data.accessToken, res.data.usuario);
+      setAuth(res.data.accessToken, res.data.user);
       // Conectar socket solo después de autenticarse para no exponer eventos anónimos
       socket.connect();
-      toast.success(`Bienvenido, ${res.data.usuario.nombre.split(' ')[0]}.`);
+      toast.success(`Bienvenido, ${res.data.user.nombre.split(' ')[0]}.`);
       router.replace('/dashboard');
     },
     onError: () => {
