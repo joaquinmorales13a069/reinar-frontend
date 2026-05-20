@@ -776,12 +776,14 @@ body {
   60% { transform: translateX(-6px); }
   80% { transform: translateX(6px); }
 }
+/* Logo dentro del form — solo visible en móvil donde .auth__left está oculto */
+.auth__form-logo { display: none; margin-bottom: var(--s-5); }
+
 @media (max-width: 768px) {
   .auth { grid-template-columns: 1fr; }
-  .auth__left { padding: var(--s-6) var(--s-5); }
-  .auth__title { font-size: 28px; }
-  .auth__hero { display: none; }
+  .auth__left { display: none; }
   .auth__right { padding: var(--s-6) var(--s-5); }
+  .auth__form-logo { display: block; }
   .app { grid-template-columns: 1fr; }
   .sidebar { display: none; }
   .bottom-nav { display: flex; }

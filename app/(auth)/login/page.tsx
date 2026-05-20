@@ -116,7 +116,7 @@ function LoginStep({ onMfaRequired }: Step1Props) {
       </button>
 
       <div className="auth__form-foot">
-        ¿Problemas para acceder? Contactá a TI · <span className="mono">soporte@reinar.com.sv</span>
+        ¿Problemas para acceder? Contactá a TI · <span className="mono">personal@joaquinmorales.dev</span>
       </div>
     </form>
   );
@@ -251,7 +251,6 @@ export default function LoginPage() {
             className="auth__brand-logo"
             priority
           />
-          <div className="auth__brand-sub">Sistema Interno de Operaciones</div>
         </div>
 
         <div className="auth__hero">
@@ -282,6 +281,10 @@ export default function LoginPage() {
       </div>
 
       <div className="auth__right">
+        {/* Solo visible en móvil, donde auth__left está oculto */}
+        <div className="auth__form-logo">
+          <Image src="/logo-reinar.png" alt="Reinar" width={120} height={30} priority />
+        </div>
         {sessionToken === null ? (
           <LoginStep onMfaRequired={setSessionToken} />
         ) : (
