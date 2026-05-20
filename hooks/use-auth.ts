@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import api from '@/lib/api';
 import { socket } from '@/lib/socket';
 import { useAuthStore } from '@/stores/auth.store';
@@ -24,6 +25,9 @@ export function useLoginMutation() {
   return useMutation<ApiResponse<LoginStep1Response>, Error, LoginPayload>({
     mutationFn: (payload) =>
       api.post<ApiResponse<LoginStep1Response>>('/auth/iniciar-sesion', payload).then((r) => r.data),
+    onError: () => {
+      toast.error('No se pudo conectar con el servidor. Intenta de nuevo.');
+    },
   });
 }
 
@@ -40,7 +44,11 @@ export function useMfaMutation() {
       setAuth(res.data.accessToken, res.data.usuario);
       // Conectar socket solo después de autenticarse para no exponer eventos anónimos
       socket.connect();
+      toast.success(`Bienvenido, ${res.data.usuario.nombre.split(' ')[0]}.`);
       router.replace('/dashboard');
+    },
+    onError: () => {
+      toast.error('Código incorrecto o sesión expirada. Intentá de nuevo.');
     },
   });
 }
@@ -54,7 +62,7 @@ export function useLogoutMutation() {
       // El backend invalida la cookie HTTP-only del refresh token en el servidor
       api.post('/auth/cerrar-sesion').then(() => undefined),
     onSettled: () => {
-      // onSettled en vez de onSuccess: limpiar siempre aunque falle la petición
+      // onSettled en vez de onSuccess: limpiar siempre aunque falle la petición de cierre
       socket.disconnect();
       clearAuth();
       router.replace('/login');

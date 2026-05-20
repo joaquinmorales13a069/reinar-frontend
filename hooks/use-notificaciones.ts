@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import api from '@/lib/api';
 import type { ApiResponse, PaginatedResponse, Notificacion } from '@/types/api';
 
@@ -45,6 +46,10 @@ export function useMarcarTodasLeidas() {
     onSuccess: () => {
       // Invalidar en vez de actualizar manualmente — más simple cuando son todas
       qc.invalidateQueries({ queryKey: NOTIF_KEY });
+      toast.success('Todas las notificaciones marcadas como leídas.');
+    },
+    onError: () => {
+      toast.error('No se pudo actualizar las notificaciones.');
     },
   });
 }

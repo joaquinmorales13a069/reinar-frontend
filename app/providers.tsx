@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { Toaster } from 'sonner';
 import { useUiStore } from '@/stores/ui.store';
 
 // Singleton a nivel de módulo para que la caché de queries sobreviva los re-renders.
@@ -32,6 +33,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       {/* TweaksHydrator carga una sola vez al montar para leer theme/density persistidos en localStorage */}
       <TweaksHydrator />
       {children}
+      {/* theme="system" para que los toasts respeten data-theme del HTML */}
+      <Toaster position="top-right" richColors theme="system" />
       {/* ReactQueryDevtools se elimina automáticamente del bundle de producción */}
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
