@@ -1,12 +1,23 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/lib/api';
 import { socket } from '@/lib/socket';
 import { useAuthStore } from '@/stores/auth.store';
 import type { ApiResponse, User } from '@/types/api';
+
+// Convierte un error de Axios con cuerpo de respuesta en el ApiResponse del backend,
+// para que los errores de negocio (401, 422…) lleguen como { success: false } al componente
+// en vez de lanzar excepción — así onError solo se dispara en fallos de red reales.
+function normalizeAxiosError<T>(err: unknown): ApiResponse<T> {
+  if (axios.isAxiosError(err) && err.response?.data) {
+    return err.response.data as ApiResponse<T>;
+  }
+  throw err;
+}
 
 // Payload del primer paso del login (credenciales)
 type LoginPayload = { email: string; password: string };
@@ -24,8 +35,12 @@ type MfaResponse = { accessToken: string; usuario: User };
 export function useLoginMutation() {
   return useMutation<ApiResponse<LoginStep1Response>, Error, LoginPayload>({
     mutationFn: (payload) =>
-      api.post<ApiResponse<LoginStep1Response>>('/auth/iniciar-sesion', payload).then((r) => r.data),
+      api
+        .post<ApiResponse<LoginStep1Response>>('/auth/iniciar-sesion', payload)
+        .then((r) => r.data)
+        .catch((err) => normalizeAxiosError<LoginStep1Response>(err)),
     onError: () => {
+      // Solo llega aquí si no hubo respuesta del servidor (error de red puro)
       toast.error('No se pudo conectar con el servidor. Intenta de nuevo.');
     },
   });
@@ -37,7 +52,10 @@ export function useMfaMutation() {
 
   return useMutation<ApiResponse<MfaResponse>, Error, MfaPayload>({
     mutationFn: (payload) =>
-      api.post<ApiResponse<MfaResponse>>('/auth/mfa/confirmar', payload).then((r) => r.data),
+      api
+        .post<ApiResponse<MfaResponse>>('/auth/mfa/confirmar', payload)
+        .then((r) => r.data)
+        .catch((err) => normalizeAxiosError<MfaResponse>(err)),
     onSuccess: (res) => {
       if (!res.success) return;
       // Guardar token en memoria (no localStorage) — decisión de seguridad XSS
@@ -48,7 +66,8 @@ export function useMfaMutation() {
       router.replace('/dashboard');
     },
     onError: () => {
-      toast.error('Código incorrecto o sesión expirada. Intentá de nuevo.');
+      // Solo llega aquí en error de red — código incorrecto lo maneja el formulario inline
+      toast.error('No se pudo verificar el código. Intenta de nuevo.');
     },
   });
 }

@@ -19,9 +19,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
+    // Los endpoints de auth devuelven 401 por credenciales incorrectas, no por sesión expirada;
+    // intentar renovar el token ahí no tiene sentido y generaría un toast de error falso.
+    const isAuthEndpoint = err.config?.url?.includes('/auth/');
     // _retry evita un bucle infinito: si la propia petición de renovación devuelve 401
     // (cookie de refresh también expirada), salimos en vez de reintentar eternamente.
-    if (err.response?.status === 401 && !err.config._retry) {
+    if (err.response?.status === 401 && !err.config._retry && !isAuthEndpoint) {
       err.config._retry = true;
       try {
         // Usamos axios base (no la instancia `api`) para que este interceptor
