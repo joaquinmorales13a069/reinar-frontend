@@ -26,7 +26,7 @@ export function AppShell({ children }: AppShellProps) {
       {/* Overlay semitransparente que cierra el sidebar en móvil al tocarlo */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-navy/50 z-40 animate-fade"
+          className="fixed inset-0 bg-black/50 z-40 animate-fade"
           onClick={() => setSidebarOpen(false)}
         />
       )}

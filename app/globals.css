@@ -1,34 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  /* ── Colores de marca → bg-navy, text-yellow, border-danger, etc. ─── */
-  --color-navy:        #0A1A2A;
-  --color-navy-med:    #1F3B55;
-  --color-navy-soft:   #2C4D6E;
-  --color-yellow:      #F2C037;
-  --color-yellow-dim:  #D9A820;
-  --color-yellow-soft: #FFF1C2;
-  --color-ok:          #2E8C5A;
-  --color-warn:        #E08A1A;
-  --color-danger:      #C23B3B;
-  --color-info:        #2F6CB7;
-
   /* ── Tipografía ─────────────────────────────────────────────────────── */
   --font-sans: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-
-  /* ── Tamaños no cubiertos por Tailwind ──────────────────────────────── */
-  --text-2xs:   0.625rem;   /* 10px — etiquetas pequeñas */
-  --text-title: 1.75rem;    /* 28px — encabezados de página */
-  --text-display: 2.75rem;  /* 44px — título auth */
 
   /* ── Animaciones ────────────────────────────────────────────────────── */
   --animate-auth-fade: auth-fade 0.25s ease-out;
   --animate-mfa-shake: mfa-shake 0.4s ease-in-out;
   --animate-fade:      fade 0.15s;
-
-  /* ── z-index personalizado ──────────────────────────────────────────── */
-  --z-panel: 200;
 }
 
 /* ─── Tokens semánticos (tema claro) ────────────────────────────────────── */
@@ -57,31 +37,6 @@
   --row-hover:   #F5F7FA;
 }
 
-/* ─── Tokens semánticos → utilidades Tailwind ───────────────────────────── */
-@theme inline {
-  --color-bg:           var(--bg);
-  --color-bg-elev:      var(--bg-elev);
-  --color-bg-sunken:    var(--bg-sunken);
-  --color-surface:      var(--surface);
-  --color-surface-2:    var(--surface-2);
-  --color-bd:           var(--bd);
-  --color-bd-soft:      var(--bd-soft);
-  --color-bd-strong:    var(--bd-strong);
-  --color-tx:           var(--tx);
-  --color-tx-2:         var(--tx-2);
-  --color-tx-3:         var(--tx-3);
-  --color-tx-muted:     var(--tx-muted);
-  --color-accent:       var(--accent);
-  --color-accent-dim:   var(--accent-dim);
-  --color-accent-soft:  var(--accent-soft);
-  --color-sidebar-bg:   var(--sidebar-bg);
-  --color-sidebar-fg:   var(--sidebar-fg);
-  --color-sidebar-fgs:  var(--sidebar-fgs);
-  --color-sidebar-act:  var(--sidebar-act);
-  --color-topbar-bg:    var(--topbar-bg);
-  --color-row-hover:    var(--row-hover);
-}
-
 /* ─── Tema oscuro ───────────────────────────────────────────────────────── */
 [data-theme="dark"] {
   --bg:          #0B141F;
@@ -102,6 +57,83 @@
   --sidebar-act: rgba(242, 192, 55, 0.14);
   --topbar-bg:   #0F1B2B;
   --row-hover:   #16263C;
+}
+
+/* ─── Utilidades personalizadas ─────────────────────────────────────────── */
+/* Tailwind v4 + Turbopack no genera clases de @theme custom, se definen aquí */
+@layer utilities {
+  /* Colores de marca — estáticos */
+  .bg-navy         { background-color: #0A1A2A; }
+  .text-navy        { color: #0A1A2A; }
+  .bg-navy-med     { background-color: #1F3B55; }
+  .bg-navy-soft    { background-color: #2C4D6E; }
+  .text-yellow     { color: #F2C037; }
+  .bg-yellow       { background-color: #F2C037; }
+  .text-danger     { color: #C23B3B; }
+  .bg-danger       { background-color: #C23B3B; }
+  .border-danger   { border-color: #C23B3B; }
+  .text-info       { color: #2F6CB7; }
+  .bg-info         { background-color: #2F6CB7; }
+  .text-ok         { color: #2E8C5A; }
+  .bg-ok           { background-color: #2E8C5A; }
+  .text-warn       { color: #E08A1A; }
+  .bg-warn         { background-color: #E08A1A; }
+
+  /* Tokens semánticos — dinámicos vía CSS vars */
+  .bg-bg           { background-color: var(--bg); }
+  .bg-bg-elev      { background-color: var(--bg-elev); }
+  .bg-bg-sunken    { background-color: var(--bg-sunken); }
+  .bg-surface      { background-color: var(--surface); }
+  .bg-surface-2    { background-color: var(--surface-2); }
+  .text-tx         { color: var(--tx); }
+  .text-tx-2       { color: var(--tx-2); }
+  .text-tx-3       { color: var(--tx-3); }
+  .text-tx-muted   { color: var(--tx-muted); }
+  .border-bd       { border-color: var(--bd); }
+  .border-bd-soft  { border-color: var(--bd-soft); }
+  .border-bd-strong { border-color: var(--bd-strong); }
+  .bg-accent       { background-color: var(--accent); }
+  .text-accent     { color: var(--accent); }
+  .border-accent   { border-color: var(--accent); }
+  .bg-accent-dim   { background-color: var(--accent-dim); }
+  .text-accent-dim { color: var(--accent-dim); }
+  .bg-accent-soft  { background-color: var(--accent-soft); }
+  .bg-sidebar-bg   { background-color: var(--sidebar-bg); }
+  .text-sidebar-fg  { color: var(--sidebar-fg); }
+  .text-sidebar-fgs { color: var(--sidebar-fgs); }
+  .bg-sidebar-act  { background-color: var(--sidebar-act); }
+  .border-sidebar-act { border-color: var(--sidebar-act); }
+  .bg-topbar-bg    { background-color: var(--topbar-bg); }
+  .border-topbar-bg { border-color: var(--topbar-bg); }
+  .border-tx       { border-color: var(--tx); }
+  .border-tx-2     { border-color: var(--tx-2); }
+  .border-tx-3     { border-color: var(--tx-3); }
+  .border-tx-muted { border-color: var(--tx-muted); }
+  .bg-row-hover    { background-color: var(--row-hover); }
+  .ring-focus      { box-shadow: 0 0 0 4px var(--focus-ring); }
+
+  /* Tamaños de texto personalizados */
+  .text-2xs    { font-size: 0.625rem; line-height: 1rem; }
+  .text-title  { font-size: 1.75rem; line-height: 2.25rem; }
+  .text-display { font-size: 2.75rem; line-height: 3.25rem; }
+
+  /* Animaciones */
+  .animate-auth-fade { animation: auth-fade 0.25s ease-out; }
+  .animate-mfa-shake { animation: mfa-shake 0.4s ease-in-out; }
+  .animate-fade      { animation: fade 0.15s; }
+
+  /* Z-index */
+  .z-panel { z-index: 200; }
+
+  /* Variantes responsive para colores custom — Turbopack no las genera desde @layer utilities */
+  @media (width < 48rem) {
+    .max-md\:bg-navy    { background-color: #0A1A2A; }
+    .max-md\:bg-bg      { background-color: var(--bg); }
+    .max-md\:bg-surface { background-color: var(--surface); }
+    .max-md\:border-bd  { border-color: var(--bd); }
+    .max-md\:text-tx    { color: var(--tx); }
+    .max-md\:text-tx-2  { color: var(--tx-2); }
+  }
 }
 
 /* ─── Base ──────────────────────────────────────────────────────────────── */
@@ -145,7 +177,7 @@ body {
   80%      { transform: translateX(6px); }
 }
 
-/* ─── MFA input — letra-spacing de 0.4em y transición especial ─────────── */
+/* ─── MFA input — letter-spacing de 0.4em no cubrible con Tailwind ─────── */
 .mfa-input {
   width: 100%;
   text-align: center;
@@ -163,6 +195,5 @@ body {
 }
 .mfa-input::placeholder { color: var(--tx-3); letter-spacing: 0.4em; }
 .mfa-input:focus    { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(242,192,55,0.18); }
-.mfa-input.is-error { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(194,59,59,0.18); }
+.mfa-input.is-error { border-color: #C23B3B; box-shadow: 0 0 0 3px rgba(194,59,59,0.18); }
 .mfa-input.is-shake { animation: mfa-shake 0.4s ease-in-out; }
-

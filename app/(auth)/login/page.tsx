@@ -29,7 +29,7 @@ type MfaFields  = z.infer<typeof mfaSchema>;
 /* ── Clases compartidas ─────────────────────────────────────────────────── */
 const fieldLabel  = 'text-xs font-medium text-tx-2 tracking-[0.01em]';
 const fieldError  = 'text-2xs text-danger flex items-center gap-1 mt-0.5';
-const inputBase   = 'h-9 px-3 bg-surface border border-bd-strong rounded text-sm text-tx outline-none w-full transition-[border-color,box-shadow] hover:border-tx-muted focus:border-accent focus:ring-2 focus:ring-accent/45';
+const inputBase   = 'h-9 px-3 bg-surface border border-bd-strong rounded text-sm text-tx outline-none w-full transition-[border-color,box-shadow] hover:border-tx-muted focus:border-accent focus:ring-focus';
 
 /* ── Paso 1: credenciales ───────────────────────────────────────────────── */
 
@@ -65,7 +65,7 @@ function LoginStep({ onMfaRequired }: Step1Props) {
   }
 
   return (
-    <form className="w-full max-w-sm animate-auth-fade" onSubmit={handleSubmit(onSubmit)}>
+    <form className="w-full max-w-sm mx-auto max-md:max-w-none max-md:mx-0 animate-auth-fade" onSubmit={handleSubmit(onSubmit)}>
       {/* Logo visible solo en móvil donde auth__left está oculto */}
       <div className="hidden max-md:block mb-5">
         <Image src="/logo-reinar.png" alt="Reinar" width={120} height={30} priority />
@@ -182,7 +182,7 @@ function MfaStep({ sessionToken, onBack }: Step2Props) {
   }
 
   return (
-    <div className="w-full max-w-sm animate-auth-fade">
+    <div className="w-full max-w-sm mx-auto max-md:max-w-none max-md:mx-0 animate-auth-fade">
       {/* Logo visible solo en móvil */}
       <div className="hidden max-md:block mb-5">
         <Image src="/logo-reinar.png" alt="Reinar" width={120} height={30} />
