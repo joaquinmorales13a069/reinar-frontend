@@ -32,3 +32,40 @@ export type Notificacion = {
   creadoEn: string;
   icono?: string;
 };
+
+export type Cliente = {
+  id: string;
+  tipo: 'EMPRESA' | 'PARTICULAR';
+  razonSocial?: string;
+  nombreComercial?: string;
+  nombre?: string;
+  apellido?: string;
+  nit?: string;
+  ncr?: string;
+  dui?: string;
+  ocupacion?: string;
+  sector?: string;
+  actividadEconomica?: string;
+  departamento: string;
+  municipio: string;
+  complemento?: string;
+  telefono?: string;
+  email?: string;
+  notas?: string;
+  estado: 'ACTIVO' | 'INACTIVO' | 'PROSPECTO';
+  facturado?: string;
+  proyectos?: number;
+};
+
+export type Contacto = {
+  id: string;
+  clienteId: string;
+  nombre: string;
+  apellido?: string;
+  cargo?: string;
+  tipoContacto: 'PRINCIPAL' | 'SECUNDARIO' | 'SOLICITANTE' | 'FACTURACION' | 'OPERATIVO';
+  telefono?: string;
+  email?: string;
+  notas?: string;
+  activo: boolean;
+};
