@@ -65,6 +65,21 @@ export const PLANTILLAS_FICHA: Partial<Record<CategoriaEquipo, FichaTecnica>> = 
   // OTRO: sin plantilla — el usuario define todos los campos libremente.
 };
 
+// Prefijo por defecto sugerido al crear un equipo según su categoría.
+// El backend no impone esta relación (prefijo es texto libre [A-Z0-9]+);
+// sirve solo como UX para pre-rellenar el campo y que cada categoría
+// quede con códigos legibles (CG-001, SB-001, etc.). El usuario puede
+// editar el prefijo manualmente y, si lo hace, no se pisa al cambiar
+// la categoría — ver EquipoForm.
+export const PREFIJO_POR_CATEGORIA: Record<CategoriaEquipo, string> = {
+  COMPRESOR_GENERADOR: 'CG',
+  SANDBLASTING: 'SB',
+  ANDAMIO_PLATAFORMA: 'AP',
+  COMPACTADOR_RODILLO: 'CR',
+  HERRAMIENTA_ESPECIALIZADA: 'HE',
+  OTRO: 'EQ',
+};
+
 // El badge usa estos kinds del componente Badge para colorear el estado.
 // DISPONIBLE → ok ya existe en STATUS_KIND de Badge.tsx; el resto se mapea acá
 // porque no todos están en el mapa por defecto y queremos colores consistentes.

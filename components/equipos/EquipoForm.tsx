@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,7 +11,7 @@ import { FormSection } from '@/components/ui/FormSection';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { EquipoImagenUpload } from '@/components/equipos/EquipoImagenUpload';
 import { useCrearEquipo, useEditarEquipo, useCambiarEstadoEquipo, useSubirImagenEquipo, useEliminarEquipo } from '@/hooks/use-equipos';
-import { CATEGORIA_LABELS, puedeEjecutar } from '@/lib/equipos';
+import { CATEGORIA_LABELS, PREFIJO_POR_CATEGORIA, puedeEjecutar } from '@/lib/equipos';
 import { useAuthStore } from '@/stores/auth.store';
 import type { Equipo, CategoriaEquipo, EstadoEquipoEditable } from '@/types/api';
 
@@ -79,14 +79,19 @@ export function EquipoForm(props: Props) {
     !isNew ? props.equipo.imagenUrl : null,
   );
   const [confirmDesact, setConfirmDesact] = useState(false);
+  // Marca si el usuario editó el prefijo a mano. Solo auto-rellenamos el prefijo
+  // al cambiar la categoría cuando el usuario NO lo customizó — así respetamos
+  // el override manual sin perder la sugerencia automática para los demás.
+  const [prefijoTouched, setPrefijoTouched] = useState(false);
 
   type FormData = CrearFormData | EditarFormData;
-  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, setError, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(isNew ? crearSchema : baseSchema) as never,
     defaultValues: isNew
       ? {
           nombre: '',
           categoria: 'COMPRESOR_GENERADOR' as CategoriaEquipo,
+          prefijo: PREFIJO_POR_CATEGORIA.COMPRESOR_GENERADOR,
           tarifaDia: undefined as unknown as number,
           tarifaSemana: undefined as unknown as number,
           tarifaMes: undefined as unknown as number,
@@ -109,6 +114,14 @@ export function EquipoForm(props: Props) {
             : undefined,
         },
   });
+
+  // Solo en modo crear: cuando la categoría cambia y el usuario no editó el
+  // prefijo a mano, lo sincronizamos con el sugerido para esa categoría.
+  const categoriaActual = watch('categoria') as CategoriaEquipo | undefined;
+  useEffect(() => {
+    if (!isNew || prefijoTouched || !categoriaActual) return;
+    setValue('prefijo' as never, PREFIJO_POR_CATEGORIA[categoriaActual] as never);
+  }, [isNew, prefijoTouched, categoriaActual, setValue]);
 
   function handleImagen(file: File, preview: string) {
     setImagenFile(file);
@@ -237,11 +250,14 @@ export function EquipoForm(props: Props) {
               <label className={labelCls}>Prefijo *</label>
               <input
                 className={`${(errors as Record<string, unknown>).prefijo ? inputErr : inputOk} font-mono uppercase`}
-                placeholder="EQ"
+                placeholder={categoriaActual ? PREFIJO_POR_CATEGORIA[categoriaActual] : 'EQ'}
                 {...register('prefijo' as never, {
                   // Forzamos uppercase en cliente para que coincida con el regex del backend.
+                  // Además marcamos prefijoTouched para que cambios posteriores de
+                  // categoría no pisen el valor que el usuario editó a mano.
                   onChange: (e) => {
                     e.target.value = String(e.target.value).toUpperCase();
+                    if (!prefijoTouched) setPrefijoTouched(true);
                   },
                 })}
               />
@@ -249,7 +265,7 @@ export function EquipoForm(props: Props) {
                 <p className={errorCls}>{(errors as Record<string, { message?: string }>).prefijo.message}</p>
               )}
               <p className={hintCls}>
-                Se generará el código <b>PREFIJO-001</b> automáticamente.
+                Sugerido según la categoría. Podés editarlo. Se generará el código <b>PREFIJO-001</b> automáticamente.
               </p>
             </div>
           ) : (
