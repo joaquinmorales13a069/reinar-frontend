@@ -1,6 +1,7 @@
 // app/(dashboard)/dashboard/page.tsx
 'use client';
 
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
@@ -25,8 +26,13 @@ export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const rol = user?.rol ?? 'VISUALIZADOR';
 
-  const fecha = format(new Date(), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
-  const fechaStr = fecha.charAt(0).toUpperCase() + fecha.slice(1);
+  const [greeting, setGreeting] = useState('');
+  const [fechaStr, setFechaStr] = useState('');
+  useEffect(() => {
+    setGreeting(getGreeting());
+    const f = format(new Date(), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
+    setFechaStr(f.charAt(0).toUpperCase() + f.slice(1));
+  }, []);
 
   // Visibilidad de secciones por rol (ver spec 2026-05-21-dashboard-design.md)
   const showIngresos = rol !== 'LOGISTICA';
@@ -40,7 +46,7 @@ export default function DashboardPage() {
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-title font-semibold tracking-tight text-tx">
-            {getGreeting()}, {user?.nombre ?? '—'}
+            {greeting}, {user?.nombre ?? '—'}
           </h1>
           <p className="text-sm text-tx-2 mt-1">
             Resumen de operaciones · {fechaStr}
@@ -76,7 +82,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Error banner */}
+      {/* Mostrar banner de error incluso cuando hay datos cacheados — el dashboard puede
+          mostrar info desactualizada junto a la advertencia, que es mejor que ocultar todo. */}
       {isError && !isLoading && (
         <div
           className="rounded-lg border border-bd p-4 flex items-center justify-between"
