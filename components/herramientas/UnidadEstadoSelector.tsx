@@ -13,6 +13,15 @@ const ESTADOS_EDITABLES: EstadoUnidadEditable[] = [
   'INACTIVO',
 ];
 
+// Cada botón usa el mismo color que el <Badge> del estado correspondiente.
+// El estado actual se renderiza mudo (gris) para reforzar que ya está aplicado.
+const ESTADO_BTN_CLS: Record<EstadoUnidadEditable, string> = {
+  DISPONIBLE: 'border-ok-soft text-ok bg-surface hover:bg-ok-soft',
+  MANTENIMIENTO: 'border-warn-soft text-warn bg-surface hover:bg-warn-soft',
+  USO_INTERNO: 'border-bd text-tx-2 bg-surface hover:bg-bg-sunken',
+  INACTIVO: 'border-danger-soft text-danger bg-surface hover:bg-danger-soft',
+};
+
 type Props = {
   unidadId: string;
   tipoId: string;
@@ -35,17 +44,16 @@ export function UnidadEstadoSelector({ unidadId, tipoId, estadoActual }: Props) 
 
   return (
     <>
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-xs text-tx-3 mr-1">Cambiar estado:</span>
+      <div className="flex items-center gap-2 text-sm">
         {ESTADOS_EDITABLES.map((e) => (
           <button
             key={e}
             type="button"
             disabled={estadoActual === e}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs transition-colors ${
+            className={`flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-1 rounded-md border text-xs font-medium transition-colors ${
               estadoActual === e
                 ? 'border-bd bg-bg-sunken text-tx-3 cursor-not-allowed'
-                : 'border-bd text-tx-2 hover:bg-bg-sunken'
+                : ESTADO_BTN_CLS[e]
             }`}
             onClick={() => setConfirmEstado(e)}
           >
