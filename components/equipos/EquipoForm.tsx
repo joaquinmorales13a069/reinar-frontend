@@ -212,7 +212,11 @@ export function EquipoForm(props: Props) {
         title={isNew ? 'Nuevo equipo' : `Editar — ${props.equipo.nombre}`}
         subtitle={isNew ? 'Registrá un equipo nuevo en la flota.' : 'Modificá los datos del equipo.'}
         back
-        backLabel="Equipos"
+        backLabel={isNew ? 'Equipos' : `Equipo ${props.equipo.codigo}`}
+        // Forzamos destino para evitar bucles cuando el usuario llega desde
+        // distintas rutas (lista, detalle, ficha). El padre natural en editar
+        // es el detalle del equipo; en crear, la lista.
+        onBack={() => router.push(isNew ? '/equipos' : `/equipos/${props.equipo.id}`)}
       />
 
       {confirmDesact && !isNew && (

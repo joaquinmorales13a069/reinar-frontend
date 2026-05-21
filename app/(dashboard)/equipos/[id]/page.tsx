@@ -2,6 +2,7 @@
 
 import { use, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
@@ -37,6 +38,7 @@ export default function EquipoDetallePage({ params }: { params: Promise<{ id: st
 
 function EquipoDetalleClient({ id }: { id: string }) {
   useEquiposRealtime();
+  const router = useRouter();
   const rol = useAuthStore((s) => s.user?.rol ?? 'VISUALIZADOR');
 
   const { data: equipo, isLoading, isError } = useEquipo(id);
@@ -91,6 +93,10 @@ function EquipoDetalleClient({ id }: { id: string }) {
         }
         back
         backLabel="Equipos"
+        // Forzamos destino: el detalle puede haberse abierto desde la ficha o el
+        // form de edición, así que router.back() generaría un bucle. Empujamos
+        // explícitamente a la lista, que es el padre lógico en la jerarquía.
+        onBack={() => router.push('/equipos')}
         actions={
           <>
             {puedeEditar && (
