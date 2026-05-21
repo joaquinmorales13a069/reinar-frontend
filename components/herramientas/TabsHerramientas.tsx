@@ -37,7 +37,7 @@ export function TabsHerramientas({ activeTab }: { activeTab: Tab }) {
     activeTab === 'tipos'
       ? puedeCrearTipo && (
           <Link href="/herramientas/tipos/nuevo" className={btnPri}>
-            <Icon name="plus" size={14} /> Nuevo tipo
+            <Icon name="plus" size={14} /> Nuevo tipo de herramienta
           </Link>
         )
       : puedeCrearConsumible && (
