@@ -116,7 +116,11 @@ export function ConsumiblesList() {
           message="No se encontraron consumibles con los filtros aplicados."
         />
       ) : (
-        <table className="w-full text-sm">
+        // overflow-x-auto + min-w-3xl: en pantallas < 768px (md y abajo) la
+        // tabla excede el contenedor y aparece scroll horizontal en lugar de
+        // aplastar las celdas y romper el layout.
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-3xl text-sm">
           <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
             <tr>
               <th className="text-left px-4 py-2 font-medium">Código</th>
@@ -170,6 +174,7 @@ export function ConsumiblesList() {
             })}
           </tbody>
         </table>
+        </div>
       )}
 
       <Pagination
