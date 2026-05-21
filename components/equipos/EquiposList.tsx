@@ -89,10 +89,13 @@ export function EquiposList() {
         subtitle={`${data?.meta.total ?? '—'} unidades · ${Object.keys(CATEGORIA_LABELS).length} categorías`}
         actions={
           <>
-            <div className="inline-flex rounded-md border border-bd overflow-hidden">
+            {/* En móvil el toggle ocupa el ancho completo con cada botón en 50%,
+                así Tabla/Grilla quedan centrados. En sm+ vuelve a inline-flex
+                para que el toggle se ajuste al contenido y no estire la barra. */}
+            <div className="flex w-full sm:inline-flex sm:w-auto rounded-md border border-bd overflow-hidden">
               <button
                 type="button"
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs ${
+                className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs ${
                   view === 'tabla' ? 'bg-accent text-navy font-semibold' : 'bg-surface text-tx-2 hover:bg-bg-sunken'
                 }`}
                 onClick={() => setTweak('equiposView', 'tabla')}
@@ -101,7 +104,7 @@ export function EquiposList() {
               </button>
               <button
                 type="button"
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs border-l border-bd ${
+                className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs border-l border-bd ${
                   view === 'grilla' ? 'bg-accent text-navy font-semibold' : 'bg-surface text-tx-2 hover:bg-bg-sunken'
                 }`}
                 onClick={() => setTweak('equiposView', 'grilla')}
