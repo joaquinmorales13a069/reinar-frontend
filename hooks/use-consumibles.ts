@@ -13,6 +13,9 @@ import type {
   AjusteStockDto,
 } from '@/types/api';
 
+// Helper duplicado intencionalmente en cada archivo de hooks: evita una
+// dependencia transitiva ("shared/api-error") y mantiene cada hook autocontenido,
+// igual que en use-equipos.ts.
 function extractErrorMessage(err: unknown, fallback: string): string {
   const anyErr = err as { response?: { data?: { error?: { message?: string } } } };
   return anyErr?.response?.data?.error?.message ?? fallback;
