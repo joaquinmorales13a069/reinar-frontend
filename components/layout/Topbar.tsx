@@ -50,16 +50,18 @@ export function Topbar({ onMenuClick, onTweaksOpen }: TopbarProps) {
 
   return (
     <header className="sticky top-0 z-20 h-14 bg-topbar-bg border-b border-bd flex items-center gap-4 px-5">
-      <button className={iconBtn} onClick={onMenuClick} aria-label="Abrir menú">
+      {/* md:hidden porque en desktop el sidebar siempre es visible; el hamburger solo tiene
+          sentido en móvil donde el sidebar está oculto vía CSS */}
+      <button className={`${iconBtn} md:hidden`} onClick={onMenuClick} aria-label="Abrir menú">
         <Icon name="menu" size={18} />
       </button>
 
-      <div className="flex items-center gap-2 text-xs text-tx-3 shrink-0">
-        <span>Reinar</span>
+      <div className="flex items-center gap-2 text-xs text-tx-3 min-w-0">
+        <span className="shrink-0">Reinar</span>
         {navInfo && (
           <>
-            <span className="text-tx-muted">/</span>
-            <span className="text-tx font-medium">{navInfo.label}</span>
+            <span className="text-tx-muted shrink-0">/</span>
+            <span className="text-tx font-medium truncate">{navInfo.label}</span>
           </>
         )}
       </div>
@@ -142,8 +144,10 @@ export function Topbar({ onMenuClick, onTweaksOpen }: TopbarProps) {
             <div className="size-8 rounded-full bg-accent text-navy flex items-center justify-center font-semibold text-xs shrink-0">
               {user ? getInitials(user.nombre) : '?'}
             </div>
+            {/* Nombre y rol ocultos en pantallas < lg — en móvil y tablet solo
+                se ve el avatar; el texto causaría overflow con el sidebar visible */}
             {user && (
-              <div>
+              <div className="hidden lg:block">
                 <div className="text-sm font-medium">{user.nombre}</div>
                 <div className="text-2xs text-tx-muted uppercase tracking-wider">{user.rol}</div>
               </div>

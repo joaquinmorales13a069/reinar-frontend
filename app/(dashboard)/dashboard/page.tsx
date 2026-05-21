@@ -41,7 +41,7 @@ export default function DashboardPage() {
   const showCta      = rol !== 'LOGISTICA' && rol !== 'VISUALIZADOR';
 
   return (
-    <div className="p-5 max-w-screen-xl mx-auto">
+    <div className="max-w-screen-xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
