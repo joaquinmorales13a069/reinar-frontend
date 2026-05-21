@@ -205,8 +205,9 @@ export function ClienteForm({ id }: { id?: string }) {
                 </div>
                 <div className="field">
                   <label className="field__label">NIT (opcional)</label>
-                  <input className="input mono" {...register('nit')} placeholder="0614-DDMMAA-NNN-N" />
+                  <input className={`input mono ${errors.nit ? 'input--error' : ''}`} {...register('nit')} placeholder="0614-DDMMAA-NNN-N" />
                   <div className="field__hint">Solo para particulares con obligación tributaria.</div>
+                  {errors.nit && <div className="field__error">{errors.nit.message}</div>}
                 </div>
                 <div className="field">
                   <label className="field__label">NCR (opcional)</label>
