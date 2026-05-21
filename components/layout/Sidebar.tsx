@@ -23,12 +23,12 @@ export function Sidebar({ isMini, onCollapse }: SidebarProps) {
     <aside
       className={`${isMini ? 'w-16' : 'w-60'} shrink-0 bg-sidebar-bg text-sidebar-fg flex flex-col border-r border-white/4 sticky top-0 h-screen overflow-y-auto overflow-x-hidden transition-[width] duration-150 max-lg:hidden`}
     >
-      {/* Marca — logo centrado, recoloreado a blanco vía filtros CSS (brightness-0
-          neutraliza los colores del PNG e invert los pinta blancos). Mantiene el
-          mismo asset, sin necesidad de un PNG alternativo. */}
+      {/* Marca — logo en su color original (amarillo/azul). El contenedor centra
+          al logo horizontal y verticalmente. mx-auto duplica el centrado en el
+          Image como salvaguarda por si Next renderiza con dimensiones fijas. */}
       <div
         className={`flex items-center justify-center border-b border-white/5 ${
-          isMini ? 'min-h-14 py-3' : 'min-h-20 xl:min-h-24 py-4'
+          isMini ? 'min-h-14 py-3' : 'min-h-20 xl:min-h-24 py-4 px-4'
         }`}
       >
         {isMini ? (
@@ -37,7 +37,7 @@ export function Sidebar({ isMini, onCollapse }: SidebarProps) {
             alt="R"
             width={32}
             height={32}
-            className="h-8 w-auto object-contain brightness-0 invert"
+            className="h-8 w-auto object-contain mx-auto"
             priority
           />
         ) : (
@@ -46,7 +46,7 @@ export function Sidebar({ isMini, onCollapse }: SidebarProps) {
             alt="Reinar"
             width={180}
             height={56}
-            className="h-12 xl:h-14 w-auto object-contain brightness-0 invert"
+            className="h-12 xl:h-14 w-auto object-contain mx-auto"
             priority
           />
         )}
