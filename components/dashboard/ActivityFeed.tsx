@@ -1,3 +1,4 @@
+'use client';
 // components/dashboard/ActivityFeed.tsx
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -24,6 +25,14 @@ const ACCION_LABEL: Record<string, string> = {
   DELETE: 'eliminó',
 };
 
+const ENTITY_LABEL: Record<string, string> = {
+  Cotizacion:  'cotización',
+  Factura:     'factura',
+  Pago:        'pago',
+  ActaEntrega: 'acta de entrega',
+  Cliente:     'cliente',
+};
+
 export function ActivityFeed({ actividad, onRefresh }: ActivityFeedProps) {
   return (
     <div className="rounded-lg bg-surface border border-bd flex flex-col">
@@ -33,6 +42,7 @@ export function ActivityFeed({ actividad, onRefresh }: ActivityFeedProps) {
           <p className="text-xs text-tx-3 mt-0.5">Últimas 24 horas en el sistema</p>
         </div>
         <button
+          type="button"
           onClick={onRefresh}
           className="flex items-center gap-1.5 text-xs text-tx-2 hover:text-tx transition-colors px-2 py-1 rounded hover:bg-bg-sunken"
         >
@@ -53,7 +63,7 @@ export function ActivityFeed({ actividad, onRefresh }: ActivityFeedProps) {
             addSuffix: true,
           });
           return (
-            <div key={i} className="flex gap-3 px-5 py-3">
+            <div key={`${item.entidad}-${item.entidadId}-${item.createdAt}`} className="flex gap-3 px-5 py-3">
               <div className="mt-0.5 flex-shrink-0 w-7 h-7 rounded-full bg-bg-sunken flex items-center justify-center text-tx-3">
                 <Icon name={iconName} size={13} />
               </div>
@@ -62,7 +72,7 @@ export function ActivityFeed({ actividad, onRefresh }: ActivityFeedProps) {
                   <span className="font-medium">{item.usuario ?? 'Sistema'}</span>{' '}
                   {accion}{' '}
                   <span className="font-mono text-xs text-tx-2">
-                    {item.entidad.toLowerCase()} {item.entidadId.slice(0, 8)}
+                    {ENTITY_LABEL[item.entidad] ?? item.entidad.toLowerCase()} {item.entidadId.slice(0, 8)}
                   </span>
                 </p>
                 <p className="text-xs text-tx-3 mt-0.5">{tiempo}</p>
