@@ -40,9 +40,9 @@ export function HerramientasTiposList() {
     limit: PAGE_SIZE,
     search: search || undefined,
     categoria: filterCat ?? undefined,
-    // El backend usa `activo: true` por default. Si queremos ver inactivos
-    // también, pasamos `activo: false` (lo cual el backend interpreta como
-    // "mostrar inactivos"; ver filtrosHerramientasSchema en server).
+    // El backend filtra de forma mutuamente exclusiva: `activo: true` muestra
+    // activos, `activo: false` muestra solo inactivos. No hay modo "ambos",
+    // así que el checkbox conmuta entre las dos vistas.
     activo: incluirInactivos ? false : true,
   });
 
@@ -87,7 +87,7 @@ export function HerramientasTiposList() {
             }}
           />
           <label htmlFor="tipos-incluir-inactivos" className="text-tx-2 cursor-pointer">
-            Incluir tipos inactivos en la lista
+            Mostrar solo inactivos
           </label>
         </div>
       )}
@@ -116,7 +116,7 @@ export function HerramientasTiposList() {
           </thead>
           <tbody>
             {(data?.data ?? []).map((t) => {
-              const totalUnidades = t._count?.unidades ?? t.unidades?.length ?? 0;
+              const totalUnidades = t.totalUnidades ?? 0;
               return (
                 <tr key={t.id} className="border-t border-bd hover:bg-bg-sunken transition-colors">
                   <td className="px-4 py-3 font-mono font-medium">

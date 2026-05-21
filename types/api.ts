@@ -220,6 +220,10 @@ export type HerramientaTipo = {
   // El backend del detalle (`GET /herramientas/:id`) incluye `unidades` y/o `_count`.
   unidades?: HerramientaUnidad[];
   _count?: { unidades?: number };
+  // Campos calculados por el endpoint LIST (GET /herramientas): el backend
+  // hace destructure de `_count` y `unidades` y los reemplaza por estos dos.
+  totalUnidades?: number;
+  unidadesDisponibles?: number;
 };
 
 export type HerramientaUnidad = {
