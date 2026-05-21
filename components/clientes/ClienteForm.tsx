@@ -142,17 +142,28 @@ export function ClienteForm({ id }: { id?: string }) {
     if (!details.length) toast.error(e?.message ?? 'Ocurrió un error inesperado.');
   }
 
-  function onSubmit(data: FormData) {
+  async function onSubmit(data: FormData) {
     if (isNew) {
       crear.mutate(data as any, {
         onSuccess: () => { toast.success('Cliente creado correctamente.'); router.push('/clientes'); },
         onError: handleError,
       });
-    } else {
-      editar.mutate({ id: id!, data }, {
-        onSuccess: () => { toast.success('Cambios guardados correctamente.'); router.push(`/clientes/${id}`); },
-        onError: handleError,
-      });
+      return;
+    }
+    // El backend NO acepta `estado` en PUT /clientes/:id (el schema lo descarta
+    // silenciosamente, por eso el toast salía "guardado" pero el estado no
+    // cambiaba). El cambio de estado se hace en PATCH /clientes/:id/estado,
+    // exactamente igual que en EquipoForm.
+    const { estado, ...rest } = data;
+    try {
+      await editar.mutateAsync({ id: id!, data: rest });
+      if (estado && estado !== existing?.estado) {
+        await cambiarEstado.mutateAsync({ id: id!, estado });
+      }
+      toast.success('Cambios guardados correctamente.');
+      router.push(`/clientes/${id}`);
+    } catch (err) {
+      handleError(err);
     }
   }
 
