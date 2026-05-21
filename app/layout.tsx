@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Space_Grotesk, IBM_Plex_Mono } from 'next/font/google';
 import './globals.css';
+import './design-system.css';
 import { Providers } from './providers';
 
 // next/font auto-hospeda las fuentes en build time: sin petición a Google en runtime,
