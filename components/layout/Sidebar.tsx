@@ -21,7 +21,7 @@ export function Sidebar({ isMini, onCollapse }: SidebarProps) {
 
   return (
     <aside
-      className={`${isMini ? 'w-16' : 'w-60'} shrink-0 bg-sidebar-bg text-sidebar-fg flex flex-col border-r border-white/4 sticky top-0 h-screen overflow-y-auto overflow-x-hidden transition-[width] duration-150 max-md:hidden`}
+      className={`${isMini ? 'w-16' : 'w-60'} shrink-0 bg-sidebar-bg text-sidebar-fg flex flex-col border-r border-white/4 sticky top-0 h-screen overflow-y-auto overflow-x-hidden transition-[width] duration-150 max-lg:hidden`}
     >
       {/* Marca */}
       <div className={`flex items-center border-b border-white/5 min-h-14 ${isMini ? 'justify-center py-3.5' : 'gap-3 px-4 py-3.5'}`}>

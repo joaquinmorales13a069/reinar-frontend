@@ -36,7 +36,7 @@ export function AppShell({ children }: AppShellProps) {
           onMenuClick={() => setSidebarOpen(true)}
           onTweaksOpen={() => setTweaksOpen(true)}
         />
-        <div className="p-6 max-md:pb-20">{children}</div>
+        <div className="p-6 max-lg:pb-20">{children}</div>
       </div>
 
       <BottomNav />
