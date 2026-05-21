@@ -10,11 +10,23 @@ import { useCliente } from '@/hooks/use-clientes';
 import { useAuthStore } from '@/stores/auth.store';
 import { formatCurrency } from '@/lib/utils';
 
+const btnSec = 'inline-flex items-center gap-2 px-4 py-2 rounded-md border border-bd text-tx-2 bg-surface text-sm font-medium hover:bg-bg-sunken transition-colors';
+const btnPri = 'inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent text-navy text-sm font-semibold hover:bg-accent-dim transition-colors';
+
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="detail-row">
-      <dt>{label}</dt>
-      <dd>{value}</dd>
+    <div className="flex items-baseline justify-between py-2.5 border-b border-bd-soft last:border-0 text-sm gap-4">
+      <dt className="text-tx-3 shrink-0">{label}</dt>
+      <dd className="text-tx text-right">{value}</dd>
+    </div>
+  );
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-bd bg-surface p-4">
+      <h3 className="text-sm font-semibold text-tx mb-3">{title}</h3>
+      {children}
     </div>
   );
 }
@@ -34,21 +46,21 @@ export function ClienteDetalle({ id }: { id: string }) {
       <PageHeader
         title={displayName}
         subtitle={
-          <>
-            <span className="badge badge--neutral">{cliente.tipo === 'EMPRESA' ? 'Empresa' : 'Particular'}</span>{' '}
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            <Badge status={cliente.tipo === 'EMPRESA' ? 'Empresa' : 'Particular'} kind="neutral" />
             <Badge status={cliente.estado} />
-            <span className="text-3 mono" style={{ marginLeft: 8 }}>· {cliente.id}</span>
-          </>
+            <span className="font-mono text-xs text-tx-3">· {cliente.id}</span>
+          </div>
         }
         back
         onBack={() => router.push('/clientes')}
         actions={
           <>
             {rol !== 'VISUALIZADOR' && (
-              <Link href={`/clientes/${id}/editar`} className="btn btn--secondary">Editar</Link>
+              <Link href={`/clientes/${id}/editar`} className={btnSec}>Editar</Link>
             )}
             {rol !== 'VISUALIZADOR' && rol !== 'LOGISTICA' && (
-              <Link href={`/cotizaciones/nueva?clienteId=${id}`} className="btn btn--primary">
+              <Link href={`/cotizaciones/nueva?clienteId=${id}`} className={btnPri}>
                 Nueva cotización
               </Link>
             )}
@@ -58,73 +70,71 @@ export function ClienteDetalle({ id }: { id: string }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         <div className="flex flex-col gap-4">
-          <div className="card">
-            <h3 className="card__title mb-3">Información general</h3>
-            <dl style={{ margin: 0 }}>
+          <Card title="Información general">
+            <dl className="m-0">
               {cliente.tipo === 'EMPRESA' ? (
                 <>
                   <DetailRow label="Razón social" value={cliente.razonSocial} />
-                  <DetailRow label="Nombre comercial" value={cliente.nombreComercial ?? <span className="text-muted">—</span>} />
-                  <DetailRow label="NIT" value={<span className="mono">{cliente.nit ?? '—'}</span>} />
-                  <DetailRow label="NCR" value={<span className="mono">{cliente.ncr ?? '—'}</span>} />
-                  <DetailRow label="Sector" value={cliente.sector ?? <span className="text-muted">—</span>} />
-                  <DetailRow label="Actividad económica" value={cliente.actividadEconomica ?? <span className="text-muted">—</span>} />
+                  <DetailRow label="Nombre comercial" value={cliente.nombreComercial ?? <span className="text-tx-muted">—</span>} />
+                  <DetailRow label="NIT" value={<span className="font-mono">{cliente.nit ?? '—'}</span>} />
+                  <DetailRow label="NCR" value={<span className="font-mono">{cliente.ncr ?? '—'}</span>} />
+                  <DetailRow label="Sector" value={cliente.sector ?? <span className="text-tx-muted">—</span>} />
+                  <DetailRow label="Actividad económica" value={cliente.actividadEconomica ?? <span className="text-tx-muted">—</span>} />
                 </>
               ) : (
                 <>
                   <DetailRow label="Nombre" value={cliente.nombre} />
-                  <DetailRow label="Apellido" value={cliente.apellido ?? <span className="text-muted">—</span>} />
-                  <DetailRow label="DUI" value={<span className="mono">{cliente.dui ?? '—'}</span>} />
-                  <DetailRow label="Ocupación" value={cliente.ocupacion ?? <span className="text-muted">—</span>} />
+                  <DetailRow label="Apellido" value={cliente.apellido ?? <span className="text-tx-muted">—</span>} />
+                  <DetailRow label="DUI" value={<span className="font-mono">{cliente.dui ?? '—'}</span>} />
+                  <DetailRow label="Ocupación" value={cliente.ocupacion ?? <span className="text-tx-muted">—</span>} />
                 </>
               )}
             </dl>
-          </div>
-          <div className="card">
-            <h3 className="card__title mb-3">Dirección</h3>
-            <dl style={{ margin: 0 }}>
+          </Card>
+          <Card title="Dirección">
+            <dl className="m-0">
               <DetailRow label="Departamento" value={cliente.departamento} />
               <DetailRow label="Municipio" value={cliente.municipio} />
-              <DetailRow label="Complemento" value={cliente.complemento ?? <span className="text-muted">—</span>} />
+              <DetailRow label="Complemento" value={cliente.complemento ?? <span className="text-tx-muted">—</span>} />
             </dl>
-          </div>
-          <div className="card">
-            <h3 className="card__title mb-3">Contacto</h3>
-            <dl style={{ margin: 0 }}>
-              <DetailRow label="Teléfono" value={<span className="mono">{cliente.telefono ?? '—'}</span>} />
+          </Card>
+          <Card title="Contacto">
+            <dl className="m-0">
+              <DetailRow label="Teléfono" value={<span className="font-mono">{cliente.telefono ?? '—'}</span>} />
               <DetailRow label="Correo" value={cliente.email ?? '—'} />
-              <DetailRow label="Notas" value={cliente.notas ?? <span className="text-muted">Sin notas.</span>} />
+              <DetailRow label="Notas" value={cliente.notas ?? <span className="text-tx-muted">Sin notas.</span>} />
             </dl>
-          </div>
+          </Card>
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="card">
-            <div style={{ display: 'flex', gap: 24 }}>
+          <div className="rounded-lg border border-bd bg-surface p-4">
+            <div className="flex gap-8">
               <div>
-                <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600 }}>Total facturado</div>
-                <div className="mono" style={{ fontSize: 26, fontWeight: 500, marginTop: 4 }}>
+                <div className="text-2xs font-semibold text-tx-3 uppercase tracking-wider">Total facturado</div>
+                <div className="font-mono text-2xl font-medium text-tx mt-1">
                   {cliente.facturado ? formatCurrency(cliente.facturado) : '$0.00'}
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 600 }}>Proyectos</div>
-                <div className="mono" style={{ fontSize: 26, fontWeight: 500, marginTop: 4 }}>{cliente.proyectos ?? 0}</div>
+                <div className="text-2xs font-semibold text-tx-3 uppercase tracking-wider">Proyectos</div>
+                <div className="font-mono text-2xl font-medium text-tx mt-1">{cliente.proyectos ?? 0}</div>
               </div>
             </div>
           </div>
-          {/* Tablas de cotizaciones y facturas: se completarán en RAMA 6 y RAMA 7 */}
-          <div className="card card--flush">
-            <div className="card__head"><h3 className="card__title">Historial de cotizaciones</h3></div>
-            <table className="table"><tbody>
-              <tr><td colSpan={3} style={{ padding: '18px', color: 'var(--text-muted)', fontSize: 'var(--t-sm)' }}>Sin cotizaciones registradas.</td></tr>
-            </tbody></table>
+
+          {/* Las tablas de cotizaciones y facturas se completarán en RAMA 6 y RAMA 7 */}
+          <div className="rounded-lg border border-bd bg-surface overflow-hidden">
+            <div className="flex items-center px-4 py-3 border-b border-bd">
+              <h3 className="text-sm font-semibold text-tx">Historial de cotizaciones</h3>
+            </div>
+            <div className="px-4 py-4 text-sm text-tx-muted">Sin cotizaciones registradas.</div>
           </div>
-          <div className="card card--flush">
-            <div className="card__head"><h3 className="card__title">Facturas vinculadas</h3></div>
-            <table className="table"><tbody>
-              <tr><td colSpan={3} style={{ padding: '18px', color: 'var(--text-muted)', fontSize: 'var(--t-sm)' }}>Sin facturas vinculadas.</td></tr>
-            </tbody></table>
+          <div className="rounded-lg border border-bd bg-surface overflow-hidden">
+            <div className="flex items-center px-4 py-3 border-b border-bd">
+              <h3 className="text-sm font-semibold text-tx">Facturas vinculadas</h3>
+            </div>
+            <div className="px-4 py-4 text-sm text-tx-muted">Sin facturas vinculadas.</div>
           </div>
         </div>
       </div>

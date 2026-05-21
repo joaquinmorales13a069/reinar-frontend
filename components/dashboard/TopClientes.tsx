@@ -49,7 +49,7 @@ export function TopClientes({ clientes }: TopClientesProps) {
               <td className="py-3 pr-4">
                 <Link
                   href={`/clientes/${c.clienteId}`}
-                  className="font-medium text-tx hover:text-accent transition-colors truncate block max-w-[120px] lg:max-w-[180px]"
+                  className="font-medium text-tx hover:text-accent transition-colors truncate block max-w-[120px] lg:max-w-[180px] ml-2"
                 >
                   {c.nombre}
                 </Link>

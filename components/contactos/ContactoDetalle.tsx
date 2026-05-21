@@ -5,20 +5,33 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { Icon } from '@/components/ui/Icon';
 import { useContacto, useToggleActivoContacto } from '@/hooks/use-contactos';
 import { useAuthStore } from '@/stores/auth.store';
+import type { Contacto } from '@/types/api';
 
-const TIPO_BADGE: Record<string, string> = {
-  PRINCIPAL: 'badge--info', SECUNDARIO: 'badge--neutral',
-  SOLICITANTE: 'badge--warn', FACTURACION: 'badge--ok', OPERATIVO: 'badge--neutral',
+const TIPO_KIND: Record<Contacto['tipoContacto'], 'info' | 'neutral' | 'warn' | 'ok'> = {
+  PRINCIPAL: 'info', SECUNDARIO: 'neutral',
+  SOLICITANTE: 'warn', FACTURACION: 'ok', OPERATIVO: 'neutral',
 };
-const TIPO_LABEL: Record<string, string> = {
+const TIPO_LABEL: Record<Contacto['tipoContacto'], string> = {
   PRINCIPAL: 'Principal', SECUNDARIO: 'Secundario',
   SOLICITANTE: 'Solicitante', FACTURACION: 'Facturación', OPERATIVO: 'Operativo',
 };
+
+const btnSec = 'inline-flex items-center gap-2 px-4 py-2 rounded-md border border-bd text-tx-2 bg-surface text-sm font-medium hover:bg-bg-sunken transition-colors';
+
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between py-2.5 border-b border-bd-soft last:border-0 text-sm gap-4">
+      <dt className="text-tx-3 shrink-0">{label}</dt>
+      <dd className="text-tx text-right">{value}</dd>
+    </div>
+  );
+}
 
 export function ContactoDetalle({ id }: { id: string }) {
   const router = useRouter();
@@ -48,28 +61,28 @@ export function ContactoDetalle({ id }: { id: string }) {
       <PageHeader
         title={fullName}
         subtitle={
-          <>
-            {contacto.cargo && <span className="text-2">{contacto.cargo} · </span>}
-            <span className={`badge ${TIPO_BADGE[contacto.tipoContacto] ?? 'badge--neutral'}`}>
-              <span className="badge__dot" />{TIPO_LABEL[contacto.tipoContacto] ?? contacto.tipoContacto}
-            </span>{' '}
-            <span className={`badge ${contacto.activo ? 'badge--ok' : 'badge--neutral'}`}>
-              <span className="badge__dot" />{contacto.activo ? 'ACTIVO' : 'INACTIVO'}
-            </span>
-            <span className="text-3 mono" style={{ marginLeft: 8 }}>· {contacto.id}</span>
-          </>
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            {contacto.cargo && <span className="text-sm text-tx-2">{contacto.cargo}</span>}
+            <Badge status={TIPO_LABEL[contacto.tipoContacto]} kind={TIPO_KIND[contacto.tipoContacto]} />
+            <Badge status={contacto.activo ? 'ACTIVO' : 'INACTIVO'} />
+            <span className="font-mono text-xs text-tx-3">· {contacto.id}</span>
+          </div>
         }
         back
         onBack={() => router.push('/contactos')}
         actions={
           <>
             {rol !== 'VISUALIZADOR' && (
-              <Link href={`/contactos/${id}/editar`} className="btn btn--secondary">
+              <Link href={`/contactos/${id}/editar`} className={btnSec}>
                 <Icon name="edit" size={14} /> Editar
               </Link>
             )}
             {contacto.activo && rol !== 'VISUALIZADOR' && (
-              <button type="button" className="btn btn--ghost" style={{ color: 'var(--danger)' }} onClick={() => setConfirmDesact(true)}>
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm text-danger border border-bd hover:bg-bg-sunken transition-colors"
+                onClick={() => setConfirmDesact(true)}
+              >
                 <Icon name="x" size={14} /> Desactivar
               </button>
             )}
@@ -88,39 +101,40 @@ export function ContactoDetalle({ id }: { id: string }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         <div className="flex flex-col gap-4">
-          <div className="card">
-            <h3 className="card__title mb-3">Información de contacto</h3>
-            <dl style={{ margin: 0 }}>
-              <div className="detail-row"><dt>Teléfono</dt><dd className="mono">{contacto.telefono ?? <span className="text-muted">—</span>}</dd></div>
-              <div className="detail-row"><dt>Correo electrónico</dt><dd>{contacto.email ?? <span className="text-muted">—</span>}</dd></div>
-              <div className="detail-row"><dt>Notas</dt><dd>{contacto.notas ?? <span className="text-muted">Sin notas registradas.</span>}</dd></div>
+          <div className="rounded-lg border border-bd bg-surface p-4">
+            <h3 className="text-sm font-semibold text-tx mb-3">Información de contacto</h3>
+            <dl className="m-0">
+              <DetailRow label="Teléfono" value={<span className="font-mono">{contacto.telefono ?? <span className="text-tx-muted">—</span>}</span>} />
+              <DetailRow label="Correo electrónico" value={contacto.email ?? <span className="text-tx-muted">—</span>} />
+              <DetailRow label="Notas" value={contacto.notas ?? <span className="text-tx-muted">Sin notas registradas.</span>} />
             </dl>
           </div>
-          {/* Sección "Aparece en" se completa en RAMA 6 (cotizaciones) y RAMA 7 (facturas) */}
-          <div className="card card--flush">
-            <div className="card__head">
-              <h3 className="card__title">Aparece en</h3>
-              <span className="text-3 text-sm">Documentos vinculados</span>
+          {/* Sección "Aparece en" se completa en RAMA 6 y RAMA 7 */}
+          <div className="rounded-lg border border-bd bg-surface overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-bd">
+              <h3 className="text-sm font-semibold text-tx">Aparece en</h3>
+              <span className="text-xs text-tx-3">Documentos vinculados</span>
             </div>
-            <div style={{ padding: '16px 18px', color: 'var(--text-muted)', fontSize: 'var(--t-sm)' }}>
+            <div className="px-4 py-4 text-sm text-tx-muted">
               Las vinculaciones estarán disponibles cuando se implementen los módulos de cotizaciones y facturas.
             </div>
           </div>
         </div>
 
-        <div className="card">
-          <h3 className="card__title mb-3">Cliente vinculado</h3>
-          <div style={{ padding: 14, background: 'var(--bg-sunken)', borderRadius: 4, marginBottom: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 40, height: 40, borderRadius: 4, background: 'var(--navy)', color: 'white', display: 'grid', placeItems: 'center', flexShrink: 0 }}>
-                <Icon name="building" size={18} />
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="mono font-semibold">{contacto.clienteId}</div>
-              </div>
+        <div className="rounded-lg border border-bd bg-surface p-4">
+          <h3 className="text-sm font-semibold text-tx mb-3">Cliente vinculado</h3>
+          <div className="flex items-center gap-3 p-3 rounded-md bg-bg-sunken mb-3">
+            <div className="w-10 h-10 rounded-md bg-navy flex items-center justify-center shrink-0">
+              <Icon name="building" size={18} className="text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-mono text-sm font-semibold text-tx truncate">{contacto.clienteId}</div>
             </div>
           </div>
-          <Link href={`/clientes/${contacto.clienteId}`} className="btn btn--secondary" style={{ width: '100%', justifyContent: 'center' }}>
+          <Link
+            href={`/clientes/${contacto.clienteId}`}
+            className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-md border border-bd text-tx-2 bg-surface text-sm font-medium hover:bg-bg-sunken transition-colors"
+          >
             Ver detalle del cliente <Icon name="arrowRight" size={14} />
           </Link>
         </div>

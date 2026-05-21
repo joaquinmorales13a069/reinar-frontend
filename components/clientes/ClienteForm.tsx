@@ -62,6 +62,12 @@ const DEFAULTS: FormData = {
   estado: 'ACTIVO',
 };
 
+// Clases reutilizables para inputs/selects/textareas
+const inputBase = 'w-full px-3 py-2 text-sm rounded-md border bg-surface text-tx placeholder:text-tx-3 focus:outline-none focus:border-accent transition-colors';
+const inputOk   = `${inputBase} border-bd`;
+const inputErr  = `${inputBase} border-danger`;
+const monoBase  = 'font-mono';
+
 export function ClienteForm({ id }: { id?: string }) {
   const isNew = !id;
   const router = useRouter();
@@ -121,7 +127,7 @@ export function ClienteForm({ id }: { id?: string }) {
   if (!isNew && loadingExisting) return <div className="flex justify-center p-12"><Spinner /></div>;
 
   return (
-    <div className="form-page">
+    <div>
       <PageHeader
         title={isNew ? 'Nuevo cliente' : `Editar — ${existing?.razonSocial ?? existing?.nombre ?? ''}`}
         subtitle={isNew ? 'Registrá un cliente para emitir cotizaciones y facturas.' : 'Modificá los datos del cliente.'}
@@ -140,9 +146,15 @@ export function ClienteForm({ id }: { id?: string }) {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <FormSection title="Tipo de cliente">
-          <div className="seg" style={{ maxWidth: 320 }}>
+          <div className="flex p-0.5 rounded-lg border border-bd bg-bg-sunken w-fit">
             {(['EMPRESA', 'PARTICULAR'] as const).map((t) => (
-              <div key={t} className={`seg__opt ${tipo === t ? 'is-active' : ''}`} onClick={() => setValue('tipo', t)}>
+              <div
+                key={t}
+                className={`px-4 py-1.5 rounded-md text-sm cursor-pointer select-none transition-all ${
+                  tipo === t ? 'bg-surface text-tx font-medium shadow-sm' : 'text-tx-2 hover:text-tx'
+                }`}
+                onClick={() => setValue('tipo', t)}
+              >
                 {t === 'EMPRESA' ? 'Empresa' : 'Particular'}
               </div>
             ))}
@@ -150,68 +162,68 @@ export function ClienteForm({ id }: { id?: string }) {
         </FormSection>
 
         <FormSection title={tipo === 'EMPRESA' ? 'Datos de la empresa' : 'Datos personales'}>
-          <div className="form-grid">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {tipo === 'EMPRESA' ? (
               <>
-                <div className="field span-2">
-                  <label className="field__label">Razón social <span style={{ color: 'var(--danger)' }}>*</span></label>
-                  <input className={`input ${errors.razonSocial ? 'input--error' : ''}`} {...register('razonSocial')} placeholder="Constructora Ejemplo, S.A. de C.V." />
-                  {errors.razonSocial && <div className="field__error">{errors.razonSocial.message}</div>}
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                  <label className="text-xs font-medium text-tx-2">Razón social <span className="text-danger">*</span></label>
+                  <input className={errors.razonSocial ? inputErr : inputOk} {...register('razonSocial')} placeholder="Constructora Ejemplo, S.A. de C.V." />
+                  {errors.razonSocial && <p className="text-xs text-danger mt-0.5">{errors.razonSocial.message}</p>}
                 </div>
-                <div className="field">
-                  <label className="field__label">NIT</label>
-                  <input className={`input mono ${errors.nit ? 'input--error' : ''}`} {...register('nit')} placeholder="0614-DDMMAA-NNN-N" />
-                  {errors.nit && <div className="field__error">{errors.nit.message}</div>}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">NIT</label>
+                  <input className={`${errors.nit ? inputErr : inputOk} ${monoBase}`} {...register('nit')} placeholder="0614-DDMMAA-NNN-N" />
+                  {errors.nit && <p className="text-xs text-danger mt-0.5">{errors.nit.message}</p>}
                 </div>
-                <div className="field">
-                  <label className="field__label">NCR</label>
-                  <input className="input mono" {...register('ncr')} placeholder="183456-7" />
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">NCR</label>
+                  <input className={`${inputOk} ${monoBase}`} {...register('ncr')} placeholder="183456-7" />
                 </div>
-                <div className="field span-2">
-                  <label className="field__label">Nombre comercial</label>
-                  <input className="input" {...register('nombreComercial')} placeholder="Nombre con el que se conoce comúnmente" />
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                  <label className="text-xs font-medium text-tx-2">Nombre comercial</label>
+                  <input className={inputOk} {...register('nombreComercial')} placeholder="Nombre con el que se conoce comúnmente" />
                 </div>
-                <div className="field">
-                  <label className="field__label">Sector</label>
-                  <select className="select" {...register('sector')}>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">Sector</label>
+                  <select className={inputOk} {...register('sector')}>
                     <option value="">— Seleccionar —</option>
                     {SECTORES.map((s) => <option key={s}>{s}</option>)}
                   </select>
                 </div>
-                <div className="field">
-                  <label className="field__label">Actividad económica</label>
-                  <input className="input" {...register('actividadEconomica')} placeholder="Ej. Construcción de obra civil" />
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">Actividad económica</label>
+                  <input className={inputOk} {...register('actividadEconomica')} placeholder="Ej. Construcción de obra civil" />
                 </div>
               </>
             ) : (
               <>
-                <div className="field">
-                  <label className="field__label">Nombre <span style={{ color: 'var(--danger)' }}>*</span></label>
-                  <input className={`input ${errors.nombre ? 'input--error' : ''}`} {...register('nombre')} placeholder="Juan Carlos" />
-                  {errors.nombre && <div className="field__error">{errors.nombre.message}</div>}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">Nombre <span className="text-danger">*</span></label>
+                  <input className={errors.nombre ? inputErr : inputOk} {...register('nombre')} placeholder="Juan Carlos" />
+                  {errors.nombre && <p className="text-xs text-danger mt-0.5">{errors.nombre.message}</p>}
                 </div>
-                <div className="field">
-                  <label className="field__label">Apellido</label>
-                  <input className="input" {...register('apellido')} placeholder="Hernández Pérez" />
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">Apellido</label>
+                  <input className={inputOk} {...register('apellido')} placeholder="Hernández Pérez" />
                 </div>
-                <div className="field">
-                  <label className="field__label">DUI</label>
-                  <input className={`input mono ${errors.dui ? 'input--error' : ''}`} {...register('dui')} placeholder="01234567-8" />
-                  {errors.dui && <div className="field__error">{errors.dui.message}</div>}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">DUI</label>
+                  <input className={`${errors.dui ? inputErr : inputOk} ${monoBase}`} {...register('dui')} placeholder="01234567-8" />
+                  {errors.dui && <p className="text-xs text-danger mt-0.5">{errors.dui.message}</p>}
                 </div>
-                <div className="field">
-                  <label className="field__label">Ocupación</label>
-                  <input className="input" {...register('ocupacion')} placeholder="Ej. Arquitecto independiente" />
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">Ocupación</label>
+                  <input className={inputOk} {...register('ocupacion')} placeholder="Ej. Arquitecto independiente" />
                 </div>
-                <div className="field">
-                  <label className="field__label">NIT (opcional)</label>
-                  <input className={`input mono ${errors.nit ? 'input--error' : ''}`} {...register('nit')} placeholder="0614-DDMMAA-NNN-N" />
-                  <div className="field__hint">Solo para particulares con obligación tributaria.</div>
-                  {errors.nit && <div className="field__error">{errors.nit.message}</div>}
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">NIT (opcional)</label>
+                  <input className={`${errors.nit ? inputErr : inputOk} ${monoBase}`} {...register('nit')} placeholder="0614-DDMMAA-NNN-N" />
+                  <p className="text-xs text-tx-3 mt-0.5">Solo para particulares con obligación tributaria.</p>
+                  {errors.nit && <p className="text-xs text-danger mt-0.5">{errors.nit.message}</p>}
                 </div>
-                <div className="field">
-                  <label className="field__label">NCR (opcional)</label>
-                  <input className="input mono" {...register('ncr')} placeholder="183456-7" />
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">NCR (opcional)</label>
+                  <input className={`${inputOk} ${monoBase}`} {...register('ncr')} placeholder="183456-7" />
                 </div>
               </>
             )}
@@ -219,11 +231,11 @@ export function ClienteForm({ id }: { id?: string }) {
         </FormSection>
 
         <FormSection title="Dirección">
-          <div className="form-grid">
-            <div className="field">
-              <label className="field__label">Departamento <span style={{ color: 'var(--danger)' }}>*</span></label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-tx-2">Departamento <span className="text-danger">*</span></label>
               <select
-                className="select"
+                className={inputOk}
                 {...deptRest}
                 onChange={(e) => {
                   onDeptChange(e);
@@ -233,42 +245,48 @@ export function ClienteForm({ id }: { id?: string }) {
               >
                 {DEPARTAMENTOS_SV.map((d) => <option key={d}>{d}</option>)}
               </select>
-              {errors.departamento && <div className="field__error">{errors.departamento.message}</div>}
+              {errors.departamento && <p className="text-xs text-danger mt-0.5">{errors.departamento.message}</p>}
             </div>
-            <div className="field">
-              <label className="field__label">Municipio</label>
-              <select className="select" {...register('municipio')}>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-tx-2">Municipio</label>
+              <select className={inputOk} {...register('municipio')}>
                 {munis.map((m) => <option key={m}>{m}</option>)}
               </select>
             </div>
-            <div className="field span-2">
-              <label className="field__label">Complemento (dirección detallada)</label>
-              <textarea className="textarea" {...register('complemento')} placeholder="Colonia, calle, número, referencia…" style={{ minHeight: 60 }} />
+            <div className="flex flex-col gap-1 sm:col-span-2">
+              <label className="text-xs font-medium text-tx-2">Complemento (dirección detallada)</label>
+              <textarea className={`${inputOk} resize-y`} {...register('complemento')} placeholder="Colonia, calle, número, referencia…" rows={2} />
             </div>
           </div>
         </FormSection>
 
         <FormSection title="Contacto">
-          <div className="form-grid">
-            <div className="field">
-              <label className="field__label">Teléfono</label>
-              <input className="input mono" {...register('telefono')} placeholder="2222-0000" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-tx-2">Teléfono</label>
+              <input className={`${inputOk} ${monoBase}`} {...register('telefono')} placeholder="2222-0000" />
             </div>
-            <div className="field">
-              <label className="field__label">Correo electrónico</label>
-              <input className={`input ${errors.email ? 'input--error' : ''}`} type="email" {...register('email')} placeholder="contacto@empresa.sv" />
-              {errors.email && <div className="field__error">{errors.email.message}</div>}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-tx-2">Correo electrónico</label>
+              <input className={errors.email ? inputErr : inputOk} type="email" {...register('email')} placeholder="contacto@empresa.sv" />
+              {errors.email && <p className="text-xs text-danger mt-0.5">{errors.email.message}</p>}
             </div>
-            <div className="field span-2">
-              <label className="field__label">Notas internas</label>
-              <textarea className="textarea" {...register('notas')} placeholder="Información adicional para el equipo de ventas (opcional)." />
+            <div className="flex flex-col gap-1 sm:col-span-2">
+              <label className="text-xs font-medium text-tx-2">Notas internas</label>
+              <textarea className={`${inputOk} resize-y`} {...register('notas')} placeholder="Información adicional para el equipo de ventas (opcional)." rows={3} />
             </div>
             {!isNew && (
-              <div className="field span-2">
-                <label className="field__label">Estado</label>
-                <div className="seg" style={{ maxWidth: 400 }}>
+              <div className="flex flex-col gap-1 sm:col-span-2">
+                <label className="text-xs font-medium text-tx-2">Estado</label>
+                <div className="flex p-0.5 rounded-lg border border-bd bg-bg-sunken w-fit">
                   {(['ACTIVO', 'INACTIVO', 'PROSPECTO'] as const).map((s) => (
-                    <div key={s} className={`seg__opt ${watch('estado') === s ? 'is-active' : ''}`} onClick={() => setValue('estado', s)}>
+                    <div
+                      key={s}
+                      className={`px-4 py-1.5 rounded-md text-sm cursor-pointer select-none transition-all ${
+                        watch('estado') === s ? 'bg-surface text-tx font-medium shadow-sm' : 'text-tx-2 hover:text-tx'
+                      }`}
+                      onClick={() => setValue('estado', s)}
+                    >
                       {s.charAt(0) + s.slice(1).toLowerCase()}
                     </div>
                   ))}
@@ -278,16 +296,16 @@ export function ClienteForm({ id }: { id?: string }) {
           </div>
         </FormSection>
 
-        <div className="form-footer flex-col sm:flex-row">
-          <button type="button" className="btn btn--ghost w-full sm:w-auto" onClick={() => router.back()}>
+        <div className="flex flex-col sm:flex-row gap-3 pt-4 mt-2 border-t border-bd">
+          <button type="button" className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm text-tx-2 border border-bd hover:bg-bg-sunken transition-colors w-full sm:w-auto" onClick={() => router.back()}>
             Cancelar
           </button>
           {!isNew && existing?.estado !== 'INACTIVO' && (
-            <button type="button" className="btn btn--ghost w-full sm:w-auto sm:mr-auto" style={{ color: 'var(--danger)' }} onClick={() => setConfirmDesact(true)}>
+            <button type="button" className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm text-danger border border-bd hover:bg-bg-sunken transition-colors w-full sm:w-auto sm:mr-auto" onClick={() => setConfirmDesact(true)}>
               <Icon name="x" size={14} /> Desactivar cliente
             </button>
           )}
-          <button type="submit" className="btn btn--primary w-full sm:w-auto" disabled={isPending}>
+          <button type="submit" className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-accent text-navy text-sm font-semibold hover:bg-accent-dim transition-colors w-full sm:w-auto disabled:opacity-50" disabled={isPending}>
             {isPending ? <><Spinner /> Guardando…</> : <><Icon name="check" size={14} /> {isNew ? 'Crear cliente' : 'Guardar cambios'}</>}
           </button>
         </div>

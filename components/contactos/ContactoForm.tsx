@@ -10,6 +10,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { FormSection } from '@/components/ui/FormSection';
+import { Badge } from '@/components/ui/Badge';
 import { useContacto, useCrearContacto, useEditarContacto } from '@/hooks/use-contactos';
 import { useClientes } from '@/hooks/use-clientes';
 
@@ -42,6 +43,10 @@ const DEFAULTS: FormData = {
   tipoContacto: 'SECUNDARIO',
   telefono: '', email: '', notas: '',
 };
+
+const inputBase = 'w-full px-3 py-2 text-sm rounded-md border bg-surface text-tx placeholder:text-tx-3 focus:outline-none focus:border-accent transition-colors';
+const inputOk  = `${inputBase} border-bd`;
+const inputErr = `${inputBase} border-danger`;
 
 export function ContactoForm({ id }: { id?: string }) {
   const isNew = !id;
@@ -96,7 +101,7 @@ export function ContactoForm({ id }: { id?: string }) {
   const fullName = [watch('nombre'), watch('apellido')].filter(Boolean).join(' ') || 'Contacto';
 
   return (
-    <div className="form-page">
+    <div>
       <PageHeader
         title={isNew ? 'Nuevo contacto' : `Editar — ${fullName}`}
         subtitle={isNew ? 'Registrá un contacto vinculado a un cliente.' : 'Modificá los datos del contacto.'}
@@ -106,74 +111,84 @@ export function ContactoForm({ id }: { id?: string }) {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <FormSection title="Datos del contacto">
-          <div className="form-grid">
-            <div className="field span-2">
-              <label className="field__label">Cliente vinculado <span style={{ color: 'var(--danger)' }}>*</span></label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1 sm:col-span-2">
+              <label className="text-xs font-medium text-tx-2">Cliente vinculado <span className="text-danger">*</span></label>
               {clienteReadonly ? (
-                <div style={{ padding: '10px 12px', background: 'var(--bg-sunken)', border: '1px solid var(--border)', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Icon name="building" size={16} color="var(--text-2)" />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 500 }}>{clienteSeleccionado?.razonSocial ?? clienteSeleccionado?.nombre ?? clienteId}</div>
-                    {clienteId && <div className="mono text-3 text-xs">{clienteId}</div>}
+                <div className="flex items-center gap-2.5 px-3 py-2 rounded-md border border-bd bg-bg-sunken">
+                  <Icon name="building" size={16} className="text-tx-3 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-tx truncate">
+                      {clienteSeleccionado?.razonSocial ?? clienteSeleccionado?.nombre ?? clienteId}
+                    </div>
+                    {clienteId && <div className="font-mono text-xs text-tx-3">{clienteId}</div>}
                   </div>
-                  <span className="badge badge--neutral">Bloqueado</span>
+                  <Badge status="Bloqueado" kind="neutral" />
                 </div>
               ) : (
-                <select className={`select ${errors.clienteId ? 'input--error' : ''}`} {...register('clienteId')}>
+                <select className={errors.clienteId ? inputErr : inputOk} {...register('clienteId')}>
                   <option value="">— Seleccionar cliente —</option>
                   {clientesData?.data.map((cl) => (
                     <option key={cl.id} value={cl.id}>{cl.razonSocial ?? cl.nombre} · {cl.id}</option>
                   ))}
                 </select>
               )}
-              {errors.clienteId && <div className="field__error">{errors.clienteId.message}</div>}
-              {!isNew && <div className="field__hint">El cliente vinculado no puede modificarse después de crear el contacto.</div>}
+              {errors.clienteId && <p className="text-xs text-danger mt-0.5">{errors.clienteId.message}</p>}
+              {!isNew && <p className="text-xs text-tx-3 mt-0.5">El cliente vinculado no puede modificarse después de crear el contacto.</p>}
             </div>
 
-            <div className="field">
-              <label className="field__label">Nombre <span style={{ color: 'var(--danger)' }}>*</span></label>
-              <input className={`input ${errors.nombre ? 'input--error' : ''}`} {...register('nombre')} placeholder="Ej. María José" />
-              {errors.nombre && <div className="field__error">{errors.nombre.message}</div>}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-tx-2">Nombre <span className="text-danger">*</span></label>
+              <input className={errors.nombre ? inputErr : inputOk} {...register('nombre')} placeholder="Ej. María José" />
+              {errors.nombre && <p className="text-xs text-danger mt-0.5">{errors.nombre.message}</p>}
             </div>
-            <div className="field">
-              <label className="field__label">Apellido</label>
-              <input className="input" {...register('apellido')} placeholder="Ej. Hernández Pérez" />
-            </div>
-
-            <div className="field span-2">
-              <label className="field__label">Cargo</label>
-              <input className="input" {...register('cargo')} placeholder="Ej. Gerente de Compras, Jefe de Bodega…" />
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-tx-2">Apellido</label>
+              <input className={inputOk} {...register('apellido')} placeholder="Ej. Hernández Pérez" />
             </div>
 
-            <div className="field span-2">
-              <label className="field__label">Tipo de contacto</label>
-              <select className="select" {...register('tipoContacto')} style={{ maxWidth: 320 }}>
+            <div className="flex flex-col gap-1 sm:col-span-2">
+              <label className="text-xs font-medium text-tx-2">Cargo</label>
+              <input className={inputOk} {...register('cargo')} placeholder="Ej. Gerente de Compras, Jefe de Bodega…" />
+            </div>
+
+            <div className="flex flex-col gap-1 sm:col-span-2">
+              <label className="text-xs font-medium text-tx-2">Tipo de contacto</label>
+              <select className={`${inputOk} max-w-xs`} {...register('tipoContacto')}>
                 {TIPOS_CONTACTO.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
 
-            <div className="field">
-              <label className="field__label">Teléfono</label>
-              <input className="input mono" {...register('telefono')} placeholder="7777-0000" />
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-tx-2">Teléfono</label>
+              <input className={`${inputOk} font-mono`} {...register('telefono')} placeholder="7777-0000" />
             </div>
-            <div className="field">
-              <label className="field__label">Correo electrónico</label>
-              <input className={`input ${errors.email ? 'input--error' : ''}`} type="email" {...register('email')} placeholder="contacto@empresa.sv" />
-              {errors.email && <div className="field__error">{errors.email.message}</div>}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-tx-2">Correo electrónico</label>
+              <input className={errors.email ? inputErr : inputOk} type="email" {...register('email')} placeholder="contacto@empresa.sv" />
+              {errors.email && <p className="text-xs text-danger mt-0.5">{errors.email.message}</p>}
             </div>
 
-            <div className="field span-2">
-              <label className="field__label">Notas</label>
-              <textarea className="textarea" {...register('notas')} placeholder="Información adicional para el equipo de ventas (opcional)." />
+            <div className="flex flex-col gap-1 sm:col-span-2">
+              <label className="text-xs font-medium text-tx-2">Notas</label>
+              <textarea className={`${inputOk} resize-y`} {...register('notas')} placeholder="Información adicional para el equipo de ventas (opcional)." rows={3} />
             </div>
           </div>
         </FormSection>
 
-        <div className="form-footer flex-col sm:flex-row">
-          <button type="button" className="btn btn--ghost w-full sm:w-auto" onClick={() => router.back()}>
+        <div className="flex flex-col sm:flex-row gap-3 pt-4 mt-2 border-t border-bd">
+          <button
+            type="button"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm text-tx-2 border border-bd hover:bg-bg-sunken transition-colors w-full sm:w-auto"
+            onClick={() => router.back()}
+          >
             Cancelar
           </button>
-          <button type="submit" className="btn btn--primary w-full sm:w-auto" disabled={isPending}>
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-accent text-navy text-sm font-semibold hover:bg-accent-dim transition-colors w-full sm:w-auto disabled:opacity-50"
+            disabled={isPending}
+          >
             {isPending ? <><Spinner /> Guardando…</> : <><Icon name="check" size={14} /> {isNew ? 'Crear contacto' : 'Guardar cambios'}</>}
           </button>
         </div>

@@ -112,6 +112,16 @@
   .bg-row-hover    { background-color: var(--row-hover); }
   .ring-focus      { box-shadow: 0 0 0 4px var(--focus-ring); }
 
+  /* Badge — fondos y bordes suaves (las CSS vars no soportan modificador /opacity) */
+  .bg-ok-soft       { background-color: rgba(46,140,90,0.08); }
+  .border-ok-soft   { border-color: rgba(46,140,90,0.18); }
+  .bg-warn-soft     { background-color: rgba(224,138,26,0.08); }
+  .border-warn-soft { border-color: rgba(224,138,26,0.18); }
+  .bg-danger-soft   { background-color: rgba(194,59,59,0.08); }
+  .border-danger-soft { border-color: rgba(194,59,59,0.18); }
+  .bg-info-soft     { background-color: rgba(47,108,183,0.08); }
+  .border-info-soft { border-color: rgba(47,108,183,0.18); }
+
   /* Tamaños de texto personalizados */
   .text-2xs    { font-size: 0.625rem; line-height: 1rem; }
   .text-title  { font-size: 1.75rem; line-height: 2.25rem; }

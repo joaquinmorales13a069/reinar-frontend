@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "autoskill": {
+      "source": "nicknisi/claude-plugins",
+      "sourceType": "github",
+      "skillPath": "plugins/meta/skills/autoskill/SKILL.md",
+      "computedHash": "db5be9e8f7f2468a23614e59e9383ccbe71dfdd6860f6f2eacca5fbeabf0bde2"
+    }
+  }
+}
