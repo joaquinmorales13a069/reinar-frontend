@@ -43,6 +43,6 @@ yarn-error.log*
 next-env.d.ts
 
 # ia and tools
-.claude/
+
 CLAUDE.md
 .agents/
