@@ -11,7 +11,58 @@ import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { Icon } from '@/components/ui/Icon';
 import { useContacto, useToggleActivoContacto } from '@/hooks/use-contactos';
 import { useAuthStore } from '@/stores/auth.store';
+import { resolverDepartamento } from '@/lib/sv-geo';
 import type { Contacto } from '@/types/api';
+
+type ClienteResumen = NonNullable<Contacto['cliente']>;
+
+function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between py-2.5 border-b border-bd-soft last:border-0 text-sm gap-4">
+      <span className="text-tx-3 shrink-0">{label}</span>
+      <span className="text-tx text-right font-mono">{value}</span>
+    </div>
+  );
+}
+
+function ClienteCard({ cliente }: { clienteId: string; cliente: ClienteResumen }) {
+  const esEmpresa = cliente.tipo === 'EMPRESA';
+  const displayName = esEmpresa
+    ? (cliente.razonSocial ?? '—')
+    : [cliente.nombre, cliente.apellido].filter(Boolean).join(' ') || '—';
+  const tipoLabel = esEmpresa ? 'EMPRESA' : 'PARTICULAR';
+  const docLabel = esEmpresa ? 'NIT' : 'DUI';
+  const docValue = esEmpresa ? cliente.nit : cliente.dui;
+  const ciudad = resolverDepartamento(cliente.departamento);
+
+  return (
+    <div>
+      {/* Encabezado del cliente */}
+      <div className="flex items-center gap-3 p-3 rounded-lg bg-bg-sunken mb-1">
+        <div className="w-11 h-11 rounded-lg bg-navy flex items-center justify-center shrink-0">
+          <Icon name={esEmpresa ? 'building' : 'user'} size={20} className="text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-bold text-tx leading-snug truncate">{displayName}</div>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="inline-block px-1.5 py-0.5 rounded border border-bd text-[10px] font-semibold text-tx-2 tracking-wide">
+              {tipoLabel}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Filas de datos */}
+      <div className="mt-3">
+        {docValue && <InfoRow label={docLabel} value={docValue} />}
+        {ciudad && ciudad !== '—' && (
+          <InfoRow label="Ciudad" value={<span className="font-sans">{ciudad}</span>} />
+        )}
+        {cliente.telefono && <InfoRow label="Teléfono" value={cliente.telefono} />}
+      </div>
+    </div>
+  );
+}
 
 const TIPO_KIND: Record<Contacto['tipoContacto'], 'info' | 'neutral' | 'warn' | 'ok'> = {
   PRINCIPAL: 'info', SECUNDARIO: 'neutral',
@@ -123,17 +174,10 @@ export function ContactoDetalle({ id }: { id: string }) {
 
         <div className="rounded-lg border border-bd bg-surface p-4">
           <h3 className="text-sm font-semibold text-tx mb-3">Cliente vinculado</h3>
-          <div className="flex items-center gap-3 p-3 rounded-md bg-bg-sunken mb-3">
-            <div className="w-10 h-10 rounded-md bg-navy flex items-center justify-center shrink-0">
-              <Icon name="building" size={18} className="text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-mono text-sm font-semibold text-tx truncate">{contacto.clienteId}</div>
-            </div>
-          </div>
+          <ClienteCard clienteId={contacto.clienteId} cliente={contacto.cliente ?? {}} />
           <Link
             href={`/clientes/${contacto.clienteId}`}
-            className="flex items-center justify-center gap-2 w-full px-4 py-2 rounded-md border border-bd text-tx-2 bg-surface text-sm font-medium hover:bg-bg-sunken transition-colors"
+            className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-md border border-bd text-tx text-sm font-medium hover:bg-bg-sunken transition-colors mt-4"
           >
             Ver detalle del cliente <Icon name="arrowRight" size={14} />
           </Link>

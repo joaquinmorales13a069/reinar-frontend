@@ -9,6 +9,7 @@ import { ContactosDeCliente } from '@/components/clientes/ContactosDeCliente';
 import { useCliente } from '@/hooks/use-clientes';
 import { useAuthStore } from '@/stores/auth.store';
 import { formatCurrency } from '@/lib/utils';
+import { resolverDepartamento, resolverMunicipio, resolverDistrito } from '@/lib/sv-geo';
 
 const btnSec = 'inline-flex items-center gap-2 px-4 py-2 rounded-md border border-bd text-tx-2 bg-surface text-sm font-medium hover:bg-bg-sunken transition-colors';
 const btnPri = 'inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent text-navy text-sm font-semibold hover:bg-accent-dim transition-colors';
@@ -39,7 +40,9 @@ export function ClienteDetalle({ id }: { id: string }) {
   if (isLoading) return <div className="flex justify-center p-12"><Spinner /></div>;
   if (isError || !cliente) return <div className="p-8 text-center text-sm text-tx-2">No se pudo cargar el cliente.</div>;
 
-  const displayName = cliente.razonSocial ?? cliente.nombre ?? '—';
+  const displayName = cliente.tipo === 'PARTICULAR'
+    ? [cliente.nombre, cliente.apellido].filter(Boolean).join(' ') || '—'
+    : cliente.razonSocial ?? '—';
 
   return (
     <div>
@@ -53,6 +56,7 @@ export function ClienteDetalle({ id }: { id: string }) {
           </div>
         }
         back
+        backLabel="Regresar"
         onBack={() => router.push('/clientes')}
         actions={
           <>
@@ -93,8 +97,9 @@ export function ClienteDetalle({ id }: { id: string }) {
           </Card>
           <Card title="Dirección">
             <dl className="m-0">
-              <DetailRow label="Departamento" value={cliente.departamento} />
-              <DetailRow label="Municipio" value={cliente.municipio} />
+              <DetailRow label="Departamento" value={resolverDepartamento(cliente.departamento)} />
+              <DetailRow label="Municipio" value={resolverMunicipio(cliente.municipio, cliente.departamento)} />
+              <DetailRow label="Distrito" value={resolverDistrito(cliente.distrito, cliente.municipio, cliente.departamento)} />
               <DetailRow label="Complemento" value={cliente.complemento ?? <span className="text-tx-muted">—</span>} />
             </dl>
           </Card>

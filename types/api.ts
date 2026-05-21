@@ -48,6 +48,7 @@ export type Cliente = {
   actividadEconomica?: string;
   departamento: string;
   municipio: string;
+  distrito?: string;
   complemento?: string;
   telefono?: string;
   email?: string;
@@ -60,6 +61,17 @@ export type Cliente = {
 export type Contacto = {
   id: string;
   clienteId: string;
+  cliente?: {
+    tipo?: 'EMPRESA' | 'PARTICULAR';
+    razonSocial?: string;
+    nombre?: string;
+    apellido?: string;
+    estado?: 'ACTIVO' | 'INACTIVO' | 'PROSPECTO';
+    nit?: string;
+    dui?: string;
+    departamento?: string;
+    telefono?: string;
+  };
   nombre: string;
   apellido?: string;
   cargo?: string;

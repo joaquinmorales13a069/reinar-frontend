@@ -7,11 +7,12 @@ type PageHeaderProps = {
   title: string;
   subtitle?: React.ReactNode;
   back?: boolean;
+  backLabel?: string;
   onBack?: () => void;
   actions?: React.ReactNode;
 };
 
-export function PageHeader({ title, subtitle, back, onBack, actions }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, back, backLabel, onBack, actions }: PageHeaderProps) {
   const router = useRouter();
 
   function handleBack() {
@@ -23,8 +24,9 @@ export function PageHeader({ title, subtitle, back, onBack, actions }: PageHeade
     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
       <div className="flex items-start gap-3 min-w-0">
         {back && (
-          <button type="button" onClick={handleBack} className="inline-flex items-center justify-center w-7 h-7 rounded text-tx-3 hover:bg-bg-sunken hover:text-tx transition-colors mt-0.5 shrink-0">
+          <button type="button" onClick={handleBack} className={`inline-flex items-center gap-1.5 rounded text-tx-3 hover:bg-bg-sunken hover:text-tx transition-colors mt-0.5 shrink-0 ${backLabel ? 'px-2 py-1 text-sm' : 'justify-center w-7 h-7'}`}>
             <Icon name="arrowLeft" size={16} />
+            {backLabel && <span>{backLabel}</span>}
           </button>
         )}
         <div className="min-w-0">

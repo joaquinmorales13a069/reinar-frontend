@@ -96,54 +96,78 @@ export function ContactosList() {
           <DataTable>
             <thead>
               <tr>
-                <th className={`${thCls} hidden sm:table-cell`} style={{ width: 110 }}>Código</th>
+                <th className={`${thCls} hidden sm:table-cell`} style={{ width: 48 }}>#</th>
                 <th className={thCls}>Nombre completo</th>
-                <th className={`${thCls} hidden lg:table-cell`} style={{ width: 200 }}>Cargo</th>
+                <th className={`${thCls} hidden lg:table-cell`} style={{ width: 180 }}>Cargo</th>
                 <th className={thCls}>Cliente vinculado</th>
                 <th className={thCls} style={{ width: 130 }}>Tipo</th>
                 <th className={`${thCls} hidden sm:table-cell`} style={{ width: 130 }}>Teléfono</th>
                 <th className={thCls} style={{ width: 110 }}>Estado</th>
-                <th className={thCls} style={{ width: 60 }} />
+                <th className={thCls} style={{ width: 80 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {data?.data.map((c) => (
-                <tr
-                  key={c.id}
-                  className="border-t border-bd hover:bg-row-hover transition-colors cursor-pointer group"
-                  onClick={() => router.push(`/contactos/${c.id}`)}
-                >
-                  <td className={`${tdCls} hidden sm:table-cell font-mono text-tx-3`}>{c.id}</td>
-                  <td className={tdCls}>
-                    <div className="font-medium">{c.nombre}{c.apellido ? ` ${c.apellido}` : ''}</div>
-                    {c.email && <div className="text-xs text-tx-3 mt-0.5">{c.email}</div>}
-                  </td>
-                  <td className={`${tdCls} hidden lg:table-cell text-tx-2`}>
-                    {c.cargo ?? <span className="text-tx-muted">—</span>}
-                  </td>
-                  <td className={tdCls}>
-                    <Link href={`/clientes/${c.clienteId}`} className="text-info hover:underline font-mono text-xs" onClick={(e) => e.stopPropagation()}>
-                      {c.clienteId}
-                    </Link>
-                  </td>
-                  <td className={tdCls}>
-                    <Badge status={TIPO_LABEL[c.tipoContacto]} kind={TIPO_KIND[c.tipoContacto]} />
-                  </td>
-                  <td className={`${tdCls} hidden sm:table-cell font-mono text-tx-2`}>
-                    {c.telefono ?? <span className="text-tx-muted">—</span>}
-                  </td>
-                  <td className={tdCls}>
-                    <Badge status={c.activo ? 'ACTIVO' : 'INACTIVO'} />
-                  </td>
-                  <td className={tdCls}>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className={iconBtn} onClick={(e) => { e.stopPropagation(); router.push(`/contactos/${c.id}`); }}>
-                        <Icon name="eye" size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {data?.data.map((c, idx) => {
+                const cl = c.cliente;
+                const nombreCliente = cl?.tipo === 'PARTICULAR'
+                  ? [cl.nombre, cl.apellido].filter(Boolean).join(' ')
+                  : (cl?.razonSocial ?? cl?.nombre ?? c.clienteId);
+                const offset = (page - 1) * 10;
+                return (
+                  <tr
+                    key={c.id}
+                    className="border-t border-bd hover:bg-row-hover transition-colors cursor-pointer"
+                    onClick={() => router.push(`/contactos/${c.id}`)}
+                  >
+                    <td className={`${tdCls} hidden sm:table-cell text-tx-3 tabular-nums`}>{offset + idx + 1}</td>
+                    <td className={tdCls}>
+                      <div className="font-medium">{c.nombre}{c.apellido ? ` ${c.apellido}` : ''}</div>
+                      {c.email && <div className="text-xs text-tx-3 mt-0.5">{c.email}</div>}
+                    </td>
+                    <td className={`${tdCls} hidden lg:table-cell text-tx-2`}>
+                      {c.cargo ?? <span className="text-tx-muted">—</span>}
+                    </td>
+                    <td className={tdCls}>
+                      <Link
+                        href={`/clientes/${c.clienteId}`}
+                        className="text-info hover:underline text-sm"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {nombreCliente}
+                      </Link>
+                    </td>
+                    <td className={tdCls}>
+                      <Badge status={TIPO_LABEL[c.tipoContacto]} kind={TIPO_KIND[c.tipoContacto]} />
+                    </td>
+                    <td className={`${tdCls} hidden sm:table-cell font-mono text-tx-2`}>
+                      {c.telefono ?? <span className="text-tx-muted">—</span>}
+                    </td>
+                    <td className={tdCls}>
+                      <Badge status={c.activo ? 'ACTIVO' : 'INACTIVO'} />
+                    </td>
+                    <td className={tdCls}>
+                      <div className="flex items-center gap-1">
+                        <button
+                          className={iconBtn}
+                          title="Ver detalle"
+                          onClick={(e) => { e.stopPropagation(); router.push(`/contactos/${c.id}`); }}
+                        >
+                          <Icon name="eye" size={14} />
+                        </button>
+                        {rol !== 'VISUALIZADOR' && (
+                          <button
+                            className={iconBtn}
+                            title="Editar"
+                            onClick={(e) => { e.stopPropagation(); router.push(`/contactos/${c.id}/editar`); }}
+                          >
+                            <Icon name="edit" size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {(data?.data?.length ?? 0) === 0 && (
                 <tr><td colSpan={8}>
                   <EmptyState icon="idCard" title="Sin contactos" message="No se encontraron contactos con los filtros aplicados." />

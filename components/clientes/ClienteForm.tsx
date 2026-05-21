@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -12,7 +12,9 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { FormSection } from '@/components/ui/FormSection';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { useCliente, useCrearCliente, useEditarCliente, useCambiarEstadoCliente } from '@/hooks/use-clientes';
-import { DEPARTAMENTOS_SV, MUNICIPIOS_SV, SECTORES } from '@/lib/sv-geo';
+import { DEPARTAMENTOS_SV, DISTRITOS_SV, getMunicipiosByDept, getDistritosByMuniDept } from '@/lib/sv-geo';
+import { SECTORES_CAT019, ACTIVIDADES_ECONOMICAS_SV } from '@/lib/cat019';
+import { PhoneInputField } from '@/components/ui/PhoneInputField';
 
 const schema = z.object({
   tipo: z.enum(['EMPRESA', 'PARTICULAR']),
@@ -28,6 +30,7 @@ const schema = z.object({
   ocupacion: z.string().optional(),
   departamento: z.string().min(1, 'El departamento es obligatorio.'),
   municipio: z.string().min(1),
+  distrito: z.string().optional(),
   complemento: z.string().optional(),
   telefono: z.string().optional(),
   email: z.string().optional(),
@@ -39,6 +42,8 @@ const schema = z.object({
       ctx.addIssue({ code: 'custom', path: ['razonSocial'], message: 'La razón social es obligatoria.' });
     if (d.nit && !/^\d{4}-\d{6}-\d{3}-\d$/.test(d.nit))
       ctx.addIssue({ code: 'custom', path: ['nit'], message: 'Formato: 0614-DDMMAA-NNN-N' });
+    if (d.ncr && !/^\d{1,8}-\d$/.test(d.ncr))
+      ctx.addIssue({ code: 'custom', path: ['ncr'], message: 'Formato: NNNNNN-N' });
   } else {
     if (!d.nombre?.trim())
       ctx.addIssue({ code: 'custom', path: ['nombre'], message: 'El nombre es obligatorio.' });
@@ -46,7 +51,11 @@ const schema = z.object({
       ctx.addIssue({ code: 'custom', path: ['dui'], message: 'Formato: NNNNNNNN-N' });
     if (d.nit && !/^\d{4}-\d{6}-\d{3}-\d$/.test(d.nit))
       ctx.addIssue({ code: 'custom', path: ['nit'], message: 'Formato: 0614-DDMMAA-NNN-N' });
+    if (d.ncr && !/^\d{1,8}-\d$/.test(d.ncr))
+      ctx.addIssue({ code: 'custom', path: ['ncr'], message: 'Formato: NNNNNN-N' });
   }
+  if (d.telefono && !/^\+\d{6,15}$/.test(d.telefono))
+    ctx.addIssue({ code: 'custom', path: ['telefono'], message: 'Número inválido (6–12 dígitos locales).' });
   if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email))
     ctx.addIssue({ code: 'custom', path: ['email'], message: 'Correo inválido.' });
 });
@@ -57,7 +66,7 @@ const DEFAULTS: FormData = {
   tipo: 'EMPRESA',
   razonSocial: '', nombreComercial: '', nit: '', ncr: '', sector: '', actividadEconomica: '',
   nombre: '', apellido: '', dui: '', ocupacion: '',
-  departamento: 'San Salvador', municipio: 'San Salvador',
+  departamento: '', municipio: '', distrito: '',
   complemento: '', telefono: '', email: '', notas: '',
   estado: 'ACTIVO',
 };
@@ -78,19 +87,50 @@ export function ClienteForm({ id }: { id?: string }) {
   const editar = useEditarCliente();
   const cambiarEstado = useCambiarEstadoCliente();
 
-  const { register, handleSubmit, watch, setValue, setError, reset, formState: { errors } } =
+  const { register, handleSubmit, watch, setValue, setError, reset, control, formState: { errors } } =
     useForm<FormData>({ resolver: zodResolver(schema), defaultValues: DEFAULTS });
 
   const tipo = watch('tipo');
   const departamento = watch('departamento');
-  const munis = MUNICIPIOS_SV[departamento] ?? [departamento];
+  const municipio = watch('municipio');
+  const sector = watch('sector');
+  const munis = getMunicipiosByDept(departamento);
+  // Sin dept+muni → muestra los 262 distritos; solo dept → filtra por dept; ambos → filtra por ambos.
+  const distritos = !departamento
+    ? DISTRITOS_SV
+    : !municipio
+      ? DISTRITOS_SV.filter((d) => d.department === departamento)
+      : getDistritosByMuniDept(departamento, municipio);
 
-  // Descomponer el onChange de RHF para el select de departamento para poder
-  // encadenar nuestra lógica de reset de municipio sin reemplazar el handler de RHF.
+  // Actividades filtradas según el sector seleccionado; sin sector muestra todas.
+  const actividadesFiltradas = sector
+    ? ACTIVIDADES_ECONOMICAS_SV.filter((a) => a.sector === sector)
+    : ACTIVIDADES_ECONOMICAS_SV;
+
   const { onChange: onDeptChange, ...deptRest } = register('departamento');
+  const { onChange: onMuniChange, ...muniRest } = register('municipio');
+  const { onChange: onSectorChange, ...sectorRest } = register('sector');
+
+  // Cuando el distrito se selecciona primero, guardamos el municipio pendiente aquí
+  // y lo aplicamos en el efecto de abajo, DESPUÉS de que el nuevo departamento haya
+  // causado un re-render con las opciones de municipio ya actualizadas en el DOM.
+  const pendingMuniRef = useRef<string>('');
 
   useEffect(() => {
-    if (existing) reset({ ...DEFAULTS, ...existing });
+    if (pendingMuniRef.current) {
+      setValue('municipio', pendingMuniRef.current);
+      pendingMuniRef.current = '';
+    }
+  }, [departamento, setValue]);
+
+  useEffect(() => {
+    if (existing) {
+      // null desde Prisma rompe z.string().optional() que solo acepta string|undefined — normalizar a ''
+      const clean = Object.fromEntries(
+        Object.entries(existing).map(([k, v]) => [k, v ?? ''])
+      );
+      reset({ ...DEFAULTS, ...(clean as Partial<FormData>) });
+    }
   }, [existing, reset]);
 
   const isPending = crear.isPending || editar.isPending || cambiarEstado.isPending;
@@ -177,7 +217,8 @@ export function ClienteForm({ id }: { id?: string }) {
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-tx-2">NCR</label>
-                  <input className={`${inputOk} ${monoBase}`} {...register('ncr')} placeholder="183456-7" />
+                  <input className={`${errors.ncr ? inputErr : inputOk} ${monoBase}`} {...register('ncr')} placeholder="183456-7" />
+                  {errors.ncr && <p className="text-xs text-danger mt-0.5">{errors.ncr.message}</p>}
                 </div>
                 <div className="flex flex-col gap-1 sm:col-span-2">
                   <label className="text-xs font-medium text-tx-2">Nombre comercial</label>
@@ -185,14 +226,45 @@ export function ClienteForm({ id }: { id?: string }) {
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-tx-2">Sector</label>
-                  <select className={inputOk} {...register('sector')}>
+                  <select
+                    className={inputOk}
+                    {...sectorRest}
+                    onChange={(e) => {
+                      onSectorChange(e);
+                      setValue('actividadEconomica', '');
+                    }}
+                  >
                     <option value="">— Seleccionar —</option>
-                    {SECTORES.map((s) => <option key={s}>{s}</option>)}
+                    {SECTORES_CAT019.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-tx-2">Actividad económica</label>
-                  <input className={inputOk} {...register('actividadEconomica')} placeholder="Ej. Construcción de obra civil" />
+                  <label className="text-xs font-medium text-tx-2">Actividad económica (CAT-019)</label>
+                  <select className={inputOk} {...register('actividadEconomica')}>
+                    <option value="">— Seleccionar actividad —</option>
+                    {sector ? (
+                      actividadesFiltradas.map((a) => (
+                        <option key={a.codigo} value={a.codigo}>
+                          {a.codigo} — {a.descripcion}
+                        </option>
+                      ))
+                    ) : (
+                      SECTORES_CAT019.map((s) => {
+                        const acts = ACTIVIDADES_ECONOMICAS_SV.filter((a) => a.sector === s);
+                        if (!acts.length) return null;
+                        return (
+                          <optgroup key={s} label={s}>
+                            {acts.map((a) => (
+                              <option key={a.codigo} value={a.codigo}>
+                                {a.codigo} — {a.descripcion}
+                              </option>
+                            ))}
+                          </optgroup>
+                        );
+                      })
+                    )}
+                  </select>
+                  {!sector && <p className="text-xs text-tx-3 mt-0.5">Seleccioná un sector para filtrar las actividades.</p>}
                 </div>
               </>
             ) : (
@@ -223,7 +295,8 @@ export function ClienteForm({ id }: { id?: string }) {
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-tx-2">NCR (opcional)</label>
-                  <input className={`${inputOk} ${monoBase}`} {...register('ncr')} placeholder="183456-7" />
+                  <input className={`${errors.ncr ? inputErr : inputOk} ${monoBase}`} {...register('ncr')} placeholder="183456-7" />
+                  {errors.ncr && <p className="text-xs text-danger mt-0.5">{errors.ncr.message}</p>}
                 </div>
               </>
             )}
@@ -231,29 +304,76 @@ export function ClienteForm({ id }: { id?: string }) {
         </FormSection>
 
         <FormSection title="Dirección">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-tx-2">Departamento <span className="text-danger">*</span></label>
               <select
-                className={inputOk}
+                className={errors.departamento ? inputErr : inputOk}
                 {...deptRest}
                 onChange={(e) => {
                   onDeptChange(e);
-                  const m = MUNICIPIOS_SV[e.target.value];
-                  if (m) setValue('municipio', m[0]);
+                  setValue('municipio', '');
+                  setValue('distrito', '');
                 }}
               >
-                {DEPARTAMENTOS_SV.map((d) => <option key={d}>{d}</option>)}
+                <option value="">— Seleccionar —</option>
+                {DEPARTAMENTOS_SV.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
               </select>
               {errors.departamento && <p className="text-xs text-danger mt-0.5">{errors.departamento.message}</p>}
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-tx-2">Municipio</label>
-              <select className={inputOk} {...register('municipio')}>
-                {munis.map((m) => <option key={m}>{m}</option>)}
+              <select
+                className={inputOk}
+                {...muniRest}
+                onChange={(e) => {
+                  onMuniChange(e);
+                  setValue('distrito', '');
+                }}
+              >
+                <option value="">— Seleccionar —</option>
+                {munis.map((m) => <option key={`${m.department}-${m.value}`} value={m.value}>{m.label}</option>)}
               </select>
             </div>
-            <div className="flex flex-col gap-1 sm:col-span-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-tx-2">Distrito</label>
+              {/* Clave compuesta dept|muni|value en el <option> porque el código de distrito
+                  no es único globalmente — el mismo valor existe en distintos municipios. */}
+              <select
+                className={inputOk}
+                value={
+                  departamento && municipio && watch('distrito')
+                    ? `${departamento}|${municipio}|${watch('distrito')}`
+                    : ''
+                }
+                onChange={(e) => {
+                  const composite = e.target.value;
+                  if (!composite) { setValue('distrito', ''); return; }
+                  const [dept, muni, code] = composite.split('|');
+                  setValue('distrito', code);
+                  if (dept !== departamento) {
+                    // El cambio de departamento causa un re-render que actualiza las opciones
+                    // de municipio en el DOM. Guardamos el municipio en un ref y lo aplicamos
+                    // en el useEffect que se ejecuta después de ese re-render.
+                    pendingMuniRef.current = muni;
+                    setValue('departamento', dept);
+                  } else if (muni !== municipio) {
+                    setValue('municipio', muni);
+                  }
+                }}
+              >
+                <option value="">— Seleccionar —</option>
+                {distritos.map((d) => (
+                  <option
+                    key={`${d.department}-${d.municipality}-${d.value}`}
+                    value={`${d.department}|${d.municipality}|${d.value}`}
+                  >
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1 sm:col-span-3">
               <label className="text-xs font-medium text-tx-2">Complemento (dirección detallada)</label>
               <textarea className={`${inputOk} resize-y`} {...register('complemento')} placeholder="Colonia, calle, número, referencia…" rows={2} />
             </div>
@@ -264,7 +384,8 @@ export function ClienteForm({ id }: { id?: string }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-tx-2">Teléfono</label>
-              <input className={`${inputOk} ${monoBase}`} {...register('telefono')} placeholder="2222-0000" />
+              <PhoneInputField control={control} name="telefono" error={!!errors.telefono} placeholder="2222-0000" />
+              {errors.telefono && <p className="text-xs text-danger mt-0.5">{errors.telefono.message}</p>}
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-tx-2">Correo electrónico</label>

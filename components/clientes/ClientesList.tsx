@@ -13,6 +13,8 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Icon } from '@/components/ui/Icon';
 import { useClientes } from '@/hooks/use-clientes';
 import { useAuthStore } from '@/stores/auth.store';
+import { resolverDepartamento } from '@/lib/sv-geo';
+import { SECTORES_CAT019, getActividadByCodigo } from '@/lib/cat019';
 
 type TipoFilter = 'EMPRESA' | 'PARTICULAR' | null;
 type EstadoFilter = 'ACTIVO' | 'INACTIVO' | 'PROSPECTO' | null;
@@ -29,6 +31,7 @@ export function ClientesList() {
   const [busqueda, setBusqueda] = useState('');
   const [filterTipo, setFilterTipo] = useState<TipoFilter>(null);
   const [filterEstado, setFilterEstado] = useState<EstadoFilter>(null);
+  const [filterSector, setFilterSector] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useClientes({
@@ -36,6 +39,7 @@ export function ClientesList() {
     busqueda: busqueda || undefined,
     tipo: filterTipo,
     estado: filterEstado,
+    sector: filterSector,
   });
 
   function toggleTipo(t: 'EMPRESA' | 'PARTICULAR') {
@@ -44,6 +48,10 @@ export function ClientesList() {
   }
   function toggleEstado(e: 'ACTIVO' | 'INACTIVO' | 'PROSPECTO') {
     setFilterEstado((prev) => (prev === e ? null : e));
+    setPage(1);
+  }
+  function handleSector(v: string) {
+    setFilterSector(v || null);
     setPage(1);
   }
 
@@ -77,8 +85,29 @@ export function ClientesList() {
             { label: 'Inactivos',    active: filterEstado === 'INACTIVO',  onToggle: () => toggleEstado('INACTIVO') },
             { label: 'Prospectos',   active: filterEstado === 'PROSPECTO', onToggle: () => toggleEstado('PROSPECTO') },
           ]}
-          onClear={() => { setBusqueda(''); setFilterTipo(null); setFilterEstado(null); setPage(1); }}
+          onClear={() => { setBusqueda(''); setFilterTipo(null); setFilterEstado(null); setFilterSector(null); setPage(1); }}
         />
+        <div className="flex items-center gap-3 px-4 py-2.5 border-b border-bd bg-bg-sunken">
+          <label className="text-xs text-tx-3 shrink-0">Sector</label>
+          <select
+            className="px-2.5 py-1 text-xs rounded-md border border-bd bg-surface text-tx focus:outline-none focus:border-accent transition-colors"
+            value={filterSector ?? ''}
+            onChange={(e) => handleSector(e.target.value)}
+          >
+            <option value="">Todos los sectores</option>
+            {SECTORES_CAT019.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          {filterSector && (
+            <button
+              className="text-xs text-tx-3 hover:text-danger transition-colors"
+              onClick={() => handleSector('')}
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
 
         {isLoading ? (
           <div className="flex justify-center p-12"><Spinner /></div>
@@ -86,37 +115,45 @@ export function ClientesList() {
           <DataTable>
             <thead>
               <tr>
-                <th className={thCls} style={{ width: 110 }}>Código</th>
+                <th className={thCls} style={{ width: 50 }}>#</th>
                 <th className={`${thCls} hidden sm:table-cell`} style={{ width: 110 }}>Tipo</th>
                 <th className={thCls}>Cliente</th>
+                <th className={`${thCls} hidden lg:table-cell`}>Actividad / Ocupación</th>
                 <th className={`${thCls} hidden md:table-cell`} style={{ width: 140 }}>Departamento</th>
                 <th className={`${thCls} hidden md:table-cell`} style={{ width: 120 }}>Teléfono</th>
-                <th className={`${thCls} hidden md:table-cell text-right`} style={{ width: 70 }}>Cot.</th>
                 <th className={thCls} style={{ width: 110 }}>Estado</th>
-                <th className={thCls} style={{ width: 80 }} />
+                <th className={thCls} style={{ width: 90 }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {data?.data.map((c) => (
+              {data?.data.map((c, i) => (
                 <tr
                   key={c.id}
                   className="border-t border-bd hover:bg-row-hover transition-colors cursor-pointer group"
                   onClick={() => router.push(`/clientes/${c.id}`)}
                 >
-                  <td className={`${tdCls} font-mono text-tx-3`}>{c.id}</td>
+                  <td className={`${tdCls} font-mono text-tx-3 text-xs`}>{(page - 1) * 10 + i + 1}</td>
                   <td className={`${tdCls} hidden sm:table-cell`}>
                     <Badge status={c.tipo === 'EMPRESA' ? 'Empresa' : 'Particular'} kind="neutral" />
                   </td>
                   <td className={tdCls}>
-                    <div className="font-medium">{c.razonSocial ?? c.nombre}</div>
+                    <div className="font-medium">
+                      {c.tipo === 'EMPRESA'
+                        ? (c.razonSocial ?? '—')
+                        : [c.nombre, c.apellido].filter(Boolean).join(' ') || '—'}
+                    </div>
                     <div className="font-mono text-xs text-tx-3 mt-0.5">{c.nit ?? c.dui ?? '—'}</div>
                   </td>
-                  <td className={`${tdCls} hidden md:table-cell text-tx-2`}>{c.departamento}</td>
-                  <td className={`${tdCls} hidden md:table-cell font-mono text-tx-2`}>{c.telefono ?? <span className="text-tx-muted">—</span>}</td>
-                  <td className={`${tdCls} hidden md:table-cell font-mono text-right`}>—</td>
+                  <td className={`${tdCls} hidden lg:table-cell text-tx-2 text-xs`}>
+                    {c.tipo === 'EMPRESA'
+                      ? (c.actividadEconomica ? (getActividadByCodigo(c.actividadEconomica)?.descripcion ?? c.actividadEconomica) : <span className="text-tx-3">—</span>)
+                      : (c.ocupacion ?? <span className="text-tx-3">—</span>)}
+                  </td>
+                  <td className={`${tdCls} hidden md:table-cell text-tx-2`}>{resolverDepartamento(c.departamento)}</td>
+                  <td className={`${tdCls} hidden md:table-cell font-mono text-tx-2`}>{c.telefono ?? <span className="text-tx-3">—</span>}</td>
                   <td className={tdCls}><Badge status={c.estado} /></td>
                   <td className={tdCls}>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1">
                       <button className={iconBtn} onClick={(e) => { e.stopPropagation(); router.push(`/clientes/${c.id}`); }}>
                         <Icon name="eye" size={14} />
                       </button>

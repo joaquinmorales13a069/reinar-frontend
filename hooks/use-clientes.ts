@@ -10,6 +10,7 @@ type ClientesParams = {
   busqueda?: string;
   tipo?: 'EMPRESA' | 'PARTICULAR' | null;
   estado?: 'ACTIVO' | 'INACTIVO' | 'PROSPECTO' | null;
+  sector?: string | null;
   activo?: boolean;
 };
 
