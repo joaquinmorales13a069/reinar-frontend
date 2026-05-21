@@ -1,7 +1,7 @@
 // app/(dashboard)/dashboard/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Link from 'next/link';
@@ -26,13 +26,13 @@ export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const rol = user?.rol ?? 'VISUALIZADOR';
 
-  const [greeting, setGreeting] = useState('');
-  const [fechaStr, setFechaStr] = useState('');
-  useEffect(() => {
-    setGreeting(getGreeting());
+  // Inicialización lazy con función para evitar el anti-patrón setState-en-effect.
+  // useState(() => ...) se ejecuta solo en cliente, evitando mismatch de hidratación.
+  const [greeting] = useState(getGreeting);
+  const [fechaStr] = useState(() => {
     const f = format(new Date(), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es });
-    setFechaStr(f.charAt(0).toUpperCase() + f.slice(1));
-  }, []);
+    return f.charAt(0).toUpperCase() + f.slice(1);
+  });
 
   // Visibilidad de secciones por rol (ver spec 2026-05-21-dashboard-design.md)
   const showIngresos = rol !== 'LOGISTICA';

@@ -55,7 +55,7 @@ export function ActivityFeed({ actividad, onRefresh }: ActivityFeedProps) {
         {actividad.length === 0 && (
           <p className="text-sm text-tx-3 text-center py-8">Sin actividad reciente.</p>
         )}
-        {actividad.map((item, i) => {
+        {actividad.map((item) => {
           const iconName: IconName = ENTITY_ICON[item.entidad] ?? 'info';
           const accion = ACCION_LABEL[item.accion] ?? item.accion.toLowerCase();
           const tiempo = formatDistanceToNow(parseISO(item.createdAt), {
