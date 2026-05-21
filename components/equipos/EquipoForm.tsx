@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { FormSection } from '@/components/ui/FormSection';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { EquipoImagenUpload } from '@/components/equipos/EquipoImagenUpload';
-import { useCrearEquipo, useEditarEquipo, useSubirImagenEquipo, useEliminarEquipo } from '@/hooks/use-equipos';
+import { useCrearEquipo, useEditarEquipo, useCambiarEstadoEquipo, useSubirImagenEquipo, useEliminarEquipo } from '@/hooks/use-equipos';
 import { CATEGORIA_LABELS, puedeEjecutar } from '@/lib/equipos';
 import { useAuthStore } from '@/stores/auth.store';
 import type { Equipo, CategoriaEquipo, EstadoEquipoEditable } from '@/types/api';
@@ -68,6 +68,7 @@ export function EquipoForm(props: Props) {
 
   const crear = useCrearEquipo();
   const editar = useEditarEquipo();
+  const cambiarEstado = useCambiarEstadoEquipo();
   const subirImagen = useSubirImagenEquipo();
   const eliminar = useEliminarEquipo();
 
@@ -167,6 +168,11 @@ export function EquipoForm(props: Props) {
             notas: v.notas || undefined,
           },
         });
+        // estado no es parte de ActualizarEquipoDto — el backend lo cambia vía
+        // PATCH /:id/estado. Solo lo disparamos si el usuario lo modificó.
+        if (v.estado && v.estado !== props.equipo.estado) {
+          await cambiarEstado.mutateAsync({ id: props.equipo.id, estado: v.estado });
+        }
         if (imagenFile) {
           await subirImagen.mutateAsync({ id: props.equipo.id, file: imagenFile });
         }
