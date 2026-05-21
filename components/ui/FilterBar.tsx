@@ -16,29 +16,29 @@ export function FilterBar({ search, onSearch, placeholder, chips = [], onClear }
   const hasFilters = !!search || chips.some((c) => c.active);
 
   return (
-    <div className="filter-bar">
-      <div className="filter-bar__search">
-        <Icon name="search" size={14} className="filter-bar__icon" />
+    <div className="filterbar">
+      <div className="input-wrap">
+        <Icon name="search" size={14} className="input-wrap__icon" />
         <input
-          className="filter-bar__input"
+          className="input input--with-icon"
           placeholder={placeholder ?? 'Buscar…'}
           value={search}
           onChange={(e) => onSearch(e.target.value)}
         />
       </div>
-      <div className="filter-bar__chips flex-wrap">
+      <div className="chips">
         {chips.map((chip) => (
           <button
             key={chip.label}
             type="button"
-            className={`chip ${chip.active ? 'chip--active' : ''}`}
+            className={`chip${chip.active ? ' chip--active' : ''}`}
             onClick={chip.onToggle}
           >
             {chip.label}
           </button>
         ))}
         {hasFilters && (
-          <button type="button" className="chip chip--clear" onClick={onClear}>
+          <button type="button" className="filterbar__clear" onClick={onClear}>
             <Icon name="x" size={11} /> Limpiar
           </button>
         )}
