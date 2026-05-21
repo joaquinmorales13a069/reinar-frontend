@@ -66,11 +66,53 @@ export const NAV_GROUPS: NavGroup[] = [
 // Todos los items aplanados — útil para resolver breadcrumbs desde un pathname.
 export const NAV_ITEMS_FLAT: NavItem[] = NAV_GROUPS.flatMap((g) => g.items);
 
-// Ítems que aparecen en el BottomNav móvil (los 5 más usados).
-export const BOTTOM_NAV_ITEMS: NavItem[] = [
-  NAV_GROUPS[0].items[0], // Inicio
-  NAV_GROUPS[0].items[1], // Clientes
-  NAV_GROUPS[1].items[0], // Cotizaciones
-  NAV_GROUPS[2].items[0], // Equipos
-  NAV_GROUPS[3].items[0], // Reportes
+// Estructura del BottomNav móvil: cada slot puede ser un link directo
+// (kind: 'link') o un grupo (kind: 'group') que abre un popover con
+// sub-items al tocar el botón. Esto resuelve que con sólo 5 slots
+// quedaban afuera secciones importantes del sidebar como Contactos,
+// Andamios, Herramientas o Servicios.
+export type BottomNavLink = {
+  kind: 'link';
+  id: string;
+  label: string;
+  href: string;
+  icon: IconName;
+};
+
+export type BottomNavGroup = {
+  kind: 'group';
+  id: string;
+  label: string;
+  icon: IconName;
+  children: NavItem[];
+};
+
+export type BottomNavSlot = BottomNavLink | BottomNavGroup;
+
+export const BOTTOM_NAV_ITEMS: BottomNavSlot[] = [
+  { kind: 'link', id: 'inicio', label: 'Inicio', href: '/dashboard', icon: 'home' },
+  {
+    kind: 'group',
+    id: 'clientes-grupo',
+    label: 'Clientes',
+    icon: 'users',
+    children: [
+      NAV_GROUPS[0].items[1], // Clientes
+      NAV_GROUPS[0].items[2], // Contactos
+    ],
+  },
+  { kind: 'link', id: 'cotizaciones', label: 'Cotizaciones', href: '/cotizaciones', icon: 'fileText' },
+  {
+    kind: 'group',
+    id: 'inventario',
+    label: 'Inventario',
+    icon: 'package',
+    children: [
+      NAV_GROUPS[2].items[0], // Equipos
+      NAV_GROUPS[2].items[2], // Andamios
+      NAV_GROUPS[2].items[3], // Herramientas & Consum.
+      NAV_GROUPS[2].items[1], // Servicios
+    ],
+  },
+  { kind: 'link', id: 'reportes', label: 'Reportes', href: '/reportes', icon: 'chartBar' },
 ];
