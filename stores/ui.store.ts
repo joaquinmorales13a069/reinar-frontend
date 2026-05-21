@@ -9,12 +9,14 @@ export type Theme = 'light' | 'dark';
 export type Density = 'comfortable' | 'compact';
 export type SidebarMode = 'full' | 'mini';
 export type Accent = 'yellow' | 'blue' | 'green' | 'red';
+export type EquiposView = 'tabla' | 'grilla';
 
 export type Tweaks = {
   theme: Theme;
   density: Density;
   sidebar: SidebarMode;
   accent: Accent;
+  equiposView: EquiposView;
 };
 
 const STORAGE_KEY = 'reinar.tweaks';
@@ -24,6 +26,7 @@ const DEFAULTS: Tweaks = {
   density: 'comfortable',
   sidebar: 'full',
   accent: 'yellow',
+  equiposView: 'tabla',
 };
 
 // La paleta de acento replica el objeto ACCENT_COLORS del prototipo para que

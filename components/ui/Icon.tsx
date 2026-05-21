@@ -9,6 +9,8 @@ const ICONS: Record<string, string> = {
   receipt:      'M5 2v20l3-2 2 2 2-2 2 2 2-2 3 2V2l-3 2-2-2-2 2-2-2-2 2-3-2Zm3 6h8M8 12h8M8 16h4',
   clipboard:    'M9 3h6a2 2 0 0 1 2 2v0h2a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h2v0a2 2 0 0 1 2-2Zm0 2v2h6V5M8 12h8M8 16h5',
   package:      'M21 8 12 3 3 8m18 0v8l-9 5-9-5V8m18 0-9 5m0 0L3 8m9 5v8',
+  list:         'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  grid:         'M3 3h7v7H3V3Zm11 0h7v7h-7V3ZM3 14h7v7H3v-7Zm11 0h7v7h-7v-7Z',
   wrench:       'M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6a1.5 1.5 0 0 0 2.1 2.1l6-6a4 4 0 0 0 5.4-5.4l-2.5 2.5L13 9.6l.8-2.8 1-.5Z',
   box:          'M3 7l9-4 9 4v10l-9 4-9-4V7Zm9-4v18M3 7l9 4 9-4',
   warehouse:    'M2 21V9l10-5 10 5v12H2Zm4 0v-9h12v9M9 21v-5h6v5',

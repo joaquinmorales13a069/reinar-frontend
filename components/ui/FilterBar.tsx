@@ -68,12 +68,15 @@ export function FilterBar({ search, onSearch, placeholder, chips = [], onClear }
           </button>
 
           {open && (
-            <div className="absolute left-0 top-full mt-1 z-20 min-w-44 rounded-lg border border-bd bg-surface shadow-lg py-1">
+            // right-0 ancla el dropdown al borde derecho del botón (no izquierdo),
+            // así crece hacia la izquierda y no se sale del viewport en móvil.
+            // whitespace-nowrap evita que labels largos se partan en líneas múltiples.
+            <div className="absolute right-0 top-full mt-1 z-20 min-w-44 rounded-lg border border-bd bg-surface shadow-lg py-1">
               {chips.map((chip) => (
                 <button
                   key={chip.label}
                   type="button"
-                  className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-sm transition-colors hover:bg-bg-sunken ${
+                  className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-sm whitespace-nowrap transition-colors hover:bg-bg-sunken ${
                     chip.active ? 'text-accent font-medium' : 'text-tx'
                   }`}
                   onClick={chip.onToggle}
