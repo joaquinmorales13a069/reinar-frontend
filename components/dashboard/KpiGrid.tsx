@@ -50,7 +50,7 @@ function buildAllKpis(data: DashboardKpis): Array<KpiCardProps & { id: KpiId }> 
       value: formatCurrency(data.facturasPorCobrar.total),
       subvalue: `${data.facturasPorCobrar.count} facturas`,
       icon: 'dollar',
-      dir: (data.facturasPorCobrar.count > 0 ? 'up' : 'flat') as KpiDir,
+      dir: (data.facturasPorCobrar.count > 0 ? 'down' : 'flat') as KpiDir,
     },
     {
       id: 'vencidas',

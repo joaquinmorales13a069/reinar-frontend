@@ -5,6 +5,7 @@ export type DashboardKpis = {
     herramientas: number;
     total: number;
   };
+  // Reservado para widget de clientes activos — aún no tiene sección propia en el dashboard
   totalClientes: number;
   cotizacionesPendientes: number;
   facturasPorCobrar: {
@@ -34,5 +35,6 @@ export type DashboardKpis = {
     createdAt: string; // ISO-8601
   }[];
   actasPendientesEntrega: number;
+  // Reservado para badge de DTEs pendientes en el topbar o una futura card de Admin/Gerente
   dtesPendientes: number;
 };
