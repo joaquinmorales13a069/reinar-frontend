@@ -34,7 +34,8 @@ api.interceptors.response.use(
           {},
           { withCredentials: true },
         );
-        useAuthStore.getState().setAuth(data.data.accessToken, useAuthStore.getState().user!);
+        const renewedUser = data.data.user ?? useAuthStore.getState().user;
+        useAuthStore.getState().setAuth(data.data.accessToken, renewedUser!);
         err.config.headers.Authorization = `Bearer ${data.data.accessToken}`;
         return api(err.config);
       } catch {
