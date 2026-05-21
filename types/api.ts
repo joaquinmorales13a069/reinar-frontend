@@ -168,3 +168,154 @@ export type EquipoMantenimientoResumen = {
   proveedor: string | null;
   estado: string;
 };
+
+// ============================================================
+// Herramientas & Consumibles (Rama 6)
+// ============================================================
+
+export type CategoriaHerramienta =
+  | 'MANGUERA'
+  | 'BOQUILLA'
+  | 'EPP'
+  | 'HERRAMIENTA_MANUAL'
+  | 'OTRO';
+
+export type CategoriaConsumible =
+  | 'ABRASIVO'
+  | 'PINTURA'
+  | 'LUBRICANTE'
+  | 'QUIMICO'
+  | 'OTRO';
+
+export type EstadoHerramienta =
+  | 'DISPONIBLE'
+  | 'RESERVADA'     // gestionado por reservas/cotizaciones
+  | 'RENTADA'       // gestionado por actas
+  | 'MANTENIMIENTO' // gestionado por el módulo de mantenimientos
+  | 'USO_INTERNO'
+  | 'INACTIVO';
+
+// Subconjunto de estados que el backend acepta vía PATCH /unidades/:id/estado.
+// Los otros (RESERVADA, RENTADA) los maneja el sistema y el UI no debe ofrecerlos.
+export type EstadoUnidadEditable =
+  | 'DISPONIBLE'
+  | 'MANTENIMIENTO'
+  | 'USO_INTERNO'
+  | 'INACTIVO';
+
+export type HerramientaTipo = {
+  id: string;
+  codigo: string;
+  nombre: string;
+  descripcion: string | null;
+  categoria: CategoriaHerramienta;
+  // Decimal serializado como string — usar decimal.js para operar, formatCurrency para mostrar.
+  tarifaDia: string;
+  tarifaSemana: string;
+  tarifaMes: string;
+  activo: boolean;
+  notas: string | null;
+  createdAt: string;
+  updatedAt: string;
+  // El backend del detalle (`GET /herramientas/:id`) incluye `unidades` y/o `_count`.
+  unidades?: HerramientaUnidad[];
+  _count?: { unidades?: number };
+};
+
+export type HerramientaUnidad = {
+  id: string;
+  codigoInterno: string;
+  herramientaTipoId: string;
+  estado: EstadoHerramienta;
+  notas: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CrearHerramientaTipoDto = {
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  categoria: CategoriaHerramienta;
+  tarifaDia: number;
+  tarifaSemana: number;
+  tarifaMes: number;
+  notas?: string;
+};
+
+export type ActualizarHerramientaTipoDto = Partial<
+  Omit<CrearHerramientaTipoDto, 'codigo'>
+>;
+
+export type FiltrosHerramientas = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  categoria?: CategoriaHerramienta;
+  activo?: boolean;
+};
+
+export type CrearUnidadDto = { notas?: string };
+
+export type FiltrosUnidades = { estado?: EstadoHerramienta };
+
+// Tipo mínimo del mantenimiento devuelto por GET /unidades/:id/mantenimientos.
+// El módulo completo de mantenimientos (Rama 15) lo extenderá.
+export type UnidadMantenimientoResumen = {
+  id: string;
+  tipo: string;
+  descripcion: string | null;
+  fechaIngreso: string;
+  fechaSalida: string | null;
+  proveedor: string | null;
+  estado: string;
+};
+
+export type Consumible = {
+  id: string;
+  codigo: string;
+  nombre: string;
+  descripcion: string | null;
+  categoria: CategoriaConsumible;
+  precioUnitario: string;
+  stockActual: number;
+  stockMinimo: number;
+  unidad: string;
+  activo: boolean;
+  notas: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CrearConsumibleDto = {
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  categoria: CategoriaConsumible;
+  precioUnitario: number;
+  stockActual: number;
+  stockMinimo: number;
+  unidad: string;
+  notas?: string;
+};
+
+// stockActual no es editable vía PUT — el backend lo rechaza, se ajusta solo
+// vía PATCH /:id/stock (ver AjusteStockDto).
+export type ActualizarConsumibleDto = Partial<
+  Omit<CrearConsumibleDto, 'codigo' | 'stockActual'>
+>;
+
+export type FiltrosConsumibles = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  categoria?: CategoriaConsumible;
+  activo?: boolean;
+  stockBajo?: boolean;
+};
+
+export type AjusteStockDto = {
+  // El backend valida que sea entero != 0; positivo = entrada, negativo = salida.
+  delta: number;
+  motivo: string;
+};
