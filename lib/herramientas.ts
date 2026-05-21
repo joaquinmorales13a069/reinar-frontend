@@ -44,7 +44,7 @@ export const ESTADO_HERRAMIENTA_KIND: Record<
 // Permisos por acción. La regla viene del backend (herramientas.routes.ts y
 // consumibles.routes.ts): admins = ADMIN/GERENTE; inventario = ADMIN/GERENTE/LOGISTICA.
 // VISUALIZADOR solo lee.
-const PERMISOS_HERRAMIENTAS = {
+export const PERMISOS_HERRAMIENTAS = {
   crearTipo: ['ADMIN', 'GERENTE'] as const,
   editarTipo: ['ADMIN', 'GERENTE'] as const,
   desactivarTipo: ['ADMIN', 'GERENTE'] as const,
