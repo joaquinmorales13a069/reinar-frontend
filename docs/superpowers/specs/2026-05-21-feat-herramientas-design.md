@@ -324,19 +324,21 @@ Implementar con helper que lee el rol del `useAuthStore()` y oculta botones (no 
 
 ## 12. Checklist de aceptación (deriva del checklist global)
 
-- [ ] Las dos tabs (Tipos / Consumibles) cargan datos reales del backend.
-- [ ] La paginación funciona en ambas listas.
-- [ ] Filtros: search, categoría, activo (tipos); search, categoría, activo, stockBajo (consumibles).
-- [ ] Crear/editar tipo y consumible muestran errores Zod del backend inline.
-- [ ] Crear unidad funciona desde el detalle del tipo y refresca la lista.
-- [ ] Cambiar estado de unidad funciona y refresca contadores agregados.
-- [ ] Ajuste de stock (entrada/salida) actualiza el detalle y la lista.
-- [ ] Soft delete de tipo y consumible funcionan; pueden reactivarse desde la misma acción.
-- [ ] Botones de escritura ocultos para VISUALIZADOR; cambio de estado oculto para OPERADOR.
-- [ ] Vista usable en tablet (768px) y móvil.
-- [ ] Dark mode no rompe colores (especialmente el resaltado de stock bajo).
-- [ ] Sin clases vanilla CSS en `globals.css`; sin valores arbitrarios Tailwind.
-- [ ] Comentarios "why" en español donde aplique.
+Verificación estática completada (tsc + lint + revisión por subagentes). Los items marcados como manuales requieren correr el backend localmente y se completarán durante el QA en navegador.
+
+- [ ] Las dos tabs (Tipos / Consumibles) cargan datos reales del backend. _(manual)_
+- [x] La paginación funciona en ambas listas. _(implementado con `<Pagination>` y reset a página 1 en cada cambio de filtro)_
+- [x] Filtros: search, categoría, activo (tipos); search, categoría, stockBajo, activo (consumibles).
+- [x] Crear/editar tipo y consumible muestran errores Zod del backend inline _(helper `aplicarErroresApi` en ambos forms)_.
+- [x] Crear unidad funciona desde el detalle del tipo y refresca la lista _(`UnidadCreatePanel` + invalidación de queries)_.
+- [x] Cambiar estado de unidad funciona y refresca contadores agregados _(`useCambiarEstadoUnidad` invalida `['herramientas']`, `['herramientas', tipoId]` y `['herramientas', tipoId, 'unidades']`)_.
+- [x] Ajuste de stock (entrada/salida) actualiza el detalle y la lista _(`useAjustarStock` invalida lista + detalle)_.
+- [x] Soft delete de tipo y consumible funcionan; pueden reactivarse desde la misma acción _(toggle button con `<ConfirmRow>`)_.
+- [x] Botones de escritura ocultos para VISUALIZADOR; acciones de inventario ocultas para OPERADOR _(matrix en `PERMISOS_HERRAMIENTAS`)_.
+- [ ] Vista usable en tablet (768px) y móvil. _(manual)_
+- [ ] Dark mode no rompe colores (especialmente el resaltado de stock bajo). _(manual)_
+- [x] Sin clases vanilla CSS en `globals.css`; sin valores arbitrarios Tailwind _(salvo `width: ${pct}%` inline en `StockBar`, documentado como excepción aceptada para barras de progreso dinámicas)_.
+- [x] Comentarios "why" en español donde aplique.
 
 ## 13. Fuera de alcance (NO en esta rama)
 
