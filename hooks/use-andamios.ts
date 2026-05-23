@@ -165,3 +165,83 @@ export function useCambiarEstadoPieza() {
     },
   });
 }
+
+// ─── Mutations de Cuerpos ────────────────────────────────────────────
+
+export function useCrearCuerpo() {
+  const qc = useQueryClient();
+  const router = useRouter();
+  return useMutation({
+    mutationFn: (data: CrearCuerpoTipoDto) =>
+      api.post<ApiResponse<CuerpoTipo>>('/andamios/cuerpos', data).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
+    onSuccess: (cuerpo) => {
+      qc.invalidateQueries({ queryKey: ['andamios', 'cuerpos'] });
+      toast.success('Configuración creada.');
+      router.push(`/andamios/cuerpos/${cuerpo.id}`);
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo crear la configuración.'));
+    },
+  });
+}
+
+export function useEditarCuerpo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: ActualizarCuerpoTipoDto }) =>
+      api.put<ApiResponse<CuerpoTipo>>(`/andamios/cuerpos/${id}`, data).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['andamios', 'cuerpos'] });
+      qc.invalidateQueries({ queryKey: ['andamios', 'cuerpos', id] });
+      toast.success('Cambios guardados.');
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudieron guardar los cambios.'));
+    },
+  });
+}
+
+export function useCambiarEstadoCuerpo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, activo }: { id: string; activo: boolean }) =>
+      api
+        .patch<ApiResponse<CuerpoTipo>>(`/andamios/cuerpos/${id}/estado`, { activo })
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    onSuccess: (cuerpo, { id }) => {
+      qc.invalidateQueries({ queryKey: ['andamios', 'cuerpos'] });
+      qc.invalidateQueries({ queryKey: ['andamios', 'cuerpos', id] });
+      toast.success(cuerpo.activo ? 'Configuración activada.' : 'Configuración desactivada.');
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo cambiar el estado.'));
+    },
+  });
+}
+
+// Mutation sin invalidación: el endpoint es vista previa y no muta nada.
+// Se modela como mutation (no query) porque es POST con body y se dispara on-demand.
+export function useExpandirCuerpo(id: string) {
+  return useMutation({
+    mutationFn: (data: ExpandirCuerpoDto) =>
+      api
+        .post<ApiResponse<ExpandirCuerpoItem[]>>(`/andamios/cuerpos/${id}/expandir`, data)
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    // Sin onSuccess toast: el resultado se muestra en la UI inline; un toast distrae.
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo calcular la expansión.'));
+    },
+  });
+}
