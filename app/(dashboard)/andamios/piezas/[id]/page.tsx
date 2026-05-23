@@ -101,6 +101,7 @@ export default function PiezaDetallePage({ params }: { params: Promise<{ id: str
           <AjusteStockPiezaPanel
             piezaId={pieza.id}
             stockActual={pieza.stockActual}
+            stockMinimo={pieza.stockMinimo}
             onClose={() => setAjusteOpen(false)}
           />
         </div>

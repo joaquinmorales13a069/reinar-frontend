@@ -25,10 +25,11 @@ const btnPri =
 type Props = {
   piezaId: string;
   stockActual: number;
+  stockMinimo: number;
   onClose: () => void;
 };
 
-export function AjusteStockPiezaPanel({ piezaId, stockActual, onClose }: Props) {
+export function AjusteStockPiezaPanel({ piezaId, stockActual, stockMinimo, onClose }: Props) {
   const ajustar = useAjustarStockPieza();
   const [signo, setSigno] = useState<'entrada' | 'salida'>('entrada');
 
@@ -110,7 +111,15 @@ export function AjusteStockPiezaPanel({ piezaId, stockActual, onClose }: Props) 
         {errors.cantidad && <p className={errorCls}>{errors.cantidad.message}</p>}
         <p className="text-xs text-tx-3 mt-1">
           Stock actual: <span className="font-mono">{stockActual}</span> · Quedaría:{' '}
-          <span className={`font-mono ${stockEstimado < 0 ? 'text-danger font-semibold' : stockEstimado === 0 ? 'text-warn font-semibold' : ''}`}>
+          <span
+            className={`font-mono ${
+              stockEstimado < 0
+                ? 'text-danger font-semibold'
+                : stockEstimado <= stockMinimo
+                  ? 'text-warn font-semibold'
+                  : ''
+            }`}
+          >
             {stockEstimado}
           </span>
         </p>
