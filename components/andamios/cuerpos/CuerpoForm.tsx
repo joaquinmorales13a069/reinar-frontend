@@ -10,6 +10,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { cuerpoFormSchema, type CuerpoFormInput } from '@/lib/schemas/andamios';
 import { useCrearCuerpo, useEditarCuerpo, usePiezas } from '@/hooks/use-andamios';
+import { trySetFieldErrorFromApi } from '@/lib/api-errors';
 import { formatCurrency } from '@/lib/utils';
 import type { CuerpoTipo } from '@/types/api';
 
@@ -48,6 +49,7 @@ export function CuerpoForm(props: Props) {
     handleSubmit,
     control,
     watch,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<CuerpoFormInput>({
     resolver: zodResolver(cuerpoFormSchema) as never,
@@ -73,11 +75,16 @@ export function CuerpoForm(props: Props) {
         cantidad: c.cantidad,
       })),
     };
-    if (props.modo === 'crear') {
-      await crear.mutateAsync(payload);
-    } else {
-      await editar.mutateAsync({ id: props.cuerpo.id, data: payload });
-      router.push(`/andamios/cuerpos/${props.cuerpo.id}`);
+    try {
+      if (props.modo === 'crear') {
+        await crear.mutateAsync(payload);
+      } else {
+        await editar.mutateAsync({ id: props.cuerpo.id, data: payload });
+        router.push(`/andamios/cuerpos/${props.cuerpo.id}`);
+      }
+    } catch (err) {
+      // Conflictos de unicidad por nombre se muestran inline; el toast del hook queda como fallback.
+      trySetFieldErrorFromApi(err, setError, 'nombre');
     }
   }
 

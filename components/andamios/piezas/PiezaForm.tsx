@@ -13,6 +13,7 @@ import {
   type PiezaEditarInput,
 } from '@/lib/schemas/andamios';
 import { useCrearPieza, useEditarPieza } from '@/hooks/use-andamios';
+import { trySetFieldErrorFromApi } from '@/lib/api-errors';
 import type { PiezaTipo } from '@/types/api';
 
 type Props =
@@ -50,6 +51,7 @@ function PiezaFormCrear({
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<PiezaCrearInput>({
     resolver: zodResolver(piezaCrearSchema) as never,
@@ -65,15 +67,21 @@ function PiezaFormCrear({
   });
 
   async function onSubmit(values: PiezaCrearInput) {
-    await crear.mutateAsync({
-      nombre: values.nombre.trim(),
-      descripcion: values.descripcion?.trim() || undefined,
-      stockActual: values.stockActual,
-      stockMinimo: values.stockMinimo,
-      tarifaDia: values.tarifaDia,
-      tarifaSemana: values.tarifaSemana,
-      tarifaMes: values.tarifaMes,
-    });
+    try {
+      await crear.mutateAsync({
+        nombre: values.nombre.trim(),
+        descripcion: values.descripcion?.trim() || undefined,
+        stockActual: values.stockActual,
+        stockMinimo: values.stockMinimo,
+        tarifaDia: values.tarifaDia,
+        tarifaSemana: values.tarifaSemana,
+        tarifaMes: values.tarifaMes,
+      });
+    } catch (err) {
+      // Si el backend reporta conflicto por nombre, lo mostramos inline; el hook
+      // ya disparó el toast genérico como fallback.
+      trySetFieldErrorFromApi(err, setError, 'nombre');
+    }
   }
 
   return (
@@ -102,6 +110,7 @@ function PiezaFormEditar({
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<PiezaEditarInput>({
     resolver: zodResolver(piezaEditarSchema) as never,
@@ -116,18 +125,22 @@ function PiezaFormEditar({
   });
 
   async function onSubmit(values: PiezaEditarInput) {
-    await editar.mutateAsync({
-      id: pieza.id,
-      data: {
-        nombre: values.nombre.trim(),
-        descripcion: values.descripcion?.trim() || undefined,
-        stockMinimo: values.stockMinimo,
-        tarifaDia: values.tarifaDia,
-        tarifaSemana: values.tarifaSemana,
-        tarifaMes: values.tarifaMes,
-      },
-    });
-    router.push(`/andamios/piezas/${pieza.id}`);
+    try {
+      await editar.mutateAsync({
+        id: pieza.id,
+        data: {
+          nombre: values.nombre.trim(),
+          descripcion: values.descripcion?.trim() || undefined,
+          stockMinimo: values.stockMinimo,
+          tarifaDia: values.tarifaDia,
+          tarifaSemana: values.tarifaSemana,
+          tarifaMes: values.tarifaMes,
+        },
+      });
+      router.push(`/andamios/piezas/${pieza.id}`);
+    } catch (err) {
+      trySetFieldErrorFromApi(err, setError, 'nombre');
+    }
   }
 
   return (
