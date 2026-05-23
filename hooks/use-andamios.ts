@@ -77,3 +77,91 @@ export function useCuerpo(id: string) {
     enabled: !!id,
   });
 }
+
+// ─── Mutations de Piezas ─────────────────────────────────────────────
+
+export function useCrearPieza() {
+  const qc = useQueryClient();
+  const router = useRouter();
+  return useMutation({
+    mutationFn: (data: CrearPiezaTipoDto) =>
+      api.post<ApiResponse<PiezaTipo>>('/andamios/piezas', data).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
+    onSuccess: (pieza) => {
+      qc.invalidateQueries({ queryKey: ['andamios', 'piezas'] });
+      toast.success('Pieza creada.');
+      router.push(`/andamios/piezas/${pieza.id}`);
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo crear la pieza.'));
+    },
+  });
+}
+
+export function useEditarPieza() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: ActualizarPiezaTipoDto }) =>
+      api.put<ApiResponse<PiezaTipo>>(`/andamios/piezas/${id}`, data).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['andamios', 'piezas'] });
+      qc.invalidateQueries({ queryKey: ['andamios', 'piezas', id] });
+      // El stockCuerposDisponibles de los cuerpos no cambia con un PUT de pieza
+      // (no toca stockActual), así que no invalidamos cuerpos aquí.
+      toast.success('Cambios guardados.');
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudieron guardar los cambios.'));
+    },
+  });
+}
+
+export function useAjustarStockPieza() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: AjusteStockPiezaDto }) =>
+      api.patch<ApiResponse<PiezaTipo>>(`/andamios/piezas/${id}/stock`, data).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['andamios', 'piezas'] });
+      qc.invalidateQueries({ queryKey: ['andamios', 'piezas', id] });
+      // Stock de piezas afecta stockCuerposDisponibles de cualquier cuerpo que la use.
+      qc.invalidateQueries({ queryKey: ['andamios', 'cuerpos'] });
+      toast.success('Stock ajustado correctamente.');
+    },
+    onError: (err) => {
+      // El backend devuelve ESTADO_INVALIDO con el valor que quedaría — toast lo muestra.
+      toast.error(extractErrorMessage(err, 'No se pudo ajustar el stock.'));
+    },
+  });
+}
+
+export function useCambiarEstadoPieza() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, activo }: { id: string; activo: boolean }) =>
+      api
+        .patch<ApiResponse<PiezaTipo>>(`/andamios/piezas/${id}/estado`, { activo })
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    onSuccess: (pieza, { id }) => {
+      qc.invalidateQueries({ queryKey: ['andamios', 'piezas'] });
+      qc.invalidateQueries({ queryKey: ['andamios', 'piezas', id] });
+      // Si la pieza estaba en un cuerpo, su stockCuerposDisponibles cambia (a 0 si se desactivó).
+      qc.invalidateQueries({ queryKey: ['andamios', 'cuerpos'] });
+      toast.success(pieza.activo ? 'Pieza activada.' : 'Pieza desactivada.');
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo cambiar el estado.'));
+    },
+  });
+}
