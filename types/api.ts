@@ -323,3 +323,114 @@ export type AjusteStockDto = {
   delta: number;
   motivo: string;
 };
+
+// ============================================================
+// Andamios (Rama 7) — PiezaTipo + CuerpoTipo
+// ============================================================
+
+export type PiezaTipo = {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  // Inventario interno. stockActual cambia vía PATCH /:id/stock (con motivo auditado),
+  // no vía PUT — el form de editar no debe enviarlo.
+  stockActual: number;
+  stockMinimo: number;
+  // Decimal serializado como string — usar decimal.js para operar, formatCurrency para mostrar.
+  tarifaDia: string;
+  tarifaSemana: string;
+  tarifaMes: string;
+  activo: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// CuerpoComponente viene anidado dentro de CuerpoTipo. El backend usa un select
+// con sólo estos campos de piezaTipo (no devuelve tarifas ni stockMinimo aquí).
+export type CuerpoComponente = {
+  id: string;
+  cantidad: number;
+  piezaTipo: {
+    id: string;
+    nombre: string;
+    stockActual: number;
+    activo: boolean;
+  };
+};
+
+export type CuerpoTipo = {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  activo: boolean;
+  createdAt: string;
+  updatedAt: string;
+  componentes: CuerpoComponente[];
+  // Calculado por backend: mínimo de floor(pieza.stockActual / componente.cantidad)
+  // entre todos los componentes. 0 si alguna pieza está inactiva.
+  stockCuerposDisponibles: number;
+};
+
+export type CrearPiezaTipoDto = {
+  nombre: string;
+  descripcion?: string;
+  stockActual?: number;
+  stockMinimo?: number;
+  tarifaDia: number;
+  tarifaSemana: number;
+  tarifaMes: number;
+};
+
+// Editar omite stockActual: el backend lo rechaza, y los ajustes van por el endpoint
+// dedicado (que requiere motivo y queda auditado).
+export type ActualizarPiezaTipoDto = {
+  nombre?: string;
+  descripcion?: string;
+  stockMinimo?: number;
+  tarifaDia?: number;
+  tarifaSemana?: number;
+  tarifaMes?: number;
+};
+
+export type AjusteStockPiezaDto = {
+  delta: number;       // entero != 0; positivo = entrada, negativo = salida
+  motivo: string;
+};
+
+export type CrearCuerpoTipoDto = {
+  nombre: string;
+  descripcion?: string;
+  componentes: { piezaTipoId: string; cantidad: number }[];
+};
+
+export type ActualizarCuerpoTipoDto = {
+  nombre?: string;
+  descripcion?: string;
+  // Si se envía, reemplaza el BOM completo (delete + recreate atomicos en backend).
+  componentes?: { piezaTipoId: string; cantidad: number }[];
+};
+
+export type FiltrosPiezas = {
+  stockBajo?: boolean;
+  incluirInactivos?: boolean;
+};
+
+export type FiltrosCuerpos = {
+  incluirInactivos?: boolean;
+};
+
+export type PeriodoExpandir = 'DIA' | 'SEMANA' | 'MES';
+
+export type ExpandirCuerpoDto = {
+  cantidad: number;
+  periodo: PeriodoExpandir;
+};
+
+// Resultado de POST /cuerpos/:id/expandir — preview de cuántas piezas se necesitarían
+// y la tarifa unitaria correspondiente al periodo. No muta stock.
+export type ExpandirCuerpoItem = {
+  tipoPiezaId: string;
+  nombre: string;
+  cantidad: number;          // comp.cantidad * dto.cantidad
+  tarifaCatalogo: string;    // Decimal correspondiente al periodo elegido
+};
