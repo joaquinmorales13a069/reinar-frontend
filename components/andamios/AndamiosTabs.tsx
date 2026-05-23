@@ -29,7 +29,10 @@ export function AndamiosTabs() {
   const rol = useAuthStore((s) => s.user?.rol);
 
   useEffect(() => {
+    // Lectura de sessionStorage post-hidratación: el setState es necesario para reflejar
+    // el tab persistido sin romper SSR (no se puede leer sessionStorage en initial state).
     const saved = sessionStorage.getItem(STORAGE_KEY);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved === 'piezas' || saved === 'cuerpos') setTab(saved);
   }, []);
 
