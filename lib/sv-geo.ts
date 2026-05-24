@@ -357,6 +357,16 @@ export function getDistritosByMuniDept(deptCode: string, muniCode: string): Dist
   return DISTRITOS_SV.filter((d) => d.department === deptCode && d.municipality === muniCode);
 }
 
+// Devuelve todos los distritos de un departamento sin pasar por municipio.
+// El flujo de Reinar para bodegas y proyectos guarda únicamente
+// departamento + distrito + texto libre, por lo que el municipio queda fuera
+// del selector. Ordenamos por label para que el dropdown sea predecible.
+export function getDistritosByDept(deptCode: string): DistritoSV[] {
+  return DISTRITOS_SV
+    .filter((d) => d.department === deptCode)
+    .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+}
+
 export function resolverDistrito(
   distritoVal: string | undefined | null,
   muniVal: string | undefined | null,
