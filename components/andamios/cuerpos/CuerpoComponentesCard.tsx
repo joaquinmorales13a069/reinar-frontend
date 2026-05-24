@@ -29,7 +29,7 @@ export function CuerpoComponentesCard({ componentes, piezas }: Props) {
         <table className="w-full text-sm">
           <thead className="bg-bg-sunken text-xs text-tx-2 uppercase">
             <tr>
-              <th className="text-left px-3 py-2 w-32">Pieza ID</th>
+              <th className="text-left px-3 py-2 w-12">#</th>
               <th className="text-left px-3 py-2">Pieza</th>
               <th className="text-right px-3 py-2 w-24">Cantidad</th>
               <th className="text-right px-3 py-2 w-32">Tarifa/día c/u</th>
@@ -37,17 +37,17 @@ export function CuerpoComponentesCard({ componentes, piezas }: Props) {
             </tr>
           </thead>
           <tbody>
-            {filas.map((f) => (
+            {filas.map((f, i) => (
               <tr key={f.id} className="border-t border-bd">
-                <td className="px-3 py-2 font-mono text-xs">
+                <td className="px-3 py-2 font-mono text-xs text-tx-3">{i + 1}</td>
+                <td className="px-3 py-2">
                   <Link
                     href={`/andamios/piezas/${f.piezaTipo.id}`}
                     className="hover:text-accent"
                   >
-                    {f.piezaTipo.id}
+                    {f.piezaTipo.nombre}
                   </Link>
                 </td>
-                <td className="px-3 py-2">{f.piezaTipo.nombre}</td>
                 <td className="px-3 py-2 text-right font-mono">×{f.cantidad}</td>
                 <td className="px-3 py-2 text-right font-mono">
                   {f.pieza ? formatCurrency(new Decimal(f.pieza.tarifaDia).toNumber()) : '—'}

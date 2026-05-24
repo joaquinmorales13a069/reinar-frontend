@@ -18,15 +18,13 @@ export function PiezasTable() {
 
   const { data: piezas, isLoading, isError } = usePiezas({ stockBajo, incluirInactivos });
 
-  // Búsqueda client-side sobre nombre o ID — el endpoint GET /andamios/piezas
+  // Búsqueda client-side sobre nombre — el endpoint GET /andamios/piezas
   // no soporta ?busqueda, por eso filtramos localmente sobre los datos ya cargados.
   const filtradas = useMemo(() => {
     if (!piezas) return [];
     const q = search.trim().toLowerCase();
     if (!q) return piezas;
-    return piezas.filter(
-      (p) => p.nombre.toLowerCase().includes(q) || p.id.toLowerCase().includes(q),
-    );
+    return piezas.filter((p) => p.nombre.toLowerCase().includes(q));
   }, [piezas, search]);
 
   // Conteo de piezas bajo mínimo calculado sobre la lista completa (sin filtro de texto)
@@ -38,7 +36,7 @@ export function PiezasTable() {
       <FilterBar
         search={search}
         onSearch={setSearch}
-        placeholder="Buscar pieza por nombre o ID…"
+        placeholder="Buscar pieza por nombre…"
         chips={[
           {
             label: `Stock bajo${bajoCount ? ` (${bajoCount})` : ''}`,
@@ -87,7 +85,7 @@ export function PiezasTable() {
           <table className="w-full min-w-3xl text-sm">
             <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
               <tr>
-                <th className="text-left px-4 py-2 font-medium w-32">ID</th>
+                <th className="text-left px-4 py-2 font-medium w-12">#</th>
                 <th className="text-left px-4 py-2 font-medium">Pieza</th>
                 <th className="text-right px-4 py-2 font-medium w-32">Stock actual</th>
                 <th className="text-right px-4 py-2 font-medium w-32">Stock mínimo</th>
@@ -96,18 +94,14 @@ export function PiezasTable() {
               </tr>
             </thead>
             <tbody>
-              {filtradas.map((p) => {
+              {filtradas.map((p, i) => {
                 const bajo = p.stockActual <= p.stockMinimo;
                 return (
                   <tr
                     key={p.id}
                     className="border-t border-bd hover:bg-bg-sunken transition-colors"
                   >
-                    <td className="px-4 py-3 font-mono font-medium text-xs">
-                      <Link href={`/andamios/piezas/${p.id}`} className="hover:underline">
-                        {p.id}
-                      </Link>
-                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-tx-3">{i + 1}</td>
                     <td className="px-4 py-3">
                       <Link href={`/andamios/piezas/${p.id}`} className="hover:underline">
                         <div className="font-medium">{p.nombre}</div>

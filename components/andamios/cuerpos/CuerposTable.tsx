@@ -15,15 +15,13 @@ export function CuerposTable() {
 
   const { data: cuerpos, isLoading, isError } = useCuerpos({ incluirInactivos });
 
-  // Búsqueda client-side sobre nombre o ID — el endpoint GET /andamios/cuerpos
+  // Búsqueda client-side sobre nombre — el endpoint GET /andamios/cuerpos
   // no soporta ?busqueda, por eso filtramos localmente sobre los datos ya cargados.
   const filtrados = useMemo(() => {
     if (!cuerpos) return [];
     const q = search.trim().toLowerCase();
     if (!q) return cuerpos;
-    return cuerpos.filter(
-      (c) => c.nombre.toLowerCase().includes(q) || c.id.toLowerCase().includes(q),
-    );
+    return cuerpos.filter((c) => c.nombre.toLowerCase().includes(q));
   }, [cuerpos, search]);
 
   return (
@@ -31,7 +29,7 @@ export function CuerposTable() {
       <FilterBar
         search={search}
         onSearch={setSearch}
-        placeholder="Buscar configuración por nombre o ID…"
+        placeholder="Buscar configuración por nombre…"
         chips={[
           {
             label: 'Incluir inactivos',
@@ -74,7 +72,7 @@ export function CuerposTable() {
           <table className="w-full min-w-3xl text-sm">
             <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
               <tr>
-                <th className="text-left px-4 py-2 font-medium w-32">ID</th>
+                <th className="text-left px-4 py-2 font-medium w-12">#</th>
                 <th className="text-left px-4 py-2 font-medium">Configuración</th>
                 <th className="text-right px-4 py-2 font-medium w-36">Piezas distintas</th>
                 <th className="text-right px-4 py-2 font-medium w-36">Disponibles</th>
@@ -82,18 +80,14 @@ export function CuerposTable() {
               </tr>
             </thead>
             <tbody>
-              {filtrados.map((c) => {
+              {filtrados.map((c, i) => {
                 const sinStock = c.stockCuerposDisponibles === 0;
                 return (
                   <tr
                     key={c.id}
                     className="border-t border-bd hover:bg-bg-sunken transition-colors"
                   >
-                    <td className="px-4 py-3 font-mono font-medium text-xs">
-                      <Link href={`/andamios/cuerpos/${c.id}`} className="hover:underline">
-                        {c.id}
-                      </Link>
-                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-tx-3">{i + 1}</td>
                     <td className="px-4 py-3">
                       <Link href={`/andamios/cuerpos/${c.id}`} className="hover:underline">
                         <div className="font-medium">{c.nombre}</div>
