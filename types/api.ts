@@ -470,3 +470,91 @@ export type FiltrosServicios = {
   search?: string;
   activo?: boolean;
 };
+
+// ============================================================
+// Bodegas (Rama 9)
+// ============================================================
+
+export type BodegaZona = {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  activa: boolean;
+};
+
+export type Bodega = {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  direccion: string | null;
+  ciudad: string | null;
+  activa: boolean;
+  // parentId === null distingue bodega principal de zona — la jerarquía es de
+  // exactamente 2 niveles y el backend rechaza zonas anidadas.
+  parentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  // zonas viene poblado por GET /bodegas/:id (solo si es principal).
+  zonas?: BodegaZona[];
+  // _count viene poblado por GET /bodegas (listado).
+  _count?: { zonas: number };
+};
+
+export type CrearBodegaDto = {
+  nombre: string;
+  descripcion?: string;
+  direccion?: string;
+  ciudad: string;
+};
+
+export type ActualizarBodegaDto = Partial<CrearBodegaDto>;
+
+export type CrearZonaDto = {
+  nombre: string;
+  descripcion?: string;
+};
+
+export type ActualizarZonaDto = Partial<CrearZonaDto>;
+
+// ============================================================
+// Proyectos (Rama 9)
+// ============================================================
+
+// PAUSADO no aparecía en el plan original pero el backend lo soporta como
+// estado intermedio. La máquina de estados completa está documentada en
+// el spec (docs/superpowers/specs/2026-05-24-bodegas-proyectos-design.md).
+export type EstadoProyecto = 'ACTIVO' | 'PAUSADO' | 'COMPLETADO' | 'CANCELADO';
+
+export type Proyecto = {
+  id: string;
+  clienteId: string;
+  nombre: string;
+  descripcion: string | null;
+  // Texto compuesto por UbicacionInput: "${detalle}, ${distrito}, ${departamento}".
+  ubicacion: string;
+  estado: EstadoProyecto;
+  createdAt: string;
+  updatedAt: string;
+  // Embebido por GET /proyectos/:id.
+  cliente?: { id: string; razonSocial: string | null; nombre: string };
+  _count?: { cotizaciones: number };
+  // KPIs computados por el backend solo en GET /proyectos/:id.
+  // Los montos son Decimal serializados como strings — usar decimal.js.
+  kpis?: {
+    totalCotizado: string;
+    totalFacturado: string;
+    equiposEnObra: number;
+  };
+};
+
+export type CrearProyectoDto = {
+  nombre: string;
+  descripcion?: string;
+  ubicacion: string;
+};
+
+export type ActualizarProyectoDto = Partial<CrearProyectoDto>;
+
+export type FiltrosProyectosCliente = {
+  estado?: EstadoProyecto;
+};
