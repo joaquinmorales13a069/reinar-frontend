@@ -5,7 +5,7 @@ import { DEPARTAMENTOS_SV, getDistritosByDept } from '@/lib/sv-geo';
 
 type UbicacionParts = {
   departamento: string; // value del catálogo (código MH); '' = no seleccionado
-  distrito: string;     // value del catálogo (código MH); '' = no seleccionado
+  distrito: string;     // label del catálogo (no el código MH, que no es único por depto); '' = no seleccionado
   detalle: string;      // texto libre (calle, número, referencia)
 };
 
@@ -23,7 +23,11 @@ const SEPARADOR = ', ';
 // del módulo de cotizaciones ya esperan strings legibles.
 function componer(parts: UbicacionParts): string {
   const dept = DEPARTAMENTOS_SV.find((d) => d.value === parts.departamento);
-  const dist = getDistritosByDept(parts.departamento).find((d) => d.value === parts.distrito);
+  // parts.distrito guarda el label (no el código MH) porque dentro de un
+  // departamento los códigos pueden repetirse entre municipios (ej: La Paz
+  // tiene dos distritos con value '05'). Usar el label como identificador
+  // interno del select evita esa ambigüedad.
+  const dist = getDistritosByDept(parts.departamento).find((d) => d.label === parts.distrito);
   if (!parts.detalle.trim() || !dept || !dist) return '';
   return `${parts.detalle.trim()}${SEPARADOR}${dist.label}${SEPARADOR}${dept.label}`;
 }
@@ -52,7 +56,7 @@ function parsear(value: string): UbicacionParts {
   // El detalle es todo lo anterior unido — el join con SEPARADOR preserva las
   // comas internas si el usuario las usó al escribir (ej. "Calle 5, casa 20").
   const detalle = tokens.slice(0, -2).join(SEPARADOR);
-  return { departamento: dept.value, distrito: dist.value, detalle };
+  return { departamento: dept.value, distrito: dist.label, detalle };
 }
 
 const inputBase =
@@ -116,10 +120,11 @@ export function UbicacionInput({ value, onChange, error, className }: UbicacionI
               {parts.departamento ? '— Selecciona distrito —' : '— Selecciona departamento primero —'}
             </option>
             {distritos.map((d) => (
-              // Nota: el value (código MH) no es único entre municipios del mismo
-              // departamento, así que la `key` combina value + label para evitar
-              // colisiones de React. El usuario seleccionará por label igualmente.
-              <option key={`${d.value}-${d.label}`} value={d.value}>{d.label}</option>
+              // value usa el label (no el código MH) porque dentro del mismo
+              // departamento el código se repite entre municipios — y aquí
+              // estamos ignorando el municipio (decisión D3 del spec). El label
+              // es el identificador estable que persistimos.
+              <option key={`${d.value}-${d.label}`} value={d.label}>{d.label}</option>
             ))}
           </select>
         </div>
