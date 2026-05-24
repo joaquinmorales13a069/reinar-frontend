@@ -2,6 +2,7 @@
 // components/dashboard/FleetWidget.tsx
 
 import type { CategoriaFlota, UtilizacionCategoria } from '@/types/dashboard';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 type FleetWidgetProps = {
   utilizacionPorCategoria: UtilizacionCategoria[];
@@ -23,6 +24,18 @@ function pct(n: number, total: number): number {
 
 export function FleetWidget({ utilizacionPorCategoria }: FleetWidgetProps) {
   const totalEquipos = utilizacionPorCategoria.reduce((acc, f) => acc + f.total, 0);
+
+  if (utilizacionPorCategoria.length === 0) {
+    return (
+      <div className="rounded-lg bg-surface border border-bd p-5">
+        <EmptyState
+          icon="package"
+          title="Sin equipos registrados"
+          message="No hay categorías de flota para mostrar."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg bg-surface border border-bd p-5 flex flex-col gap-3">
