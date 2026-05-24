@@ -114,8 +114,8 @@ export default function DashboardPage() {
                 showIngresos && showFlota ? 'md:grid-cols-2' : 'grid-cols-1'
               }`}
             >
-              {showIngresos && <RevenueWidget ingresosMes={data.ingresosMes} />}
-              {showFlota    && <FleetWidget utilizacionEquipos={data.utilizacionEquipos} />}
+              {showIngresos && <RevenueWidget ingresosUltimos6Meses={data.ingresosUltimos6Meses} />}
+              {showFlota    && <FleetWidget utilizacionPorCategoria={data.utilizacionPorCategoria} />}
             </div>
           )}
 
