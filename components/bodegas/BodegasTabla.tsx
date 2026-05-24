@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FilterBar } from '@/components/ui/FilterBar';
@@ -25,6 +25,8 @@ export function BodegasTabla() {
 
   // Filtrado client-side porque GET /bodegas no acepta query params.
   // Asumimos volúmenes bajos (decenas de bodegas) — ver decisión D6 del spec.
+  // El filtro aplica solo al nivel principal: si una principal pasa, todas
+  // sus zonas se muestran (sean activas o inactivas).
   const filtradas = useMemo(() => {
     if (!data) return [];
     const q = search.trim().toLowerCase();
@@ -85,7 +87,10 @@ export function BodegasTabla() {
           <table className="w-full min-w-3xl text-sm">
             <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
               <tr>
+                <th className="text-left px-4 py-2 font-medium w-12">#</th>
                 <th className="text-left px-4 py-2 font-medium">Bodega</th>
+                <th className="text-left px-4 py-2 font-medium w-28">Tipo</th>
+                <th className="text-left px-4 py-2 font-medium">Descripción</th>
                 <th className="text-left px-4 py-2 font-medium w-36">Ciudad</th>
                 <th className="text-right px-4 py-2 font-medium w-20">Zonas</th>
                 <th className="text-left px-4 py-2 font-medium w-28">Estado</th>
@@ -93,60 +98,125 @@ export function BodegasTabla() {
               </tr>
             </thead>
             <tbody>
-              {filtradas.map((b) => (
-                <tr
-                  key={b.id}
-                  className="border-t border-bd hover:bg-bg-sunken transition-colors cursor-pointer"
-                  onClick={() => router.push(`/bodegas/${b.id}`)}
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Icon name="warehouse" size={14} className="text-tx-3 shrink-0" />
-                      <div>
-                        <div className="font-medium">{b.nombre}</div>
-                        {b.descripcion && (
-                          <div className="text-xs text-tx-3 mt-0.5 truncate max-w-md">
-                            {b.descripcion}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-tx-2">{b.ciudad || '—'}</td>
-                  <td className="px-4 py-3 text-right font-mono">{b._count?.zonas ?? 0}</td>
-                  <td className="px-4 py-3">
-                    <Badge
-                      status={b.activa ? 'ACTIVA' : 'INACTIVA'}
-                      kind={b.activa ? 'ok' : 'neutral'}
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div
-                      className="inline-flex gap-1"
-                      // stopPropagation evita que el click en los íconos también
-                      // dispare el row click que navega al detalle.
-                      onClick={(e) => e.stopPropagation()}
+              {filtradas.map((b, i) => {
+                const numero = i + 1;
+                const zonas = b.zonas ?? [];
+                return (
+                  <Fragment key={b.id}>
+                    <tr
+                      className="border-t border-bd hover:bg-bg-sunken transition-colors cursor-pointer"
+                      onClick={() => router.push(`/bodegas/${b.id}`)}
                     >
-                      <Link
-                        href={`/bodegas/${b.id}`}
-                        className="inline-flex items-center justify-center w-7 h-7 rounded-md text-tx-3 hover:bg-bg hover:text-tx transition-colors"
-                        aria-label="Ver"
-                      >
-                        <Icon name="eye" size={14} />
-                      </Link>
-                      {puedeEditar && (
-                        <Link
-                          href={`/bodegas/${b.id}/editar`}
-                          className="inline-flex items-center justify-center w-7 h-7 rounded-md text-tx-3 hover:bg-bg hover:text-tx transition-colors"
-                          aria-label="Editar"
+                      <td className="px-4 py-3 font-mono text-xs text-tx-3">{numero}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Icon name="warehouse" size={14} className="text-tx-3 shrink-0" />
+                          <div className="font-medium">{b.nombre}</div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge status="PRINCIPAL" kind="info" />
+                      </td>
+                      <td className="px-4 py-3 text-tx-2">
+                        {b.descripcion ? (
+                          <span className="line-clamp-2">{b.descripcion}</span>
+                        ) : (
+                          <span className="text-tx-3">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-tx-2">{b.ciudad || '—'}</td>
+                      <td className="px-4 py-3 text-right font-mono">{b._count?.zonas ?? zonas.length}</td>
+                      <td className="px-4 py-3">
+                        <Badge
+                          status={b.activa ? 'ACTIVA' : 'INACTIVA'}
+                          kind={b.activa ? 'ok' : 'neutral'}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div
+                          className="inline-flex gap-1"
+                          // stopPropagation evita que el click en los íconos también
+                          // dispare el row click que navega al detalle.
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <Icon name="edit" size={14} />
-                        </Link>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                          <Link
+                            href={`/bodegas/${b.id}`}
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-tx-3 hover:bg-bg hover:text-tx transition-colors"
+                            aria-label="Ver"
+                          >
+                            <Icon name="eye" size={14} />
+                          </Link>
+                          {puedeEditar && (
+                            <Link
+                              href={`/bodegas/${b.id}/editar`}
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-tx-3 hover:bg-bg hover:text-tx transition-colors"
+                              aria-label="Editar"
+                            >
+                              <Icon name="edit" size={14} />
+                            </Link>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+
+                    {zonas.map((z) => (
+                      <tr
+                        key={z.id}
+                        // Fondo más hundido para reforzar visualmente la jerarquía:
+                        // las zonas se leen como "hijas" de la fila principal previa.
+                        className="border-t border-bd bg-bg-sunken/40 hover:bg-bg-sunken transition-colors cursor-pointer"
+                        onClick={() =>
+                          puedeEditar
+                            ? router.push(`/bodegas/${b.id}/zonas/${z.id}/editar`)
+                            : router.push(`/bodegas/${b.id}`)
+                        }
+                      >
+                        <td className="px-4 py-2.5"></td>
+                        <td className="px-4 py-2.5">
+                          <div className="flex items-center gap-2 pl-6">
+                            <Icon name="chevronRight" size={12} className="text-tx-3 shrink-0" />
+                            <div className="font-medium text-tx-2 text-sm">{z.nombre}</div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <Badge status="ZONA" kind="neutral" />
+                        </td>
+                        <td className="px-4 py-2.5 text-tx-3 text-sm">
+                          {z.descripcion ? (
+                            <span className="line-clamp-2">{z.descripcion}</span>
+                          ) : (
+                            <span className="text-tx-3">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2.5 text-tx-3 text-sm">{b.ciudad || '—'}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-tx-3">—</td>
+                        <td className="px-4 py-2.5">
+                          <Badge
+                            status={z.activa ? 'ACTIVA' : 'INACTIVA'}
+                            kind={z.activa ? 'ok' : 'neutral'}
+                          />
+                        </td>
+                        <td className="px-4 py-2.5 text-right">
+                          <div
+                            className="inline-flex gap-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {puedeEditar && (
+                              <Link
+                                href={`/bodegas/${b.id}/zonas/${z.id}/editar`}
+                                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-tx-3 hover:bg-bg hover:text-tx transition-colors"
+                                aria-label="Editar zona"
+                              >
+                                <Icon name="edit" size={14} />
+                              </Link>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
