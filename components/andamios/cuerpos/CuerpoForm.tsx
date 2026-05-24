@@ -95,10 +95,12 @@ export function CuerpoForm(props: Props) {
 
   const title = props.modo === 'editar' ? 'Editar configuración' : 'Nueva configuración';
   const submitLabel = props.modo === 'editar' ? 'Guardar cambios' : 'Guardar configuración';
+  const backLabel =
+    props.modo === 'editar' ? `Configuración ${props.cuerpo.nombre}` : 'Andamios';
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 pb-24">
-      <PageHeader title={title} back onBack={onBack} />
+      <PageHeader title={title} back backLabel={backLabel} onBack={onBack} />
 
       <FormSection title="Información">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

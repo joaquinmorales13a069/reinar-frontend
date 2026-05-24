@@ -87,6 +87,7 @@ function PiezaFormCrear({
   return (
     <Layout
       title="Nueva pieza"
+      backLabel="Andamios"
       onBack={() => router.push('/andamios')}
       submitLabel="Guardar pieza"
       onSubmit={handleSubmit(onSubmit)}
@@ -146,6 +147,7 @@ function PiezaFormEditar({
   return (
     <Layout
       title="Editar pieza"
+      backLabel={`Pieza ${pieza.nombre}`}
       onBack={() => router.push(`/andamios/piezas/${pieza.id}`)}
       submitLabel="Guardar cambios"
       onSubmit={handleSubmit(onSubmit)}
@@ -159,6 +161,7 @@ function PiezaFormEditar({
 
 function Layout({
   title,
+  backLabel,
   onBack,
   submitLabel,
   onSubmit,
@@ -166,6 +169,7 @@ function Layout({
   children,
 }: {
   title: string;
+  backLabel?: string;
   onBack: () => void;
   submitLabel: string;
   onSubmit: (e: React.FormEvent) => void;
@@ -174,7 +178,7 @@ function Layout({
 }) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4 pb-24">
-      <PageHeader title={title} back onBack={onBack} />
+      <PageHeader title={title} back backLabel={backLabel} onBack={onBack} />
       {children}
       <div className="sticky bottom-0 left-0 right-0 -mx-4 px-4 py-3 bg-bg border-t border-bd flex justify-end gap-2">
         <button

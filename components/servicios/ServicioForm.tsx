@@ -79,6 +79,7 @@ function ServicioFormCrear({
     <Layout
       title="Nuevo servicio"
       subtitle="Registra un servicio cotizable."
+      backLabel="Servicios"
       onBack={() => router.push('/servicios')}
       submitLabel="Crear servicio"
       onSubmit={handleSubmit(onSubmit)}
@@ -137,6 +138,7 @@ function ServicioFormEditar({
     <Layout
       title={`Editar — ${servicio.nombre}`}
       subtitle="Modifica los datos del servicio."
+      backLabel={`Servicio ${servicio.codigo}`}
       onBack={() => router.push(`/servicios/${servicio.id}`)}
       submitLabel="Guardar cambios"
       onSubmit={handleSubmit(onSubmit)}
@@ -151,6 +153,7 @@ function ServicioFormEditar({
 function Layout({
   title,
   subtitle,
+  backLabel,
   onBack,
   submitLabel,
   onSubmit,
@@ -159,6 +162,7 @@ function Layout({
 }: {
   title: string;
   subtitle?: string;
+  backLabel?: string;
   onBack: () => void;
   submitLabel: string;
   onSubmit: (e: React.FormEvent) => void;
@@ -167,7 +171,7 @@ function Layout({
 }) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4 pb-24">
-      <PageHeader title={title} subtitle={subtitle} back onBack={onBack} />
+      <PageHeader title={title} subtitle={subtitle} back backLabel={backLabel} onBack={onBack} />
       {children}
       <div className="sticky bottom-0 left-0 right-0 -mx-4 px-4 py-3 bg-bg border-t border-bd flex justify-end gap-2">
         <button
