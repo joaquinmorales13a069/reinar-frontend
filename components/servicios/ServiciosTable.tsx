@@ -8,8 +8,11 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
 import { Badge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
+import { Icon } from '@/components/ui/Icon';
 import { useServicios } from '@/hooks/use-servicios';
 import { formatCurrency } from '@/lib/utils';
+import { useAuthStore } from '@/stores/auth.store';
+import { puedeEjecutarServicio } from '@/lib/servicios';
 
 type FiltroEstado = 'TODOS' | 'ACTIVO' | 'INACTIVO';
 
@@ -17,6 +20,9 @@ export function ServiciosTable() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [estado, setEstado] = useState<FiltroEstado>('TODOS');
+
+  const rol = useAuthStore((s) => s.user?.rol);
+  const puedeEditar = puedeEjecutarServicio('editar', rol);
 
   // El backend filtra por `activo` boolean (o lo omite para traer todos).
   const activo = estado === 'ACTIVO' ? true : estado === 'INACTIVO' ? false : undefined;
@@ -99,6 +105,7 @@ export function ServiciosTable() {
                   <th className="text-left px-4 py-2 font-medium w-32">Unidad</th>
                   <th className="text-right px-4 py-2 font-medium w-36">Tarifa base</th>
                   <th className="text-left px-4 py-2 font-medium w-28">Estado</th>
+                  <th className="text-right px-4 py-2 font-medium w-24">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,6 +139,26 @@ export function ServiciosTable() {
                           status={s.activo ? 'ACTIVO' : 'INACTIVO'}
                           kind={s.activo ? 'ok' : 'neutral'}
                         />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="inline-flex gap-1">
+                          <Link
+                            href={`/servicios/${s.id}`}
+                            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-tx-3 hover:bg-bg hover:text-tx transition-colors"
+                            aria-label="Ver"
+                          >
+                            <Icon name="eye" size={14} />
+                          </Link>
+                          {puedeEditar && (
+                            <Link
+                              href={`/servicios/${s.id}/editar`}
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-md text-tx-3 hover:bg-bg hover:text-tx transition-colors"
+                              aria-label="Editar"
+                            >
+                              <Icon name="edit" size={14} />
+                            </Link>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

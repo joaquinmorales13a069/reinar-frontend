@@ -13,7 +13,6 @@ import {
   type ServicioEditarInput,
 } from '@/lib/schemas/servicios';
 import { useCrearServicio, useEditarServicio } from '@/hooks/use-servicios';
-import { trySetFieldErrorFromApi } from '@/lib/api-errors';
 import type { Servicio } from '@/types/api';
 
 type Props =
@@ -50,7 +49,6 @@ function ServicioFormCrear({
   const {
     register,
     handleSubmit,
-    setError,
     formState: { errors, isSubmitting },
   } = useForm<ServicioCrearInput>({
     resolver: zodResolver(servicioCrearSchema) as never,
@@ -72,9 +70,8 @@ function ServicioFormCrear({
         unidad: values.unidad.trim(),
         notas: values.notas?.trim() || undefined,
       });
-    } catch (err) {
-      // Si el backend reporta conflicto por nombre, lo mostramos inline.
-      trySetFieldErrorFromApi(err, setError, 'nombre');
+    } catch {
+      // El hook ya dispara toast.error en onError.
     }
   }
 
@@ -105,7 +102,6 @@ function ServicioFormEditar({
   const {
     register,
     handleSubmit,
-    setError,
     formState: { errors, isSubmitting },
   } = useForm<ServicioEditarInput>({
     resolver: zodResolver(servicioEditarSchema) as never,
@@ -131,8 +127,9 @@ function ServicioFormEditar({
         },
       });
       router.push(`/servicios/${servicio.id}`);
-    } catch (err) {
-      trySetFieldErrorFromApi(err, setError, 'nombre');
+    } catch {
+      // El hook ya dispara toast.error en onError; aquí solo evitamos navegar
+      // tras una falla del PUT.
     }
   }
 
