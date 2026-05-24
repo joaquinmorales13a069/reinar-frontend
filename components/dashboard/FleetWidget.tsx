@@ -1,82 +1,70 @@
-// components/dashboard/FleetWidget.tsx
 'use client';
+// components/dashboard/FleetWidget.tsx
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  Cell,
-  Tooltip,
-} from 'recharts';
-import type { DashboardKpis } from '@/types/dashboard';
+import type { CategoriaFlota, UtilizacionCategoria } from '@/types/dashboard';
 
 type FleetWidgetProps = {
-  utilizacionEquipos: DashboardKpis['utilizacionEquipos'];
+  utilizacionPorCategoria: UtilizacionCategoria[];
 };
 
-// Colores en hex directo porque Recharts no interpreta CSS vars en atributos SVG fill
-const ESTADOS = [
-  { key: 'disponibles',  label: 'Disponibles',   color: '#2E8C5A' },
-  { key: 'rentados',     label: 'Rentados',       color: '#F2C037' },
-  { key: 'mantenimiento', label: 'Mantenimiento', color: '#E08A1A' },
-  { key: 'inactivos',    label: 'Inactivos',      color: '#6B7B8E' },
-] as const;
+const CATEGORIA_LABEL: Record<CategoriaFlota, string> = {
+  COMPRESOR_GENERADOR:       'Compresores y generadores',
+  SANDBLASTING:              'Sandblasting',
+  ANDAMIO_PLATAFORMA:        'Andamios y plataformas',
+  COMPACTADOR_RODILLO:       'Compactadores y rodillos',
+  HERRAMIENTA_ESPECIALIZADA: 'Herramienta especializada',
+  OTRO:                      'Otros equipos',
+  ANDAMIO_PIEZA:             'Andamios (piezas)',
+};
 
-export function FleetWidget({ utilizacionEquipos }: FleetWidgetProps) {
-  const chartData = ESTADOS.map((e) => ({
-    estado: e.label,
-    cantidad: utilizacionEquipos[e.key],
-    color: e.color,
-  }));
+function pct(n: number, total: number): number {
+  return total > 0 ? (n / total) * 100 : 0;
+}
+
+export function FleetWidget({ utilizacionPorCategoria }: FleetWidgetProps) {
+  const totalEquipos = utilizacionPorCategoria.reduce((acc, f) => acc + f.total, 0);
 
   return (
     <div className="rounded-lg bg-surface border border-bd p-5 flex flex-col gap-3">
       <div>
         <h3 className="text-sm font-medium text-tx">Utilización de flota</h3>
         <p className="text-xs text-tx-3 mt-0.5">
-          Estado actual · {utilizacionEquipos.total} equipos en total
+          Por categoría · {totalEquipos} unidades en total
         </p>
       </div>
-      <ResponsiveContainer width="100%" height={148}>
-        <BarChart
-          data={chartData}
-          layout="vertical"
-          margin={{ top: 0, right: 12, left: 0, bottom: 0 }}
-        >
-          <XAxis
-            type="number"
-            axisLine={false}
-            tickLine={false}
-            tick={{ fontSize: 11, fill: '#6B7B8E' }}
-            allowDecimals={false}
-          />
-          <YAxis
-            type="category"
-            dataKey="estado"
-            axisLine={false}
-            tickLine={false}
-            tick={{ fontSize: 11, fill: '#44546A' }}
-            width={96}
-          />
-          <Tooltip
-            cursor={{ fill: 'rgba(10,26,42,0.04)' }}
-            contentStyle={{
-              background: '#FFFFFF',
-              border: '1px solid rgba(10,26,42,0.10)',
-              borderRadius: 6,
-              fontSize: 12,
-            }}
-            formatter={(value) => [`${value ?? 0} equipos`, 'Cantidad']}
-          />
-          <Bar dataKey="cantidad" radius={[0, 4, 4, 0]}>
-            {chartData.map((entry) => (
-              <Cell key={entry.estado} fill={entry.color} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+
+      <div className="flex flex-col gap-2.5">
+        {utilizacionPorCategoria.map((fila) => (
+          <div key={fila.categoria} className="grid grid-cols-[1fr_auto] gap-x-3 items-center">
+            <div className="min-w-0">
+              <div className="text-sm text-tx truncate">{CATEGORIA_LABEL[fila.categoria]}</div>
+              <div className="flex h-2 rounded-full overflow-hidden bg-bd mt-1.5">
+                <div className="bg-accent" style={{ width: `${pct(fila.rentado, fila.total)}%` }} />
+                <div className="bg-warn"   style={{ width: `${pct(fila.mantenimiento, fila.total)}%` }} />
+                <div className="bg-bg-sunken" style={{ width: `${pct(fila.disponible, fila.total)}%` }} />
+              </div>
+            </div>
+            <span className="font-mono text-xs text-tx-2 whitespace-nowrap">
+              {fila.total > 0 ? `${fila.rentado}/${fila.total}` : '—'}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-2 mt-1 border-t border-bd text-xs text-tx-2">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-accent" />
+          Rentado
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-warn" />
+          Mantenimiento
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-bg-sunken border border-bd" />
+          Disponible
+        </span>
+      </div>
     </div>
   );
 }

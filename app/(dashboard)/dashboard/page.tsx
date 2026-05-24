@@ -115,7 +115,7 @@ export default function DashboardPage() {
               }`}
             >
               {showIngresos && <RevenueWidget ingresosUltimos6Meses={data.ingresosUltimos6Meses} />}
-              {showFlota    && <FleetWidget utilizacionEquipos={data.utilizacionEquipos} />}
+              {showFlota    && <FleetWidget utilizacionPorCategoria={data.utilizacionPorCategoria} />}
             </div>
           )}
 
