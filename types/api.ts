@@ -434,3 +434,39 @@ export type ExpandirCuerpoItem = {
   cantidad: number;          // comp.cantidad * dto.cantidad
   tarifaCatalogo: string;    // Decimal correspondiente al periodo elegido
 };
+
+// ============================================================
+// Servicios (Rama 8)
+// ============================================================
+
+export type Servicio = {
+  id: string;
+  codigo: string;          // SV-001, autogenerado por el backend
+  nombre: string;
+  descripcion: string | null;
+  // Decimal serializado como string — usar decimal.js para operar, formatCurrency para mostrar.
+  tarifaBase: string;
+  unidad: string;          // texto libre (hora, día, m², proyecto…)
+  activo: boolean;
+  notas: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CrearServicioDto = {
+  nombre: string;
+  descripcion?: string;
+  tarifaBase: number;
+  unidad: string;
+  notas?: string;
+};
+
+// El backend rechaza cambios de `codigo`; lo dejamos fuera del DTO de edición.
+export type ActualizarServicioDto = Partial<CrearServicioDto>;
+
+export type FiltrosServicios = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  activo?: boolean;
+};
