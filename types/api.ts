@@ -470,3 +470,102 @@ export type FiltrosServicios = {
   search?: string;
   activo?: boolean;
 };
+
+// ============================================================
+// Bodegas (Rama 9)
+// ============================================================
+
+// Forma embebida en Bodega (GET /bodegas/:id) — el backend hace un select
+// reducido que omite timestamps; no agregarlos sin actualizar también el
+// backend.
+export type BodegaZona = {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  activa: boolean;
+};
+
+export type Bodega = {
+  id: string;
+  nombre: string;
+  descripcion: string | null;
+  direccion: string | null;
+  ciudad: string | null;
+  activa: boolean;
+  // No viene en GET /bodegas (el listado solo trae principales y el backend
+  // omite el campo en su `select`). Sí viene en GET /bodegas/:id como
+  // string|null. Marcarlo opcional refleja esa dualidad de shapes.
+  parentId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  // zonas viene poblado por GET /bodegas/:id (solo si es principal).
+  zonas?: BodegaZona[];
+  // _count viene poblado por GET /bodegas (listado).
+  _count?: { zonas: number };
+};
+
+export type CrearBodegaDto = {
+  nombre: string;
+  descripcion?: string;
+  direccion?: string;
+  ciudad: string;
+};
+
+export type ActualizarBodegaDto = Partial<CrearBodegaDto>;
+
+export type CrearZonaDto = {
+  nombre: string;
+  descripcion?: string;
+};
+
+export type ActualizarZonaDto = Partial<CrearZonaDto>;
+
+// ============================================================
+// Proyectos (Rama 9)
+// ============================================================
+
+// PAUSADO no aparecía en el plan original pero el backend lo soporta como
+// estado intermedio. La máquina de estados completa está documentada en
+// el spec (docs/superpowers/specs/2026-05-24-bodegas-proyectos-design.md).
+export type EstadoProyecto = 'ACTIVO' | 'PAUSADO' | 'COMPLETADO' | 'CANCELADO';
+
+export type Proyecto = {
+  id: string;
+  clienteId: string;
+  nombre: string;
+  descripcion: string | null;
+  // Texto compuesto por UbicacionInput: "${detalle}, ${distrito}, ${departamento}".
+  ubicacion: string;
+  estado: EstadoProyecto;
+  createdAt: string;
+  updatedAt: string;
+  // Embebido por GET /proyectos/:id.
+  // Para clientes EMPRESA el campo `nombre` puede ser null; mostrar
+  // razonSocial como fallback.
+  cliente?: { id: string; razonSocial: string | null; nombre: string | null };
+  _count?: { cotizaciones: number };
+  // KPIs computados por el backend solo en GET /proyectos/:id.
+  // Los montos son Decimal serializados como strings — usar decimal.js.
+  kpis?: {
+    // Cuando no hay filas agregadas el backend devuelve el número 0 (no "0"),
+    // pero los Decimal serializados llegan como string. Cualquier consumidor
+    // debe pasar el valor por `new Decimal(...)` antes de operar.
+    totalCotizado: string | number;
+    totalFacturado: string | number;
+    equiposEnObra: number;
+  };
+};
+
+export type CrearProyectoDto = {
+  nombre: string;
+  descripcion?: string;
+  ubicacion: string;
+};
+
+export type ActualizarProyectoDto = Partial<CrearProyectoDto>;
+
+// El backend de proyectos no acepta paginación porque el listado es siempre
+// por cliente (sub-recurso) — el cliente raramente tiene >50 proyectos.
+export type FiltrosProyectos = {
+  estado?: EstadoProyecto;
+};

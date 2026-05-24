@@ -22,7 +22,9 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'inicio',    label: 'Inicio',    href: '/dashboard',  icon: 'home' },
       { id: 'clientes',  label: 'Clientes',  href: '/clientes',   icon: 'users' },
       { id: 'contactos', label: 'Contactos', href: '/contactos',  icon: 'idCard' },
-      { id: 'proyectos', label: 'Proyectos', href: '/proyectos',  icon: 'building' },
+      // Proyectos no aparece como item de navegación global porque viven bajo
+      // el cliente (ver spec D1). El detalle individual se accede desde
+      // /clientes/:id o desde el módulo de cotizaciones.
     ],
   },
   {

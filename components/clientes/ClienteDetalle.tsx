@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { ContactosDeCliente } from '@/components/clientes/ContactosDeCliente';
+import { ProyectosClienteCard } from '@/components/proyectos/ProyectosClienteCard';
 import { useCliente } from '@/hooks/use-clientes';
 import { useAuthStore } from '@/stores/auth.store';
 import { formatCurrency } from '@/lib/utils';
@@ -145,6 +146,9 @@ export function ClienteDetalle({ id }: { id: string }) {
       </div>
 
       <ContactosDeCliente clienteId={id} />
+      <div className="mt-4">
+        <ProyectosClienteCard cliente={{ id: cliente.id, estado: cliente.estado }} />
+      </div>
     </div>
   );
 }
