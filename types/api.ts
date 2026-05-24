@@ -475,6 +475,9 @@ export type FiltrosServicios = {
 // Bodegas (Rama 9)
 // ============================================================
 
+// Forma embebida en Bodega (GET /bodegas/:id) — el backend hace un select
+// reducido que omite timestamps; no agregarlos sin actualizar también el
+// backend.
 export type BodegaZona = {
   id: string;
   nombre: string;
@@ -489,9 +492,10 @@ export type Bodega = {
   direccion: string | null;
   ciudad: string | null;
   activa: boolean;
-  // parentId === null distingue bodega principal de zona — la jerarquía es de
-  // exactamente 2 niveles y el backend rechaza zonas anidadas.
-  parentId: string | null;
+  // No viene en GET /bodegas (el listado solo trae principales y el backend
+  // omite el campo en su `select`). Sí viene en GET /bodegas/:id como
+  // string|null. Marcarlo opcional refleja esa dualidad de shapes.
+  parentId?: string | null;
   createdAt: string;
   updatedAt: string;
   // zonas viene poblado por GET /bodegas/:id (solo si es principal).
@@ -536,13 +540,18 @@ export type Proyecto = {
   createdAt: string;
   updatedAt: string;
   // Embebido por GET /proyectos/:id.
-  cliente?: { id: string; razonSocial: string | null; nombre: string };
+  // Para clientes EMPRESA el campo `nombre` puede ser null; mostrar
+  // razonSocial como fallback.
+  cliente?: { id: string; razonSocial: string | null; nombre: string | null };
   _count?: { cotizaciones: number };
   // KPIs computados por el backend solo en GET /proyectos/:id.
   // Los montos son Decimal serializados como strings — usar decimal.js.
   kpis?: {
-    totalCotizado: string;
-    totalFacturado: string;
+    // Cuando no hay filas agregadas el backend devuelve el número 0 (no "0"),
+    // pero los Decimal serializados llegan como string. Cualquier consumidor
+    // debe pasar el valor por `new Decimal(...)` antes de operar.
+    totalCotizado: string | number;
+    totalFacturado: string | number;
     equiposEnObra: number;
   };
 };
@@ -555,6 +564,8 @@ export type CrearProyectoDto = {
 
 export type ActualizarProyectoDto = Partial<CrearProyectoDto>;
 
-export type FiltrosProyectosCliente = {
+// El backend de proyectos no acepta paginación porque el listado es siempre
+// por cliente (sub-recurso) — el cliente raramente tiene >50 proyectos.
+export type FiltrosProyectos = {
   estado?: EstadoProyecto;
 };
