@@ -11,27 +11,77 @@ type ActivityFeedProps = {
   onRefresh: () => void;
 };
 
-const ENTITY_ICON: Record<string, IconName> = {
-  Cotizacion:  'fileText',
-  Factura:     'receipt',
-  Pago:        'dollar',
-  ActaEntrega: 'clipboard',
-  Cliente:     'user',
-};
-
-const ACCION_LABEL: Record<string, string> = {
-  CREATE: 'creó',
-  UPDATE: 'actualizó',
-  DELETE: 'eliminó',
+// El backend emite acciones como VERBO_ENTIDAD en mayúsculas
+// (ej. CREAR_CLIENTE, CAMBIAR_ESTADO_PIEZA, AJUSTAR_STOCK_CONSUMIBLE).
+// Mapeamos solo el verbo; la entidad se resuelve por separado vía ENTITY_LABEL.
+const VERBO_LABEL: Record<string, string> = {
+  CREAR:          'creó',
+  ACTUALIZAR:     'actualizó',
+  ELIMINAR:       'eliminó',
+  CAMBIAR_ESTADO: 'cambió el estado de',
+  AJUSTAR_STOCK:  'ajustó el stock de',
+  ACTIVAR:        'activó',
+  DESACTIVAR:     'desactivó',
+  EMITIR:         'emitió',
+  ANULAR:         'anuló',
+  DESPACHAR:      'despachó',
+  ENTREGAR:       'entregó',
+  REGISTRAR:      'registró',
+  APROBAR:        'aprobó',
+  RECHAZAR:       'rechazó',
 };
 
 const ENTITY_LABEL: Record<string, string> = {
-  Cotizacion:  'cotización',
-  Factura:     'factura',
-  Pago:        'pago',
-  ActaEntrega: 'acta de entrega',
-  Cliente:     'cliente',
+  Cotizacion:        'cotización',
+  Factura:           'factura',
+  Pago:              'pago',
+  ActaEntrega:       'acta de entrega',
+  Cliente:           'cliente',
+  Contacto:          'contacto',
+  Equipo:            'equipo',
+  Servicio:          'servicio',
+  PiezaTipo:         'pieza de andamio',
+  CuerpoTipo:        'configuración de andamio',
+  HerramientaTipo:   'herramienta',
+  HerramientaUnidad: 'unidad de herramienta',
+  Consumible:        'consumible',
+  Bodega:            'bodega',
+  Proyecto:          'proyecto',
+  Usuario:           'usuario',
+  Configuracion:     'configuración',
 };
+
+const ENTITY_ICON: Record<string, IconName> = {
+  Cotizacion:        'fileText',
+  Factura:           'receipt',
+  Pago:              'dollar',
+  ActaEntrega:       'clipboard',
+  Cliente:           'user',
+  Contacto:          'idCard',
+  Equipo:            'package',
+  Servicio:          'tool',
+  PiezaTipo:         'layers',
+  CuerpoTipo:        'layers',
+  HerramientaTipo:   'hammer',
+  HerramientaUnidad: 'hammer',
+  Consumible:        'package',
+  Bodega:            'warehouse',
+  Proyecto:          'building',
+  Usuario:           'user',
+  Configuracion:     'gear',
+};
+
+// Prefijos ordenados por longitud descendente: "CAMBIAR_ESTADO" gana sobre "CAMBIAR".
+// Si la acción no matchea ningún prefijo, devolvemos el string original con espacios
+// para que al menos sea legible (fallback defensivo).
+const VERBO_PREFIJOS = Object.keys(VERBO_LABEL).sort((a, b) => b.length - a.length);
+
+function labelDeAccion(accion: string): string {
+  for (const p of VERBO_PREFIJOS) {
+    if (accion === p || accion.startsWith(`${p}_`)) return VERBO_LABEL[p];
+  }
+  return accion.toLowerCase().replace(/_/g, ' ');
+}
 
 export function ActivityFeed({ actividad, onRefresh }: ActivityFeedProps) {
   return (
@@ -57,7 +107,8 @@ export function ActivityFeed({ actividad, onRefresh }: ActivityFeedProps) {
         )}
         {actividad.map((item) => {
           const iconName: IconName = ENTITY_ICON[item.entidad] ?? 'info';
-          const accion = ACCION_LABEL[item.accion] ?? item.accion.toLowerCase();
+          const verbo = labelDeAccion(item.accion);
+          const entidadLabel = ENTITY_LABEL[item.entidad] ?? item.entidad.toLowerCase();
           const tiempo = formatDistanceToNow(parseISO(item.createdAt), {
             locale: es,
             addSuffix: true,
@@ -70,10 +121,9 @@ export function ActivityFeed({ actividad, onRefresh }: ActivityFeedProps) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-tx leading-snug">
                   <span className="font-medium">{item.usuario ?? 'Sistema'}</span>{' '}
-                  {accion}{' '}
-                  <span className="font-mono text-xs text-tx-2">
-                    {ENTITY_LABEL[item.entidad] ?? item.entidad.toLowerCase()} {item.entidadId.slice(0, 8)}
-                  </span>
+                  {verbo}{' '}
+                  <span className="text-tx-2">{entidadLabel}</span>{' '}
+                  <span className="font-mono text-xs text-tx-3">{item.entidadId.slice(0, 8)}</span>
                 </p>
                 <p className="text-xs text-tx-3 mt-0.5">{tiempo}</p>
               </div>
