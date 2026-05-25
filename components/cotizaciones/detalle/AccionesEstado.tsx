@@ -71,6 +71,14 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
         <Icon name="receipt" size={14} /> Ver factura {cotizacion.factura.numeroFactura}
       </Link>
     );
+  } else if (cotizacion.estado === 'CANCELADA' && cotizacion.factura) {
+    // Mantenemos el link a la factura (ahora ANULADA) para trazabilidad: el
+    // usuario debe poder llegar al documento que disparo la cancelacion.
+    botones = (
+      <Link href={`/facturas/${cotizacion.factura.id}`} className={`${btnBase} border border-bd text-tx-2 hover:bg-bg-sunken`}>
+        <Icon name="receipt" size={14} /> Ver factura anulada {cotizacion.factura.numeroFactura}
+      </Link>
+    );
   }
 
   return (

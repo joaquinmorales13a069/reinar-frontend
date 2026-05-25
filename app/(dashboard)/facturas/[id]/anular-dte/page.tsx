@@ -120,11 +120,15 @@ export default function AnularDtePage({ params }: { params: Promise<{ id: string
 
       <div className="flex items-start gap-2 bg-danger-soft text-danger rounded-md px-4 py-3 mb-4 text-sm">
         <Icon name="alertTriangle" size={18} />
-        <span>
-          <b>Esta acción es irreversible.</b> Se enviará la anulación al
-          Ministerio de Hacienda. La factura quedará en estado <b>ANULADA</b>{' '}
-          y no podrá emitirse nuevamente bajo el mismo número de control.
-        </span>
+        <div className="space-y-1">
+          <p><b>Esta acción es irreversible y tiene efecto cascada:</b></p>
+          <ul className="list-disc list-inside ml-2 space-y-0.5">
+            <li>El DTE se anulará ante el Ministerio de Hacienda y no podrá emitirse nuevamente bajo el mismo número de control.</li>
+            <li>La factura quedará en estado <b>ANULADA</b>.</li>
+            <li>La cotización origen pasará a <b>CANCELADA</b> (no se puede re-aprobar; hay que crear una nueva si se quiere rehacer).</li>
+            <li>Se libera el inventario reservado (equipos, herramientas, stock de consumibles y piezas).</li>
+          </ul>
+        </div>
       </div>
 
       <div className="bg-bg border border-bd rounded-md p-4 mb-4">
