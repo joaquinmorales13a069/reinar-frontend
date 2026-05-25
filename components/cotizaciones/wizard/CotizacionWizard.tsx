@@ -59,9 +59,8 @@ export function CotizacionWizard({ cotizacionId, initialStep = 0 }: Props) {
   }, [cot, router]);
 
   // Al crear la cotizacion en el paso 1, seedeamos el cache con la respuesta
-  // del POST (escalares solamente; las relaciones llegan con el GET que
-  // useCotizacion dispara al cambiar activeId). Forzamos items: [] para que
-  // Step2Items pueda renderizar inmediatamente sin esperar al GET.
+  // del POST. El backend ahora devuelve el shape completo (con relaciones e
+  // items: []) igual que obtenerCotizacion, asi que no necesitamos defaults.
   //
   // NO cambiamos la URL aqui: usar window.history.replaceState engana a Next
   // sobre la ruta real y router.replace remontaria el componente. Aceptamos
@@ -69,7 +68,7 @@ export function CotizacionWizard({ cotizacionId, initialStep = 0 }: Props) {
   // borrador en pantalla (queda registrado en el backend pero el flujo se
   // reinicia). Es preferible a los bugs sutiles de routing.
   function handleCotizacionCreated(created: Cotizacion) {
-    qc.setQueryData(['cotizacion', created.id], { ...created, items: created.items ?? [] });
+    qc.setQueryData(['cotizacion', created.id], created);
     setActiveId(created.id);
     setStep(1);
   }
