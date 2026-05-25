@@ -8,7 +8,6 @@ import type {
   PaginatedResponse,
   Cotizacion,
   CotizacionListItem,
-  CotizacionItem,
   CrearCotizacionDto,
   ActualizarCotizacionDto,
   AgregarItemDto,
@@ -146,17 +145,22 @@ export function useEliminarCotizacion() {
 export function useAgregarItemCotizacion() {
   const qc = useQueryClient();
   return useMutation({
+    // El backend devuelve la cotización completa (no solo el item creado) para
+    // que el frontend hidrate el cache sin un GET adicional. Critico al expandir
+    // cuerpos de andamio donde llamamos este hook N veces seguidas.
     mutationFn: ({ id, data }: { id: string; data: AgregarItemDto }) =>
       api
-        .post<ApiResponse<CotizacionItem>>(`/cotizaciones/${id}/items`, data)
+        .post<ApiResponse<Cotizacion>>(`/cotizaciones/${id}/items`, data)
         .then((r) => {
           if (!r.data.success) throw new Error(r.data.error.message);
           return r.data.data;
         }),
-    onSuccess: (_item, { id, data }) => {
-      qc.invalidateQueries({ queryKey: ['cotizacion', id] });
+    onSuccess: (cot, { id, data }) => {
+      qc.setQueryData(['cotizacion', id], cot);
       // Si el item afecta inventario reservado, refresca los listados relevantes
-      // para que otros tabs del usuario reflejen la nueva disponibilidad.
+      // para que otros tabs del usuario reflejen la nueva disponibilidad. Estos
+      // queries no estan en el detalle de la cotizacion, por eso aqui si vale
+      // la pena invalidar.
       if (data.tipo === 'EQUIPO') qc.invalidateQueries({ queryKey: ['equipos'] });
       if (data.tipo === 'HERRAMIENTA') qc.invalidateQueries({ queryKey: ['herramientas'] });
     },
@@ -203,16 +207,21 @@ export function useEditarItemCotizacion() {
 export function useEliminarItemCotizacion() {
   const qc = useQueryClient();
   return useMutation({
+    // El backend devuelve la cotizacion completa tras el delete; usamos
+    // setQueryData para evitar un GET adicional.
     mutationFn: ({ cotizacionId, itemId }: { cotizacionId: string; itemId: string }) =>
       api
-        .delete<ApiResponse<unknown>>(
+        .delete<ApiResponse<Cotizacion>>(
           `/cotizaciones/${cotizacionId}/items/${itemId}`,
         )
         .then((r) => {
           if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
         }),
-    onSuccess: (_data, { cotizacionId }) => {
-      qc.invalidateQueries({ queryKey: ['cotizacion', cotizacionId] });
+    onSuccess: (cot, { cotizacionId }) => {
+      qc.setQueryData(['cotizacion', cotizacionId], cot);
+      // Inventario externo no esta en el detalle de cotizacion; mantenemos
+      // invalidaciones para reflejar disponibilidad en otros tabs.
       qc.invalidateQueries({ queryKey: ['equipos'] });
       qc.invalidateQueries({ queryKey: ['herramientas'] });
     },
