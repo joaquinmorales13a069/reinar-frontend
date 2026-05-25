@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
 import { FormSection } from '@/components/ui/FormSection';
+import { Spinner } from '@/components/ui/Spinner';
 import { useClientes } from '@/hooks/use-clientes';
 import { useContactos } from '@/hooks/use-contactos';
 import { useProyectosCliente } from '@/hooks/use-proyectos';
@@ -63,11 +65,32 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
 
   const clienteId = watch('clienteId');
 
-  // Buscador local de clientes — uno solo, controlado.
+  // Estado del picker de cliente. busq + filtroTipo se aplican al query del
+  // listado dentro del dropdown. pickerAbierto controla el panel desplegable.
   const [busq, setBusq] = useState('');
-  const clientesQ = useClientes({ busqueda: busq, limit: 8 });
+  const [filtroTipo, setFiltroTipo] = useState<'TODOS' | 'EMPRESA' | 'PARTICULAR'>('TODOS');
+  const [pickerAbierto, setPickerAbierto] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  const clientesQ = useClientes({
+    busqueda: busq || undefined,
+    tipo: filtroTipo === 'TODOS' ? null : filtroTipo,
+    limit: 20,
+  });
   const contactosQ = useContactos({ clienteId: clienteId || undefined });
   const proyectosQ = useProyectosCliente(clienteId);
+
+  // Cierra el panel al hacer click fuera.
+  useEffect(() => {
+    if (!pickerAbierto) return;
+    function onMouseDown(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerAbierto(false);
+      }
+    }
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [pickerAbierto]);
 
   // Guardamos el cliente seleccionado en estado local en vez de derivarlo de
   // `clientesQ.data.find(...)`. Razón: al hacer click se limpia `busq` lo que
@@ -114,42 +137,104 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <FormSection title="Cliente y proyecto">
         {!clienteSeleccionado && (
-          <div className="mb-4">
+          <div className="mb-4 relative" ref={pickerRef}>
             <label className="block text-sm font-medium text-tx mb-1.5">
-              Buscar cliente <span className="text-danger">*</span>
+              Cliente <span className="text-danger">*</span>
             </label>
-            <div className="relative">
-              <Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-tx-3 pointer-events-none" />
-              <input
-                className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx focus:outline-none focus:border-accent"
-                placeholder="Buscar por nombre…"
-                value={busq}
-                onChange={(e) => setBusq(e.target.value)}
-              />
-              {busq && clientesQ.data && clientesQ.data.data.length > 0 && (
-                <div className="absolute z-10 left-0 right-0 mt-1 bg-bg border border-bd rounded-md shadow-md max-h-64 overflow-y-auto">
-                  {clientesQ.data.data.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-bg-sunken border-b border-bd last:border-b-0"
-                      onClick={() => {
-                        setValue('clienteId', c.id, { shouldValidate: true });
-                        setValue('contactoSolicitanteId', null);
-                        setValue('proyectoId', null);
-                        setBusq('');
-                        setClienteSeleccionado(c);
-                      }}
-                    >
-                      <div className="font-medium">{c.razonSocial ?? `${c.nombre ?? ''} ${c.apellido ?? ''}`.trim()}</div>
-                      <div className="text-xs text-tx-3 font-mono">
-                        {c.tipo === 'EMPRESA' ? `NIT ${c.nit ?? '—'}` : `DUI ${c.dui ?? '—'}`}
-                      </div>
-                    </button>
-                  ))}
+
+            {/* Trigger del dropdown */}
+            <button
+              type="button"
+              onClick={() => setPickerAbierto((v) => !v)}
+              className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx-3 hover:border-accent transition-colors"
+            >
+              <span className="inline-flex items-center gap-2">
+                <Icon name="users" size={14} />
+                Seleccionar cliente…
+              </span>
+              <Icon name={pickerAbierto ? 'chevronUp' : 'chevronDown'} size={14} />
+            </button>
+
+            {/* Panel desplegable */}
+            {pickerAbierto && (
+              <div className="absolute z-20 mt-1 left-0 right-0 bg-bg border border-bd rounded-md shadow-lg">
+                {/* Buscador + filtros de tipo */}
+                <div className="p-3 border-b border-bd space-y-3">
+                  <div className="relative">
+                    <Icon name="search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-tx-3 pointer-events-none" />
+                    <input
+                      autoFocus
+                      value={busq}
+                      onChange={(e) => setBusq(e.target.value)}
+                      placeholder="Buscar por nombre…"
+                      className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx focus:outline-none focus:border-accent"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    {(['TODOS', 'EMPRESA', 'PARTICULAR'] as const).map((tipo) => (
+                      <button
+                        key={tipo}
+                        type="button"
+                        onClick={() => setFiltroTipo(tipo)}
+                        className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                          filtroTipo === tipo
+                            ? 'bg-accent text-navy border-accent font-medium'
+                            : 'text-tx-2 border-bd hover:bg-bg-sunken'
+                        }`}
+                      >
+                        {tipo === 'TODOS' ? 'Todos' : tipo === 'EMPRESA' ? 'Empresa' : 'Particular'}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* Lista scrollable */}
+                <div className="max-h-72 overflow-y-auto">
+                  {clientesQ.isLoading ? (
+                    <div className="flex justify-center py-6">
+                      <Spinner />
+                    </div>
+                  ) : (clientesQ.data?.data ?? []).length === 0 ? (
+                    <div className="px-3 py-6 text-center text-sm text-tx-3">
+                      Sin clientes que coincidan.
+                    </div>
+                  ) : (
+                    (clientesQ.data?.data ?? []).map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => {
+                          setValue('clienteId', c.id, { shouldValidate: true });
+                          setValue('contactoSolicitanteId', null);
+                          setValue('proyectoId', null);
+                          setClienteSeleccionado(c);
+                          setPickerAbierto(false);
+                          setBusq('');
+                          setFiltroTipo('TODOS');
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-bg-sunken border-b border-bd last:border-b-0 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="font-medium text-tx text-sm">
+                              {c.razonSocial ?? `${c.nombre ?? ''} ${c.apellido ?? ''}`.trim()}
+                            </div>
+                            <div className="text-xs text-tx-3 font-mono mt-0.5">
+                              {c.tipo === 'EMPRESA' ? `NIT ${c.nit ?? '—'}` : `DUI ${c.dui ?? '—'}`}
+                            </div>
+                          </div>
+                          <Badge
+                            status={c.tipo === 'EMPRESA' ? 'Empresa' : 'Particular'}
+                            kind={c.tipo === 'EMPRESA' ? 'info' : 'neutral'}
+                          />
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
             {errors.clienteId && <p className="text-xs text-danger mt-1">{errors.clienteId.message}</p>}
           </div>
         )}
