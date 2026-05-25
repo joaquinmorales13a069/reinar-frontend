@@ -54,12 +54,10 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
     },
   });
 
-  const tipoDoc = watch('tipoDocumentoFiscal');
   const modo = watch('depositoModo');
   const depPorcentaje = watch('depositoPorcentaje');
   const depMonto = watch('depositoMonto');
   const iva = watch('porcentajeIva');
-  const requiereContactoFact = tipoDoc === 'CCF' || tipoDoc === 'SUJETO_EXCLUIDO';
 
   // Calculos en vivo para que el vendedor vea el contexto del deposito.
   // El total guardado (cotizacion.total) refleja el IVA persistido en la BD.
@@ -125,7 +123,7 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
 
           <div>
             <label className="block text-sm font-medium text-tx mb-1.5">
-              Contacto de facturación {requiereContactoFact && <span className="text-danger">*</span>}
+              Contacto de facturación
             </label>
             <select
               className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx"
@@ -138,6 +136,9 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
                 </option>
               ))}
             </select>
+            <p className="text-xs text-tx-3 mt-1">
+              Solo para coordinación interna. El DTE se emite con los datos de la empresa cliente.
+            </p>
             {errors.contactoFacturacionId && (
               <p className="text-xs text-danger mt-1">{errors.contactoFacturacionId.message}</p>
             )}

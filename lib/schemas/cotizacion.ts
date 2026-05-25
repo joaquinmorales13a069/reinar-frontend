@@ -34,19 +34,10 @@ export const step3Schema = z
     notasInternas: z.string().optional().nullable(),
   })
   .superRefine((data, ctx) => {
-    // CCF y SUJETO_EXCLUIDO requieren contactoFacturacionId — el backend devuelve
-    // 422 DATOS_FISCALES_INCOMPLETOS si falta, pero validamos client-side para
-    // mostrar el error inline sin viajar al servidor.
-    if (
-      (data.tipoDocumentoFiscal === 'CCF' || data.tipoDocumentoFiscal === 'SUJETO_EXCLUIDO') &&
-      !data.contactoFacturacionId
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['contactoFacturacionId'],
-        message: 'CCF y Sujeto Excluido requieren contacto de facturación',
-      });
-    }
+    // contactoFacturacionId es metadata opcional para todos los tipos. El DTE
+    // se emite con los datos de la empresa (cliente.razonSocial/nit/ncr), no
+    // del contacto. Las validaciones fiscales reales (NCR para CCF, etc.) se
+    // hacen al momento de emitir el DTE en facturas.service.ts.
     if (data.depositoModo === 'PORCENTAJE' && !data.depositoPorcentaje) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
