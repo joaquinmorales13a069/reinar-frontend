@@ -55,7 +55,11 @@ export type Cliente = {
   notas?: string;
   estado: 'ACTIVO' | 'INACTIVO' | 'PROSPECTO';
   facturado?: string;
+  // proyectos era un campo plano que el backend nunca devolvio — siempre era
+  // undefined y caia al ?? 0. Ahora el detalle devuelve _count.proyectos.
+  // Lo mantenemos opcional como fallback historico.
   proyectos?: number;
+  _count?: { proyectos?: number };
 };
 
 export type Contacto = {
@@ -568,4 +572,216 @@ export type ActualizarProyectoDto = Partial<CrearProyectoDto>;
 // por cliente (sub-recurso) — el cliente raramente tiene >50 proyectos.
 export type FiltrosProyectos = {
   estado?: EstadoProyecto;
+};
+
+// ============================================================
+// Cotizaciones (Rama 10)
+// ============================================================
+
+export type EstadoCotizacion = 'BORRADOR' | 'ENVIADA' | 'APROBADA' | 'RECHAZADA';
+
+export type TipoItemCotizacion =
+  | 'EQUIPO'
+  | 'HERRAMIENTA'
+  | 'SERVICIO'
+  | 'CONSUMIBLE'
+  | 'PIEZA_ANDAMIO'
+  | 'CUSTOM';
+
+export type PeriodoItem = 'DIA' | 'SEMANA' | 'QUINCENA' | 'MES' | 'CUSTOM';
+
+export type TipoDocumentoFiscal = 'CF' | 'CCF' | 'SUJETO_EXCLUIDO';
+
+export type CondicionesPago = 'CONTADO' | 'CREDITO' | 'OTRO';
+
+export type CotizacionItem = {
+  id: string;
+  cotizacionId: string;
+  tipo: TipoItemCotizacion;
+  descripcion: string;
+  cantidad: number;
+  periodo: PeriodoItem;
+  periodoCustomLabel: string | null;
+  // Decimales serializados como string — usar decimal.js para operar.
+  tarifaCatalogo: string;
+  tarifaCustom: string | null;
+  tarifaAplicada: string;
+  esTarifaCustom: boolean;
+  subtotal: string;
+  orden: number;
+  fechaServicio: string | null;
+  tecnicoAsignado: string | null;
+  equipoId: string | null;
+  herramientaTipoId: string | null;
+  servicioId: string | null;
+  consumibleId: string | null;
+  piezaTipoId: string | null;
+};
+
+// Forma reducida devuelta por GET /cotizaciones (lista).
+export type CotizacionListItem = {
+  id: string;
+  numeroCotizacion: string;
+  estado: EstadoCotizacion;
+  total: string;
+  fechaCreacion: string;
+  fechaVencimiento: string;
+  // El backend devuelve los 5 campos para que el frontend componga el label segun
+  // tipo: EMPRESA -> razonSocial, PARTICULAR -> nombre + apellido.
+  cliente: {
+    id: string;
+    tipo: 'EMPRESA' | 'PARTICULAR';
+    razonSocial: string | null;
+    nombre: string | null;
+    apellido: string | null;
+  };
+  creadoPor: { id: string; nombre: string; apellido: string };
+  _count: { items: number };
+};
+
+// Forma completa devuelta por GET /cotizaciones/:id.
+export type Cotizacion = {
+  id: string;
+  numeroCotizacion: string;
+  clienteId: string;
+  proyectoId: string | null;
+  contactoSolicitanteId: string | null;
+  contactoFacturacionId: string | null;
+  estado: EstadoCotizacion;
+  condicionesPago: CondicionesPago | null;
+  tipoDocumentoFiscal: TipoDocumentoFiscal | null;
+  porcentajeIva: number;
+  depositoPorcentaje: string | null;
+  depositoMonto: string | null;
+  subtotal: string;
+  montoIva: string;
+  total: string;
+  notas: string | null;
+  notasInternas: string | null;
+  fechaCreacion: string;
+  fechaEnvio: string | null;
+  fechaVencimiento: string;
+  fechaAprobacion: string | null;
+  creadoPor: { id: string; nombre: string; apellido: string; email: string };
+  cliente: {
+    id: string;
+    tipo: 'EMPRESA' | 'PARTICULAR';
+    razonSocial: string | null;
+    nombre: string | null;
+    apellido: string | null;
+    nit: string | null;
+    dui: string | null;
+    email: string | null;
+    telefono: string | null;
+  };
+  proyecto: { id: string; nombre: string } | null;
+  contactoSolicitante: { id: string; nombre: string; apellido: string | null; email: string | null } | null;
+  contactoFacturacion: { id: string; nombre: string; apellido: string | null; cargo: string | null } | null;
+  items: CotizacionItem[];
+  factura: { id: string; numeroFactura: string; estado: string } | null;
+};
+
+export type CrearCotizacionDto = {
+  clienteId: string;
+  proyectoId?: string;
+  contactoSolicitanteId?: string;
+  condicionesPago?: CondicionesPago;
+  tipoDocumentoFiscal?: TipoDocumentoFiscal;
+  contactoFacturacionId?: string;
+  notas?: string;
+  notasInternas?: string;
+  porcentajeIva?: number;
+  fechaVencimiento?: string;
+  // Mutuamente excluyentes — validado por Zod y por el backend.
+  depositoPorcentaje?: number;
+  depositoMonto?: number;
+};
+
+export type ActualizarCotizacionDto = Partial<CrearCotizacionDto>;
+
+export type FiltrosCotizaciones = {
+  page?: number;
+  limit?: number;
+  clienteId?: string;
+  proyectoId?: string;
+  estado?: EstadoCotizacion;
+  search?: string;
+};
+
+// Discriminated union por `tipo` — espeja exactamente el schema de Zod del backend.
+export type AgregarItemDto =
+  | {
+      tipo: 'EQUIPO';
+      equipoId: string;
+      // Siempre 1: cada Equipo es una unidad fisica unica. El backend ahora
+      // rechaza cualquier otro valor; el frontend ni siquiera expone el input.
+      cantidad?: 1;
+      periodo?: PeriodoItem;
+      periodoCustomLabel?: string;
+      tarifaCustom?: string;
+      descripcion?: string;
+      fechaServicio?: string;
+      tecnicoAsignado?: string;
+      orden?: number;
+    }
+  | {
+      tipo: 'HERRAMIENTA';
+      herramientaTipoId: string;
+      cantidad: number;
+      periodo?: PeriodoItem;
+      periodoCustomLabel?: string;
+      tarifaCustom?: string;
+      descripcion?: string;
+      fechaServicio?: string;
+      tecnicoAsignado?: string;
+      orden?: number;
+    }
+  | {
+      tipo: 'SERVICIO';
+      servicioId: string;
+      cantidad?: number;
+      tarifaCustom?: string;
+      descripcion?: string;
+      fechaServicio?: string;
+      tecnicoAsignado?: string;
+      orden?: number;
+    }
+  | {
+      tipo: 'CONSUMIBLE';
+      consumibleId: string;
+      cantidad: number;
+      tarifaCustom?: string;
+      descripcion?: string;
+      orden?: number;
+    }
+  | {
+      tipo: 'PIEZA_ANDAMIO';
+      piezaTipoId: string;
+      cantidad: number;
+      periodo?: PeriodoItem;
+      periodoCustomLabel?: string;
+      tarifaCustom?: string;
+      descripcion?: string;
+      fechaServicio?: string;
+      orden?: number;
+    }
+  | {
+      tipo: 'CUSTOM';
+      descripcion: string;
+      cantidad: number;
+      tarifaCustom: string; // requerido
+      periodo?: PeriodoItem;
+      periodoCustomLabel?: string;
+      orden?: number;
+    };
+
+export type EditarItemDto = {
+  cantidad?: number;
+  periodo?: PeriodoItem;
+  periodoCustomLabel?: string;
+  tarifaCustom?: string | null;
+  descripcion?: string;
+  fechaServicio?: string | null;
+  tecnicoAsignado?: string | null;
+  orden?: number;
 };

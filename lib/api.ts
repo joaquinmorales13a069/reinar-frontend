@@ -6,6 +6,11 @@ const api = axios.create({
   // withCredentials es necesario para que el navegador incluya la cookie HTTP-only
   // del refresh token en peticiones cross-origin; sin esto la renovación silenciosa falla.
   withCredentials: true,
+  // 30s de timeout: si una request del backend queda colgada (deadlock, hot
+  // reload mal recuperado, etc.) preferimos que axios la cancele y el hook
+  // muestre un toast de error en vez de dejar al usuario mirando un spinner
+  // infinito sin saber que paso.
+  timeout: 30_000,
 });
 
 api.interceptors.request.use((config) => {

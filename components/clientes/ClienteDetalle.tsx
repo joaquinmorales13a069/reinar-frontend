@@ -8,8 +8,10 @@ import { Spinner } from '@/components/ui/Spinner';
 import { ContactosDeCliente } from '@/components/clientes/ContactosDeCliente';
 import { ProyectosClienteCard } from '@/components/proyectos/ProyectosClienteCard';
 import { useCliente } from '@/hooks/use-clientes';
+import { useCotizaciones } from '@/hooks/use-cotizaciones';
 import { useAuthStore } from '@/stores/auth.store';
-import { formatCurrency } from '@/lib/utils';
+import { CotizacionStatusBadge } from '@/components/cotizaciones/CotizacionStatusBadge';
+import { formatCurrency, formatDate } from '@/lib/utils';
 import { resolverDepartamento, resolverMunicipio, resolverDistrito } from '@/lib/sv-geo';
 
 const btnSec = 'inline-flex items-center gap-2 px-4 py-2 rounded-md border border-bd text-tx-2 bg-surface text-sm font-medium hover:bg-bg-sunken transition-colors';
@@ -37,6 +39,9 @@ export function ClienteDetalle({ id }: { id: string }) {
   const router = useRouter();
   const rol = useAuthStore((s) => s.user?.rol ?? 'VISUALIZADOR');
   const { data: cliente, isLoading, isError } = useCliente(id);
+  // Cargamos las cotizaciones del cliente para poblar el "Historial". El
+  // backend ya soporta el filtro clienteId; tomamos las 20 mas recientes.
+  const cotizacionesQ = useCotizaciones({ clienteId: id, limit: 20 });
 
   if (isLoading) return <div className="flex justify-center p-12"><Spinner /></div>;
   if (isError || !cliente) return <div className="p-8 text-center text-sm text-tx-2">No se pudo cargar el cliente.</div>;
@@ -51,7 +56,10 @@ export function ClienteDetalle({ id }: { id: string }) {
         title={displayName}
         subtitle={
           <div className="flex flex-wrap items-center gap-2 mt-1">
-            <Badge status={cliente.tipo === 'EMPRESA' ? 'Empresa' : 'Particular'} kind="neutral" />
+            <Badge
+              status={cliente.tipo === 'EMPRESA' ? 'Empresa' : 'Particular'}
+              kind={cliente.tipo === 'EMPRESA' ? 'info' : 'neutral'}
+            />
             <Badge status={cliente.estado} />
             <span className="font-mono text-xs text-tx-3">· {cliente.id}</span>
           </div>
@@ -124,17 +132,52 @@ export function ClienteDetalle({ id }: { id: string }) {
               </div>
               <div>
                 <div className="text-2xs font-semibold text-tx-3 uppercase tracking-wider">Proyectos</div>
-                <div className="font-mono text-2xl font-medium text-tx mt-1">{cliente.proyectos ?? 0}</div>
+                <div className="font-mono text-2xl font-medium text-tx mt-1">{cliente._count?.proyectos ?? cliente.proyectos ?? 0}</div>
               </div>
             </div>
           </div>
 
-          {/* Las tablas de cotizaciones y facturas se completarán en RAMA 6 y RAMA 7 */}
           <div className="rounded-lg border border-bd bg-surface overflow-hidden">
-            <div className="flex items-center px-4 py-3 border-b border-bd">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-bd">
               <h3 className="text-sm font-semibold text-tx">Historial de cotizaciones</h3>
+              {cotizacionesQ.data && (
+                <span className="text-xs text-tx-3">
+                  {cotizacionesQ.data.meta.total} {cotizacionesQ.data.meta.total === 1 ? 'cotización' : 'cotizaciones'}
+                </span>
+              )}
             </div>
-            <div className="px-4 py-4 text-sm text-tx-muted">Sin cotizaciones registradas.</div>
+            {cotizacionesQ.isLoading ? (
+              <div className="px-4 py-6 flex justify-center"><Spinner /></div>
+            ) : !cotizacionesQ.data || cotizacionesQ.data.data.length === 0 ? (
+              <div className="px-4 py-4 text-sm text-tx-muted">Sin cotizaciones registradas.</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
+                  <tr>
+                    <th className="text-left px-4 py-2 font-medium">Número</th>
+                    <th className="text-left px-4 py-2 font-medium">Estado</th>
+                    <th className="text-right px-4 py-2 font-medium">Total</th>
+                    <th className="text-left px-4 py-2 font-medium">Creado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cotizacionesQ.data.data.map((c) => (
+                    <tr
+                      key={c.id}
+                      className="border-t border-bd hover:bg-bg-sunken cursor-pointer transition-colors"
+                      onClick={() => router.push(`/cotizaciones/${c.id}`)}
+                    >
+                      <td className="px-4 py-2 font-mono font-medium text-tx">{c.numeroCotizacion}</td>
+                      <td className="px-4 py-2">
+                        <CotizacionStatusBadge estado={c.estado} />
+                      </td>
+                      <td className="px-4 py-2 text-right font-mono">{formatCurrency(c.total)}</td>
+                      <td className="px-4 py-2 font-mono text-tx-2 text-xs">{formatDate(c.fechaCreacion)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
           <div className="rounded-lg border border-bd bg-surface overflow-hidden">
             <div className="flex items-center px-4 py-3 border-b border-bd">

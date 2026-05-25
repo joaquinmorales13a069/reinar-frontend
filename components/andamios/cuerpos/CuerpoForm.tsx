@@ -151,7 +151,7 @@ export function CuerpoForm(props: Props) {
           <>
             <div className="overflow-x-auto rounded-md border border-bd">
               <table className="w-full text-sm">
-                <thead className="bg-bg-sunken text-xs text-tx-2 uppercase">
+                <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
                   <tr>
                     <th className="text-left px-3 py-2">Pieza</th>
                     <th className="text-left px-3 py-2 w-32">Cantidad</th>
