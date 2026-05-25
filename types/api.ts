@@ -834,6 +834,9 @@ export type DteRespuestaMH = {
 } | null;
 
 // Forma reducida del listado GET /facturas — solo los campos del select.
+// cliente trae los 5 campos para que la tabla componga el nombre segun tipo
+// (EMPRESA -> razonSocial; PARTICULAR -> nombre + apellido). Mismo patron
+// que CotizacionListItem.
 export type FacturaListItem = {
   id: string;
   numeroFactura: string;
@@ -844,7 +847,13 @@ export type FacturaListItem = {
   saldoPendiente: string;
   fechaEmision: string;
   fechaVencimiento: string;
-  cliente: { id: string; nombre: string };
+  cliente: {
+    id: string;
+    tipo: 'EMPRESA' | 'PARTICULAR';
+    razonSocial: string | null;
+    nombre: string | null;
+    apellido: string | null;
+  };
   cotizacion: { id: string; numeroCotizacion: string };
   contactoFacturacion: { id: string; nombre: string } | null;
 };

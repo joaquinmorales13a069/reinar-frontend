@@ -22,11 +22,17 @@ export default function FacturasPage() {
 
   // El backend de facturas (segun lo revisado) no expone parametro `busqueda`.
   // Filtramos client-side sobre la pagina actual: alcanza para el MVP y se
-  // sustituye cuando el backend agregue search.
+  // sustituye cuando el backend agregue search. La busqueda mira los 3
+  // campos de nombre del cliente (razonSocial, nombre, apellido) porque
+  // EMPRESA y PARTICULAR usan distintos.
   const filtered = (data?.data ?? []).filter((f) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return f.numeroFactura.toLowerCase().includes(q) || f.cliente.nombre.toLowerCase().includes(q);
+    const nombre = [f.cliente.razonSocial, f.cliente.nombre, f.cliente.apellido]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return f.numeroFactura.toLowerCase().includes(q) || nombre.includes(q);
   });
 
   const total = data?.meta.total ?? 0;

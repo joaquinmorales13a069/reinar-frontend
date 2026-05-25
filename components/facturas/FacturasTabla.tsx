@@ -12,6 +12,15 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { descargarFacturaPdfBranded } from '@/hooks/use-facturas';
 import type { FacturaListItem } from '@/types/api';
 
+// EMPRESA usa razonSocial; PARTICULAR arma con nombre + apellido. Fallback a
+// "—" si falta el dato base, para no romper la tabla con clientes mal cargados.
+// Misma logica que CotizacionesTabla.nombreCliente — la duplicamos a proposito
+// para no extraer un util de 6 lineas a un archivo compartido.
+function nombreCliente(c: FacturaListItem['cliente']): string {
+  if (c.tipo === 'EMPRESA') return c.razonSocial ?? '—';
+  return [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
+}
+
 type Props = {
   data: FacturaListItem[];
   loading: boolean;
@@ -64,7 +73,7 @@ export function FacturasTabla({ data, loading, page, pageSize, total, onPage }: 
                 onClick={() => router.push(`/facturas/${f.id}`)}
               >
                 <td className="px-4 py-2.5 font-mono font-medium text-tx">{f.numeroFactura}</td>
-                <td className="px-4 py-2.5 text-tx">{f.cliente.nombre}</td>
+                <td className="px-4 py-2.5 text-tx">{nombreCliente(f.cliente)}</td>
                 <td className="px-4 py-2.5">
                   <Link
                     href={`/cotizaciones/${f.cotizacion.id}`}
