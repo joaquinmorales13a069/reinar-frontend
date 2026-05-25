@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Icon } from '@/components/ui/Icon';
@@ -11,6 +11,20 @@ import { useProyectosCliente } from '@/hooks/use-proyectos';
 import { useCrearCotizacion, useActualizarCotizacion } from '@/hooks/use-cotizaciones';
 import { step1Schema, type Step1Form } from '@/lib/schemas/cotizacion';
 import type { Cotizacion } from '@/types/api';
+
+// Tipo mínimo del cliente seleccionado: solo lo que la card de resumen necesita.
+// Definido aquí (no derivado de `Cliente`) porque debe aceptar tanto el shape
+// del listado — donde los strings opcionales son `string | undefined` — como
+// el embebido en `Cotizacion.cliente`, donde son `string | null`.
+type ClienteResumen = {
+  id: string;
+  tipo: 'EMPRESA' | 'PARTICULAR';
+  razonSocial?: string | null;
+  nombre?: string | null;
+  apellido?: string | null;
+  nit?: string | null;
+  dui?: string | null;
+};
 
 type Props = {
   cotizacion: Cotizacion | null;
@@ -52,10 +66,24 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
   const contactosQ = useContactos({ clienteId: clienteId || undefined });
   const proyectosQ = useProyectosCliente(clienteId);
 
-  // Cliente seleccionado actual (para mostrar en card).
-  const clienteSeleccionado = useMemo(
-    () => clientesQ.data?.data.find((c) => c.id === clienteId) ?? null,
-    [clientesQ.data, clienteId],
+  // Guardamos el cliente seleccionado en estado local en vez de derivarlo de
+  // `clientesQ.data.find(...)`. Razón: al hacer click se limpia `busq` lo que
+  // dispara un nuevo fetch con busqueda vacía; mientras llega la respuesta el
+  // find devolvía undefined y la card aparecía vacía por un parpadeo de varios
+  // segundos. En modo editar pre-cargamos con el cliente embebido en la
+  // cotización para no depender de los resultados del buscador en ese flujo.
+  const [clienteSeleccionado, setClienteSeleccionado] = useState<ClienteResumen | null>(
+    cotizacion
+      ? {
+          id: cotizacion.cliente.id,
+          tipo: cotizacion.cliente.tipo,
+          razonSocial: cotizacion.cliente.razonSocial,
+          nombre: cotizacion.cliente.nombre,
+          apellido: cotizacion.cliente.apellido,
+          nit: cotizacion.cliente.nit,
+          dui: cotizacion.cliente.dui,
+        }
+      : null,
   );
 
   async function onSubmit(values: Step1Form) {
@@ -105,6 +133,7 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
                         setValue('contactoSolicitanteId', null);
                         setValue('proyectoId', null);
                         setBusq('');
+                        setClienteSeleccionado(c);
                       }}
                     >
                       <div className="font-medium">{c.razonSocial ?? `${c.nombre ?? ''} ${c.apellido ?? ''}`.trim()}</div>
@@ -139,6 +168,7 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
                 setValue('clienteId', '', { shouldValidate: true });
                 setValue('contactoSolicitanteId', null);
                 setValue('proyectoId', null);
+                setClienteSeleccionado(null);
               }}
             >
               <Icon name="x" size={12} /> Cambiar
