@@ -10,6 +10,13 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { descargarCotizacionPdf } from '@/hooks/use-cotizaciones';
 import type { CotizacionListItem } from '@/types/api';
 
+// EMPRESA tiene el nombre en razonSocial; PARTICULAR lo arma con nombre + apellido.
+// Fallback a "—" si falta el dato base, para no romper la tabla con clientes mal cargados.
+function nombreCliente(c: CotizacionListItem['cliente']): string {
+  if (c.tipo === 'EMPRESA') return c.razonSocial ?? '—';
+  return [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
+}
+
 type Props = {
   data: CotizacionListItem[];
   loading: boolean;
@@ -45,25 +52,28 @@ export function CotizacionesTabla({ data, loading, page, pageSize, total, onPage
       <table className="w-full text-sm">
         <thead className="bg-bg-sunken text-tx-3 text-xs uppercase tracking-wider">
           <tr>
+            <th className="text-right font-medium px-4 py-2.5 w-12">#</th>
             <th className="text-left font-medium px-4 py-2.5">Número</th>
             <th className="text-left font-medium px-4 py-2.5">Cliente</th>
             <th className="text-left font-medium px-4 py-2.5">Estado</th>
             <th className="text-right font-medium px-4 py-2.5">Ítems</th>
             <th className="text-right font-medium px-4 py-2.5">Total</th>
-            <th className="text-left font-medium px-4 py-2.5">Creación</th>
+            <th className="text-left font-medium px-4 py-2.5">Creado</th>
             <th className="text-left font-medium px-4 py-2.5">Vence</th>
             <th className="w-12 px-4 py-2.5" />
           </tr>
         </thead>
         <tbody>
-          {data.map((c) => (
+          {data.map((c, i) => (
             <tr
               key={c.id}
               className="border-t border-bd hover:bg-bg-sunken cursor-pointer transition-colors"
               onClick={() => router.push(`/cotizaciones/${c.id}`)}
             >
+              {/* Consecutivo absoluto sobre la paginacion: fila 21 = #21, no #1 de pag 2. */}
+              <td className="px-4 py-2.5 text-right tabular-nums text-tx-3">{(page - 1) * pageSize + i + 1}</td>
               <td className="px-4 py-2.5 font-mono font-medium text-tx">{c.numeroCotizacion}</td>
-              <td className="px-4 py-2.5 text-tx">{c.cliente.nombre}</td>
+              <td className="px-4 py-2.5 text-tx">{nombreCliente(c.cliente)}</td>
               <td className="px-4 py-2.5">
                 <CotizacionStatusBadge estado={c.estado} />
               </td>

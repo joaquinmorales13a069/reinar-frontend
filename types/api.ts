@@ -622,7 +622,15 @@ export type CotizacionListItem = {
   total: string;
   fechaCreacion: string;
   fechaVencimiento: string;
-  cliente: { id: string; nombre: string };
+  // El backend devuelve los 5 campos para que el frontend componga el label segun
+  // tipo: EMPRESA -> razonSocial, PARTICULAR -> nombre + apellido.
+  cliente: {
+    id: string;
+    tipo: 'EMPRESA' | 'PARTICULAR';
+    razonSocial: string | null;
+    nombre: string | null;
+    apellido: string | null;
+  };
   creadoPor: { id: string; nombre: string; apellido: string };
   _count: { items: number };
 };
