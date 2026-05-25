@@ -10,6 +10,7 @@ import { useContactos } from '@/hooks/use-contactos';
 import { useProyectosCliente } from '@/hooks/use-proyectos';
 import { useCrearCotizacion, useActualizarCotizacion } from '@/hooks/use-cotizaciones';
 import { step1Schema, type Step1Form } from '@/lib/schemas/cotizacion';
+import { fechaSVHoyMasDias, fechaSVToIso, isoToFechaSV } from '@/lib/utils';
 import type { Cotizacion } from '@/types/api';
 
 // Tipo mínimo del cliente seleccionado: solo lo que la card de resumen necesita.
@@ -49,12 +50,14 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
       proyectoId: cotizacion?.proyectoId ?? null,
       contactoSolicitanteId: cotizacion?.contactoSolicitanteId ?? null,
       // El input type="date" requiere YYYY-MM-DD. El backend devuelve ISO completo.
-      // Al crear (sin cotizacion previa), pre-llenamos con hoy + 7 días — espeja el
-      // default del backend (cotizaciones.service.ts) y le ahorra un clic al usuario,
-      // que igual puede sobreescribirlo antes de avanzar.
-      fechaVencimiento:
-        cotizacion?.fechaVencimiento?.slice(0, 10) ??
-        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+      // Usamos helpers que normalizan a TZ El Salvador (Reinar opera ahi); sin esto
+      // un usuario en otra TZ (ej. Australia) veria una fecha distinta al editar de
+      // la que vio al crear, porque slice(0,10) del ISO toma la fecha UTC, no la
+      // fecha local en SV.
+      // Al crear (sin cotizacion previa), pre-llenamos con hoy + 7 días.
+      fechaVencimiento: cotizacion
+        ? isoToFechaSV(cotizacion.fechaVencimiento)
+        : fechaSVHoyMasDias(7),
     },
   });
 
@@ -87,8 +90,10 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
   );
 
   async function onSubmit(values: Step1Form) {
-    // El backend espera ISO; convertimos YYYY-MM-DD a "YYYY-MM-DDT00:00:00Z".
-    const fechaIso = new Date(values.fechaVencimiento + 'T00:00:00').toISOString();
+    // El backend espera ISO; convertimos YYYY-MM-DD asumiendo que es medianoche
+    // en El Salvador (UTC-6 fijo, SV no observa DST). Asi un vendedor en
+    // Australia y otro en SV ven y guardan la misma fecha comercial.
+    const fechaIso = fechaSVToIso(values.fechaVencimiento);
     const payload = {
       clienteId: values.clienteId,
       proyectoId: values.proyectoId ?? undefined,
