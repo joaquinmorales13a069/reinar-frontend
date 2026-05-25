@@ -169,6 +169,10 @@ export function useAgregarItemCotizacion() {
 export function useEditarItemCotizacion() {
   const qc = useQueryClient();
   return useMutation({
+    // El backend devuelve la cotización completa (no solo el item editado) para
+    // que el frontend pueda hidratar el cache con un solo round-trip. Antes
+    // invalidábamos y eso disparaba un GET extra por cada edit inline, lo que
+    // hacía sentir la sección de ítems lenta.
     mutationFn: ({
       cotizacionId,
       itemId,
@@ -179,7 +183,7 @@ export function useEditarItemCotizacion() {
       data: EditarItemDto;
     }) =>
       api
-        .patch<ApiResponse<CotizacionItem>>(
+        .patch<ApiResponse<Cotizacion>>(
           `/cotizaciones/${cotizacionId}/items/${itemId}`,
           data,
         )
@@ -187,8 +191,8 @@ export function useEditarItemCotizacion() {
           if (!r.data.success) throw new Error(r.data.error.message);
           return r.data.data;
         }),
-    onSuccess: (_item, { cotizacionId }) => {
-      qc.invalidateQueries({ queryKey: ['cotizacion', cotizacionId] });
+    onSuccess: (cot, { cotizacionId }) => {
+      qc.setQueryData(['cotizacion', cotizacionId], cot);
     },
     onError: (err) => {
       toast.error(extractErrorMessage(err, 'No se pudo editar el ítem.'));
