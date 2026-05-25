@@ -35,7 +35,12 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
       proyectoId: cotizacion?.proyectoId ?? null,
       contactoSolicitanteId: cotizacion?.contactoSolicitanteId ?? null,
       // El input type="date" requiere YYYY-MM-DD. El backend devuelve ISO completo.
-      fechaVencimiento: cotizacion?.fechaVencimiento?.slice(0, 10) ?? '',
+      // Al crear (sin cotizacion previa), pre-llenamos con hoy + 7 días — espeja el
+      // default del backend (cotizaciones.service.ts) y le ahorra un clic al usuario,
+      // que igual puede sobreescribirlo antes de avanzar.
+      fechaVencimiento:
+        cotizacion?.fechaVencimiento?.slice(0, 10) ??
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
     },
   });
 
