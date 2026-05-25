@@ -62,10 +62,12 @@ export function CotizacionWizard({ cotizacionId, initialStep = 0 }: Props) {
   // obligando al usuario a hacer click en "Siguiente" dos veces.
   //
   // Además seedea el cache de React Query con la cotización recién devuelta
-  // por el POST para que useCotizacion(id) tenga `data` al instante y el Step 2
-  // no quede en blanco esperando el GET.
+  // por el POST para que useCotizacion(id) tenga `data` al instante. El POST
+  // del backend devuelve solo los campos escalares (no las relaciones), por eso
+  // forzamos `items: []` para que Step2Items no rompa al leer items.length —
+  // el GET que useCotizacion dispara despues completa el resto del shape.
   function handleCotizacionCreated(created: Cotizacion) {
-    qc.setQueryData(['cotizacion', created.id], created);
+    qc.setQueryData(['cotizacion', created.id], { ...created, items: created.items ?? [] });
     setActiveId(created.id);
     window.history.replaceState(null, '', `/cotizaciones/${created.id}/editar`);
     setStep(1);
