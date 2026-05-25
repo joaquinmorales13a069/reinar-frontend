@@ -11,6 +11,8 @@ import { ItemsFacturadosCard } from '@/components/facturas/detalle/ItemsFacturad
 import { PagosCard } from '@/components/facturas/detalle/PagosCard';
 import { ProgresoCobroCard } from '@/components/facturas/detalle/ProgresoCobroCard';
 import { ActasVinculadasCard } from '@/components/facturas/detalle/ActasVinculadasCard';
+import { AjustarEstadoCard } from '@/components/facturas/detalle/AjustarEstadoCard';
+import { HeaderAcciones } from '@/components/facturas/detalle/HeaderAcciones';
 import { DteSection } from '@/components/dte/DteSection';
 import {
   useFactura,
@@ -33,6 +35,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
   // toast como respaldo.
   const [emitirError, setEmitirError] = useState<string | null>(null);
   const [descargandoPdfDte, setDescargandoPdfDte] = useState(false);
+  const [ajusteOpen, setAjusteOpen] = useState(false);
 
   if (isLoading) return <div className="flex justify-center py-12"><Spinner /></div>;
   if (error) {
@@ -93,10 +96,21 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
         back
         backLabel="Facturas"
         onBack={() => router.push('/facturas')}
+        actions={
+          <HeaderAcciones
+            factura={factura}
+            isAdminOGerente={isAdminOGerente}
+            ajusteOpen={ajusteOpen}
+            onToggleAjuste={() => setAjusteOpen((o) => !o)}
+          />
+        }
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
         <div className="lg:col-span-2 space-y-4">
+          {ajusteOpen && isAdminOGerente && (
+            <AjustarEstadoCard factura={factura} onClose={() => setAjusteOpen(false)} />
+          )}
           <ClienteFechasCard factura={factura} />
           <DteSection
             doc={factura}
