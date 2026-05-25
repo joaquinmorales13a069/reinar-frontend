@@ -45,6 +45,7 @@ export default function CotizacionDetallePage({ params }: { params: Promise<{ id
           </span>
         }
         back
+        backLabel="Cotizaciones"
         onBack={() => router.push('/cotizaciones')}
         actions={puedeEscribir ? <AccionesEstado cotizacion={cot} /> : null}
       />
