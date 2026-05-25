@@ -164,7 +164,15 @@ export function useAgregarItemCotizacion() {
       if (data.tipo === 'EQUIPO') qc.invalidateQueries({ queryKey: ['equipos'] });
       if (data.tipo === 'HERRAMIENTA') qc.invalidateQueries({ queryKey: ['herramientas'] });
     },
-    onError: (err) => {
+    onError: (err, { id }) => {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      // 404 al agregar item = la cotizacion en cache no existe en el backend
+      // (id stale por refresco/restart/db sucio). Purgamos el cache para
+      // forzar al wizard a recuperar estado coherente o salir al listado.
+      if (status === 404) {
+        qc.removeQueries({ queryKey: ['cotizacion', id] });
+        qc.invalidateQueries({ queryKey: ['cotizaciones'] });
+      }
       toast.error(extractErrorMessage(err, 'No se pudo agregar el ítem.'));
     },
   });

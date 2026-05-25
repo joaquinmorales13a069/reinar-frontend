@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
 import { Icon } from '@/components/ui/Icon';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Spinner } from '@/components/ui/Spinner';
@@ -37,7 +36,6 @@ type Props = {
 
 export function CotizacionWizard({ cotizacionId, initialStep = 0 }: Props) {
   const router = useRouter();
-  const qc = useQueryClient();
   const [step, setStep] = useState<StepId>(initialStep);
   const [activeId, setActiveId] = useState<string | undefined>(cotizacionId);
 
@@ -58,20 +56,26 @@ export function CotizacionWizard({ cotizacionId, initialStep = 0 }: Props) {
     }
   }, [cot, router]);
 
-  // Al crear la cotizacion en el paso 1, seedeamos el cache con la respuesta
-  // del POST. El backend ahora devuelve el shape completo (con relaciones e
-  // items: []) igual que obtenerCotizacion, asi que no necesitamos defaults.
+  // Al crear la cotizacion en el paso 1, solo seteamos el activeId y avanzamos
+  // al paso 2. NO seedeamos el cache de React Query con la respuesta del POST:
+  // si por alguna razon (backend desactualizado, version vieja en memoria,
+  // codigo mid-deploy) la respuesta no es shape completo, el cache queda
+  // contaminado con un objeto invalido (numeroCotizacion undefined, items
+  // undefined, etc.) y la UI se rompe en cascada.
   //
-  // NO cambiamos la URL aqui: usar window.history.replaceState engana a Next
-  // sobre la ruta real y router.replace remontaria el componente. Aceptamos
-  // que si el usuario refresca el browser durante la creacion, pierde el
-  // borrador en pantalla (queda registrado en el backend pero el flujo se
-  // reinicia). Es preferible a los bugs sutiles de routing.
+  // Dejamos que useCotizacion(id) haga el GET y traiga la cotizacion completa.
+  // El spinner intermedio (esperandoCotizacion) cubre los milisegundos de
+  // latencia. Trade-off: un round-trip extra a cambio de robustez total
+  // contra inconsistencias del servidor.
   function handleCotizacionCreated(created: Cotizacion) {
-    qc.setQueryData(['cotizacion', created.id], created);
     setActiveId(created.id);
     setStep(1);
   }
+
+  // Defensa contra cache contaminado: si llegamos a un cot que falta campos
+  // obligatorios (numeroCotizacion, items), lo tratamos como invalido y
+  // forzamos re-fetch. Indicador de que el shape recibido era parcial.
+  const cotValido = cot && cot.numeroCotizacion && Array.isArray(cot.items);
 
   function goTo(next: StepId) {
     // Solo permitimos volver hacia atrás libremente; avanzar requiere el botón
@@ -89,16 +93,21 @@ export function CotizacionWizard({ cotizacionId, initialStep = 0 }: Props) {
     );
   }
 
-  // Si estamos en step > 0 pero el cache aun no tiene la cotizacion (puede
-  // pasar si el GET tras la creacion sigue in-flight), mostramos spinner en
-  // vez de dejar el contenido vacio o caer en TypeError por cot.items.
-  const esperandoCotizacion = step > 0 && !cot;
+  // Si estamos en step > 0 pero el cache aun no tiene cot valido (GET en vuelo
+  // tras la creacion, o cache contaminado en proceso de re-fetch), mostramos
+  // spinner en vez de dejar el contenido vacio o caer en TypeError por
+  // cot.items o cot.numeroCotizacion undefined.
+  const esperandoCotizacion = step > 0 && !cotValido;
+
+  // cotPlanoSeguro: solo lo usamos en lugares que requieren cot definido.
+  // Cuando cotValido es false, los steps 1+ caen al spinner antes de leerlo.
+  const cotSeguro = cotValido ? cot : null;
 
   return (
     <div>
       <PageHeader
-        title={cot ? `Editar ${cot.numeroCotizacion}` : 'Nueva cotización'}
-        subtitle={cot ? 'Solo se pueden editar borradores.' : 'Completá los 4 pasos para emitir una cotización.'}
+        title={cotSeguro ? `Editar ${cotSeguro.numeroCotizacion}` : 'Nueva cotización'}
+        subtitle={cotSeguro ? 'Solo se pueden editar borradores.' : 'Completá los 4 pasos para emitir una cotización.'}
         back
         backLabel="Cancelar"
         onBack={() => router.push('/cotizaciones')}
@@ -115,28 +124,28 @@ export function CotizacionWizard({ cotizacionId, initialStep = 0 }: Props) {
           <>
             {step === 0 && (
               <Step1Cliente
-                cotizacion={cot ?? null}
+                cotizacion={cotSeguro}
                 onCreated={handleCotizacionCreated}
                 onUpdated={() => setStep(1)}
               />
             )}
-            {step === 1 && cot && (
+            {step === 1 && cotSeguro && (
               <Step2Items
-                cotizacion={cot}
+                cotizacion={cotSeguro}
                 onBack={() => setStep(0)}
                 onNext={() => setStep(2)}
               />
             )}
-            {step === 2 && cot && (
+            {step === 2 && cotSeguro && (
               <Step3Terminos
-                cotizacion={cot}
+                cotizacion={cotSeguro}
                 onBack={() => setStep(1)}
                 onNext={() => setStep(3)}
               />
             )}
-            {step === 3 && cot && (
+            {step === 3 && cotSeguro && (
               <Step4Resumen
-                cotizacion={cot}
+                cotizacion={cotSeguro}
                 onBack={() => setStep(2)}
               />
             )}
