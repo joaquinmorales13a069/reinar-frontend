@@ -12,7 +12,7 @@ import { Step1Cliente } from './Step1Cliente';
 import { Step2Items } from './Step2Items';
 import { Step3Terminos } from './Step3Terminos';
 import { Step4Resumen } from './Step4Resumen';
-import type { Cotizacion } from '@/types/api';
+import type { Cotizacion, EstadoCotizacion } from '@/types/api';
 
 type StepId = 0 | 1 | 2 | 3;
 
@@ -22,6 +22,10 @@ const STEPS: { id: StepId; label: string }[] = [
   { id: 2, label: 'Términos' },
   { id: 3, label: 'Resumen' },
 ];
+
+// Estados en los que la cotización ya no es editable y debemos enviar al
+// usuario al detalle solo-lectura.
+const ESTADOS_NO_EDITABLES: EstadoCotizacion[] = ['ENVIADA', 'APROBADA', 'RECHAZADA'];
 
 type Props = {
   // Si viene id, estamos en modo editar; si no, en modo crear.
@@ -44,32 +48,29 @@ export function CotizacionWizard({ cotizacionId, initialStep = 0 }: Props) {
   const cotizacionQ = useCotizacion(activeId);
   const cot = cotizacionQ.data;
 
-  // Si llegamos en modo editar y el borrador ya no está en BORRADOR, el
-  // backend rechazará cualquier mutación: bloqueamos la UI antes de intentar.
+  // Si la cotizacion paso a un estado no editable, redirigimos al detalle.
+  // Comprobacion explicita contra la lista (no negacion de BORRADOR) para
+  // evitar falsos positivos cuando cot.estado fuera undefined por algun
+  // shape parcial transitorio en el cache.
   useEffect(() => {
-    if (cot && cot.estado !== 'BORRADOR') {
+    if (cot && cot.estado && ESTADOS_NO_EDITABLES.includes(cot.estado)) {
       router.replace(`/cotizaciones/${cot.id}`);
     }
   }, [cot, router]);
 
-  // Al crear la cotización por primera vez (al final del paso 1), actualizamos
-  // la URL para que recargar el browser no pierda el borrador.
+  // Al crear la cotizacion en el paso 1, seedeamos el cache con la respuesta
+  // del POST (escalares solamente; las relaciones llegan con el GET que
+  // useCotizacion dispara al cambiar activeId). Forzamos items: [] para que
+  // Step2Items pueda renderizar inmediatamente sin esperar al GET.
   //
-  // Usamos `window.history.replaceState` en vez de `router.replace` porque
-  // navegar de /cotizaciones/nueva a /cotizaciones/{id}/editar dispara remount
-  // del componente (son dos page.tsx distintos): el setStep(1) se ejecutaba
-  // en el componente que se desmontaba y el nuevo arrancaba en step 0,
-  // obligando al usuario a hacer click en "Siguiente" dos veces.
-  //
-  // Además seedea el cache de React Query con la cotización recién devuelta
-  // por el POST para que useCotizacion(id) tenga `data` al instante. El POST
-  // del backend devuelve solo los campos escalares (no las relaciones), por eso
-  // forzamos `items: []` para que Step2Items no rompa al leer items.length —
-  // el GET que useCotizacion dispara despues completa el resto del shape.
+  // NO cambiamos la URL aqui: usar window.history.replaceState engana a Next
+  // sobre la ruta real y router.replace remontaria el componente. Aceptamos
+  // que si el usuario refresca el browser durante la creacion, pierde el
+  // borrador en pantalla (queda registrado en el backend pero el flujo se
+  // reinicia). Es preferible a los bugs sutiles de routing.
   function handleCotizacionCreated(created: Cotizacion) {
     qc.setQueryData(['cotizacion', created.id], { ...created, items: created.items ?? [] });
     setActiveId(created.id);
-    window.history.replaceState(null, '', `/cotizaciones/${created.id}/editar`);
     setStep(1);
   }
 
@@ -79,6 +80,8 @@ export function CotizacionWizard({ cotizacionId, initialStep = 0 }: Props) {
     if (next < step) setStep(next);
   }
 
+  // Spinner inicial cuando entramos al wizard en modo editar y aun no llego
+  // el GET del detalle.
   if (cotizacionId && cotizacionQ.isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -86,6 +89,11 @@ export function CotizacionWizard({ cotizacionId, initialStep = 0 }: Props) {
       </div>
     );
   }
+
+  // Si estamos en step > 0 pero el cache aun no tiene la cotizacion (puede
+  // pasar si el GET tras la creacion sigue in-flight), mostramos spinner en
+  // vez de dejar el contenido vacio o caer en TypeError por cot.items.
+  const esperandoCotizacion = step > 0 && !cot;
 
   return (
     <div>
@@ -100,32 +108,40 @@ export function CotizacionWizard({ cotizacionId, initialStep = 0 }: Props) {
       <Stepper current={step} onClick={goTo} />
 
       <div className="mt-6">
-        {step === 0 && (
-          <Step1Cliente
-            cotizacion={cot ?? null}
-            onCreated={handleCotizacionCreated}
-            onUpdated={() => setStep(1)}
-          />
-        )}
-        {step === 1 && cot && (
-          <Step2Items
-            cotizacion={cot}
-            onBack={() => setStep(0)}
-            onNext={() => setStep(2)}
-          />
-        )}
-        {step === 2 && cot && (
-          <Step3Terminos
-            cotizacion={cot}
-            onBack={() => setStep(1)}
-            onNext={() => setStep(3)}
-          />
-        )}
-        {step === 3 && cot && (
-          <Step4Resumen
-            cotizacion={cot}
-            onBack={() => setStep(2)}
-          />
+        {esperandoCotizacion ? (
+          <div className="flex justify-center py-12">
+            <Spinner />
+          </div>
+        ) : (
+          <>
+            {step === 0 && (
+              <Step1Cliente
+                cotizacion={cot ?? null}
+                onCreated={handleCotizacionCreated}
+                onUpdated={() => setStep(1)}
+              />
+            )}
+            {step === 1 && cot && (
+              <Step2Items
+                cotizacion={cot}
+                onBack={() => setStep(0)}
+                onNext={() => setStep(2)}
+              />
+            )}
+            {step === 2 && cot && (
+              <Step3Terminos
+                cotizacion={cot}
+                onBack={() => setStep(1)}
+                onNext={() => setStep(3)}
+              />
+            )}
+            {step === 3 && cot && (
+              <Step4Resumen
+                cotizacion={cot}
+                onBack={() => setStep(2)}
+              />
+            )}
+          </>
         )}
       </div>
     </div>

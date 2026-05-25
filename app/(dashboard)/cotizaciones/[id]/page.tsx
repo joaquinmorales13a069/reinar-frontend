@@ -17,10 +17,21 @@ export default function CotizacionDetallePage({ params }: { params: Promise<{ id
   const { id } = use(params);
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
-  const { data: cot, isLoading } = useCotizacion(id);
+  const { data: cot, isLoading, error } = useCotizacion(id);
 
   if (isLoading) {
     return <div className="flex justify-center py-12"><Spinner /></div>;
+  }
+  // Distinguimos error de red/servidor de "no encontrada" para no mentirle al
+  // usuario cuando la cotizacion existe pero el GET fallo por otra razon.
+  if (error) {
+    return (
+      <EmptyState
+        icon="fileText"
+        title="No se pudo cargar"
+        message="Hubo un problema al cargar la cotización. Refrescá la página para reintentar."
+      />
+    );
   }
   if (!cot) {
     return (
