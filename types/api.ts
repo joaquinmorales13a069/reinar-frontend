@@ -785,3 +785,154 @@ export type EditarItemDto = {
   tecnicoAsignado?: string | null;
   orden?: number;
 };
+
+// ============================================================
+// Facturas (Rama 11)
+// ============================================================
+
+export type EstadoFactura =
+  | 'PENDIENTE'
+  | 'PARCIAL'
+  | 'PAGADA'
+  | 'VENCIDA'
+  | 'ANULADA';
+
+// PAGADA no esta — el backend la asigna automaticamente cuando los pagos
+// cubren el total. El endpoint PATCH /:id/estado la rechaza si se envia.
+export type EstadoFacturaEditable =
+  | 'PENDIENTE'
+  | 'PARCIAL'
+  | 'VENCIDA'
+  | 'ANULADA';
+
+export type EstadoDTE =
+  | 'PENDIENTE'
+  | 'PROCESANDO'
+  | 'APROBADO'
+  | 'RECHAZADO'
+  | 'ANULADO';
+
+export type TipoDTE = 'FC' | 'CCF' | 'SUJETO_EXCLUIDO';
+
+// El backend tambien acepta ANTICIPO, pero solo lo asigna el servicio de
+// cotizaciones al aprobar — la UI no lo expone como opcion al registrar pago.
+export type MetodoPago =
+  | 'EFECTIVO'
+  | 'TRANSFERENCIA'
+  | 'CHEQUE'
+  | 'TARJETA'
+  | 'OTRO'
+  | 'ANTICIPO';
+
+// Forma libre que devuelve FacturaLlama en el campo dteRespuestaMH.
+// El rechazo del MH viene con codigo + descripcionMsg + lista de observaciones.
+// Si la estructura cambia upstream, esto necesita actualizarse.
+export type DteRespuestaMH = {
+  codigo?: string;
+  descripcionMsg?: string;
+  observaciones?: string[];
+} | null;
+
+// Forma reducida del listado GET /facturas — solo los campos del select.
+export type FacturaListItem = {
+  id: string;
+  numeroFactura: string;
+  estado: EstadoFactura;
+  estadoDTE: EstadoDTE;
+  total: string;
+  montoPagado: string;
+  saldoPendiente: string;
+  fechaEmision: string;
+  fechaVencimiento: string;
+  cliente: { id: string; nombre: string };
+  cotizacion: { id: string; numeroCotizacion: string };
+  contactoFacturacion: { id: string; nombre: string } | null;
+};
+
+export type Pago = {
+  id: string;
+  facturaId: string;
+  monto: string;
+  fecha: string;
+  metodoPago: MetodoPago;
+  referencia: string | null;
+  notas: string | null;
+  createdAt: string;
+};
+
+// Acta vinculada — forma minima embebida en factura. RAMA 12 extendera con
+// el modulo completo de actas.
+export type ActaResumen = {
+  id: string;
+  numeroActa: string;
+  estado: string;
+};
+
+// Forma completa devuelta por GET /facturas/:id.
+export type Factura = {
+  id: string;
+  numeroFactura: string;
+  cotizacionId: string;
+  clienteId: string;
+  contactoFacturacionId: string | null;
+  estado: EstadoFactura;
+  fechaEmision: string;
+  fechaVencimiento: string;
+  // Decimales serializados como string — usar decimal.js para operar.
+  subtotal: string;
+  porcentajeIva: string;
+  montoIva: string;
+  total: string;
+  montoPagado: string;
+  saldoPendiente: string;
+  tipoDTE: TipoDTE | null;
+  estadoDTE: EstadoDTE;
+  dteId: string | null;
+  dteControlNumber: string | null;
+  dteRespuestaMH: DteRespuestaMH;
+  notas: string | null;
+  createdAt: string;
+  updatedAt: string;
+  cliente: Cliente;
+  cotizacion: Pick<
+    Cotizacion,
+    'id' | 'numeroCotizacion' | 'items'
+  > & {
+    items: CotizacionItem[];
+  };
+  contactoFacturacion: Contacto | null;
+  pagos: Pago[];
+  actasEntrega: ActaResumen[];
+};
+
+export type FiltrosFacturas = {
+  page?: number;
+  limit?: number;
+  clienteId?: string;
+  estado?: EstadoFactura;
+  estadoDTE?: EstadoDTE;
+  fechaDesde?: string;
+  fechaHasta?: string;
+};
+
+export type ActualizarFacturaDto = {
+  notas?: string;
+  fechaVencimiento?: string;
+};
+
+export type CambiarEstadoFacturaDto = {
+  estado: EstadoFacturaEditable;
+  motivo?: string;
+};
+
+export type EmitirDTEDto = {
+  tipoDTE: TipoDTE;
+};
+
+export type CrearPagoDto = {
+  monto: string;
+  fecha: string;
+  metodoPago: Exclude<MetodoPago, 'ANTICIPO'>;
+  referencia?: string;
+  notas?: string;
+};
