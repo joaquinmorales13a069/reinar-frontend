@@ -115,15 +115,28 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
                     />
                   </td>
                   <td className="px-3 py-2 text-right font-mono">
-                    {/* Edit inline de la tarifa: si tipea algo distinto se guarda como tarifaCustom */}
+                    {/* Edit inline de la tarifa: si tipea algo distinto se guarda como tarifaCustom.
+                        Usamos type="text" + inputMode="decimal" porque type="number" en algunos
+                        navegadores acepta letras y deja .value vacío; validamos onBlur con regex
+                        y revertimos si el valor no es un decimal válido. */}
                     <input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       className="w-24 text-right font-mono bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
                       defaultValue={it.tarifaAplicada}
+                      onKeyDown={(e) => {
+                        // Permitimos teclas de control (Backspace, flechas, Tab, etc.); rechazamos
+                        // cualquier caracter que no sea digito o el punto decimal.
+                        if (e.key.length === 1 && !/[0-9.]/.test(e.key)) e.preventDefault();
+                      }}
                       onBlur={(e) => {
-                        const v = e.target.value;
-                        if (v === '' || v === it.tarifaAplicada) return;
+                        const v = e.target.value.trim();
+                        if (v === it.tarifaAplicada) return;
+                        if (!/^\d+(\.\d{1,2})?$/.test(v)) {
+                          // Valor invalido: revertimos visualmente y no enviamos PATCH.
+                          e.target.value = it.tarifaAplicada;
+                          return;
+                        }
                         patch(it, { tarifaCustom: v });
                       }}
                     />
