@@ -72,9 +72,14 @@ export function HeaderAcciones({ factura, isAdminOGerente, ajusteOpen, onToggleA
               Anular factura {factura.numeroFactura}
             </h4>
             <p className="text-xs text-tx-3">
-              Si la factura tiene un DTE aprobado, también se anulará ante el Ministerio de
-              Hacienda.
+              Esta acción tiene efecto cascada:
             </p>
+            <ul className="text-xs text-tx-3 list-disc list-inside mt-1 space-y-0.5">
+              <li>Factura queda en estado ANULADA y no podrá editarse.</li>
+              <li>Si tiene DTE aprobado, también se anulará ante el Ministerio de Hacienda.</li>
+              <li>La cotización origen pasará a CANCELADA (no se puede re-aprobar).</li>
+              <li>Se libera el inventario reservado (equipos, herramientas, stock).</li>
+            </ul>
           </div>
           <textarea
             rows={3}
@@ -84,7 +89,7 @@ export function HeaderAcciones({ factura, isAdminOGerente, ajusteOpen, onToggleA
           />
           {errors.motivo && <p className="text-xs text-danger">{errors.motivo.message}</p>}
           <ConfirmRow
-            message="¿Confirmar anulación? La factura quedará en estado ANULADA y no podrá editarse."
+            message="¿Confirmar anulación? La acción es irreversible."
             confirmLabel={cambiar.isPending ? 'Anulando…' : 'Sí, anular'}
             onCancel={() => setConfirmAnular(false)}
             onConfirm={handleSubmit(onAnular)}

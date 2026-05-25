@@ -578,7 +578,10 @@ export type FiltrosProyectos = {
 // Cotizaciones (Rama 10)
 // ============================================================
 
-export type EstadoCotizacion = 'BORRADOR' | 'ENVIADA' | 'APROBADA' | 'RECHAZADA';
+// CANCELADA es estado terminal asignado automaticamente al anular la factura
+// generada por la cotizacion. Libera el inventario reservado y no permite
+// re-aprobacion — si se quiere rehacer la venta, crear una nueva cotizacion.
+export type EstadoCotizacion = 'BORRADOR' | 'ENVIADA' | 'APROBADA' | 'RECHAZADA' | 'CANCELADA';
 
 export type TipoItemCotizacion =
   | 'EQUIPO'
