@@ -17,6 +17,12 @@ const PERIODO_LABEL: Record<PeriodoItem, string> = {
   CUSTOM: 'Custom',
 };
 
+// Periodos seleccionables en el dropdown. QUINCENA se omite porque en la base
+// de datos solo hay tarifaDia/tarifaSemana/tarifaMes — el backend calcularia
+// quincena como semana*2, que rara vez es la tarifa real que el cliente quiere.
+// QUINCENA se conserva en PERIODO_LABEL para items historicos que ya la tengan.
+const PERIODOS_SELECCIONABLES: PeriodoItem[] = ['DIA', 'SEMANA', 'MES', 'CUSTOM'];
+
 const TIPO_LABEL: Record<TipoItemCotizacion, string> = {
   EQUIPO: 'Equipo',
   HERRAMIENTA: 'Herramienta',
@@ -82,7 +88,13 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
                     <Badge status={TIPO_LABEL[it.tipo]} kind="neutral" />
                   </td>
                   <td className="px-3 py-2">
+                    {/* key incluye el valor del cache para que cuando el backend
+                        actualice el item (ej. recalculo de tarifa al cambiar
+                        periodo), el input uncontrolled se remonte con el nuevo
+                        defaultValue. Sin esto el input quedaba stale mostrando
+                        el valor que el usuario tipeo o el inicial. */}
                     <input
+                      key={`desc-${it.id}-${it.descripcion}`}
                       className="w-full bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none text-sm"
                       defaultValue={it.descripcion}
                       onBlur={(e) => {
@@ -94,19 +106,26 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
                   </td>
                   <td className="px-3 py-2">
                     <select
+                      key={`per-${it.id}-${it.periodo}`}
                       className="text-sm bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
                       defaultValue={it.periodo}
                       onChange={(e) => patch(it, { periodo: e.target.value as PeriodoItem })}
                     >
-                      {(Object.keys(PERIODO_LABEL) as PeriodoItem[]).map((p) => (
+                      {PERIODOS_SELECCIONABLES.map((p) => (
                         <option key={p} value={p}>
                           {PERIODO_LABEL[p]}
                         </option>
                       ))}
+                      {/* Si el item ya tiene QUINCENA persistida (historico), la incluimos
+                          como opcion para no perderla al editar otro campo. */}
+                      {it.periodo === 'QUINCENA' && (
+                        <option value="QUINCENA">{PERIODO_LABEL.QUINCENA}</option>
+                      )}
                     </select>
                   </td>
                   <td className="px-3 py-2 text-right">
                     <input
+                      key={`cant-${it.id}-${it.cantidad}`}
                       type="number"
                       min={1}
                       className="w-16 text-right font-mono bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
@@ -123,6 +142,7 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
                         navegadores acepta letras y deja .value vacío; validamos onBlur con regex
                         y revertimos si el valor no es un decimal válido. */}
                     <input
+                      key={`tar-${it.id}-${it.tarifaAplicada}`}
                       type="text"
                       inputMode="decimal"
                       className="w-24 text-right font-mono bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"

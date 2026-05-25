@@ -10,11 +10,11 @@ import { formatCurrency } from '@/lib/utils';
 import type { HerramientaTipo, PeriodoItem } from '@/types/api';
 import type { TabChildProps } from './index';
 
-const PERIODOS: { value: Exclude<PeriodoItem, 'CUSTOM'>; label: string }[] = [
-  { value: 'DIA',      label: 'Día' },
-  { value: 'SEMANA',   label: 'Semana' },
-  { value: 'QUINCENA', label: 'Quincena' },
-  { value: 'MES',      label: 'Mes' },
+// QUINCENA se omite porque la base de datos solo tiene tarifaDia/Semana/Mes.
+const PERIODOS: { value: Exclude<PeriodoItem, 'CUSTOM' | 'QUINCENA'>; label: string }[] = [
+  { value: 'DIA',    label: 'Día' },
+  { value: 'SEMANA', label: 'Semana' },
+  { value: 'MES',    label: 'Mes' },
 ];
 
 // El backend asigna las unidades automáticamente; el usuario solo elige el tipo
@@ -22,7 +22,7 @@ const PERIODOS: { value: Exclude<PeriodoItem, 'CUSTOM'>; label: string }[] = [
 export function TabHerramienta({ cotizacionId, onAdded }: TabChildProps) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<HerramientaTipo | null>(null);
-  const [periodo, setPeriodo] = useState<Exclude<PeriodoItem, 'CUSTOM'>>('DIA');
+  const [periodo, setPeriodo] = useState<Exclude<PeriodoItem, 'CUSTOM' | 'QUINCENA'>>('DIA');
   const [cantidad, setCantidad] = useState(1);
 
   const herrQ = useHerramientaTipos({ search: search || undefined, activo: true });
@@ -119,8 +119,7 @@ export function TabHerramienta({ cotizacionId, onAdded }: TabChildProps) {
               {formatCurrency(
                 periodo === 'DIA' ? selected.tarifaDia :
                 periodo === 'SEMANA' ? selected.tarifaSemana :
-                periodo === 'MES' ? selected.tarifaMes :
-                selected.tarifaSemana,
+                selected.tarifaMes,
               )}
             </div>
           </div>

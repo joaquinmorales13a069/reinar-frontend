@@ -11,18 +11,18 @@ import { formatCurrency } from '@/lib/utils';
 import type { PiezaTipo, CuerpoTipo, PeriodoItem } from '@/types/api';
 import type { TabChildProps } from './index';
 
-const PERIODOS: { value: Exclude<PeriodoItem, 'CUSTOM'>; label: string }[] = [
-  { value: 'DIA',      label: 'Día' },
-  { value: 'SEMANA',   label: 'Semana' },
-  { value: 'QUINCENA', label: 'Quincena' },
-  { value: 'MES',      label: 'Mes' },
+// QUINCENA se omite porque la base de datos solo tiene tarifaDia/Semana/Mes.
+const PERIODOS: { value: Exclude<PeriodoItem, 'CUSTOM' | 'QUINCENA'>; label: string }[] = [
+  { value: 'DIA',    label: 'Día' },
+  { value: 'SEMANA', label: 'Semana' },
+  { value: 'MES',    label: 'Mes' },
 ];
 
 type Modo = 'pieza' | 'cuerpo';
 
 export function TabAndamio({ cotizacionId, onAdded }: TabChildProps) {
   const [modo, setModo] = useState<Modo>('pieza');
-  const [periodo, setPeriodo] = useState<Exclude<PeriodoItem, 'CUSTOM'>>('DIA');
+  const [periodo, setPeriodo] = useState<Exclude<PeriodoItem, 'CUSTOM' | 'QUINCENA'>>('DIA');
   const [cantidad, setCantidad] = useState(1);
   const [piezaSel, setPiezaSel] = useState<PiezaTipo | null>(null);
   const [cuerpoSel, setCuerpoSel] = useState<CuerpoTipo | null>(null);
@@ -31,11 +31,10 @@ export function TabAndamio({ cotizacionId, onAdded }: TabChildProps) {
   const cuerposQ = useCuerpos({});
   const agregar = useAgregarItemCotizacion();
 
-  function tarifaPieza(p: PiezaTipo, per: Exclude<PeriodoItem, 'CUSTOM'>): string {
+  function tarifaPieza(p: PiezaTipo, per: Exclude<PeriodoItem, 'CUSTOM' | 'QUINCENA'>): string {
     if (per === 'DIA') return p.tarifaDia;
     if (per === 'SEMANA') return p.tarifaSemana;
-    if (per === 'MES') return p.tarifaMes;
-    return p.tarifaSemana; // QUINCENA — backend recalcula = 2 * semana
+    return p.tarifaMes;
   }
 
   async function confirmarPieza() {

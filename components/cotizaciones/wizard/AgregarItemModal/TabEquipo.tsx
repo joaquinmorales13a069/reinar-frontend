@@ -10,17 +10,18 @@ import { formatCurrency } from '@/lib/utils';
 import type { Equipo, PeriodoItem } from '@/types/api';
 import type { TabChildProps } from './index';
 
-const PERIODOS: { value: Exclude<PeriodoItem, 'CUSTOM'>; label: string }[] = [
-  { value: 'DIA',      label: 'Día' },
-  { value: 'SEMANA',   label: 'Semana' },
-  { value: 'QUINCENA', label: 'Quincena' },
-  { value: 'MES',      label: 'Mes' },
+// QUINCENA se omite porque la base de datos solo tiene tarifaDia/Semana/Mes;
+// el backend la calcularia como semana*2, que rara vez es la tarifa real.
+const PERIODOS: { value: Exclude<PeriodoItem, 'CUSTOM' | 'QUINCENA'>; label: string }[] = [
+  { value: 'DIA',    label: 'Día' },
+  { value: 'SEMANA', label: 'Semana' },
+  { value: 'MES',    label: 'Mes' },
 ];
 
 export function TabEquipo({ cotizacionId, onAdded }: TabChildProps) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Equipo | null>(null);
-  const [periodo, setPeriodo] = useState<Exclude<PeriodoItem, 'CUSTOM'>>('DIA');
+  const [periodo, setPeriodo] = useState<Exclude<PeriodoItem, 'CUSTOM' | 'QUINCENA'>>('DIA');
   const [cantidad, setCantidad] = useState(1);
 
   // Solo equipos DISPONIBLES — el backend rechaza con 409 si se intenta uno rentado.
@@ -110,8 +111,7 @@ export function TabEquipo({ cotizacionId, onAdded }: TabChildProps) {
               {formatCurrency(
                 periodo === 'DIA' ? selected.tarifaDia :
                 periodo === 'SEMANA' ? selected.tarifaSemana :
-                periodo === 'MES' ? selected.tarifaMes :
-                selected.tarifaSemana,
+                selected.tarifaMes,
               )}
             </div>
           </div>
