@@ -58,11 +58,21 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
   const modo = watch('depositoModo');
   const depPorcentaje = watch('depositoPorcentaje');
   const depMonto = watch('depositoMonto');
+  const iva = watch('porcentajeIva');
   const requiereContactoFact = tipoDoc === 'CCF' || tipoDoc === 'SUJETO_EXCLUIDO';
 
   // Calculos en vivo para que el vendedor vea el contexto del deposito.
-  // El total viene del backend como string Decimal — siempre operar con decimal.js.
-  const totalDecimal = new Decimal(cotizacion.total);
+  // El total guardado (cotizacion.total) refleja el IVA persistido en la BD.
+  // Recalculamos en vivo a partir del subtotal + el IVA del form (que el
+  // usuario puede haber cambiado sin guardar aun) para que el total y los
+  // calculos del deposito se mantengan coherentes con lo que ve en pantalla.
+  const subtotalDecimal = new Decimal(cotizacion.subtotal);
+  const ivaPct = new Decimal(typeof iva === 'number' && !isNaN(iva) ? iva : cotizacion.porcentajeIva);
+  const totalDecimal = subtotalDecimal
+    .mul(new Decimal(100).plus(ivaPct))
+    .div(100)
+    .toDecimalPlaces(2);
+
   const depositoCalculado =
     modo === 'PORCENTAJE' && depPorcentaje
       ? totalDecimal.mul(depPorcentaje).div(100).toDecimalPlaces(2)
@@ -164,9 +174,14 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
       <FormSection title="Depósito (opcional)">
         {/* Total de referencia: ayuda al vendedor a dimensionar el deposito. */}
         <div className="flex items-baseline justify-between mb-3 p-3 bg-bg-sunken rounded-md">
-          <span className="text-sm text-tx-2">Total de la cotización</span>
+          <span className="text-sm text-tx-2">
+            Total de la cotización
+            {ivaPct.toString() !== String(cotizacion.porcentajeIva) && (
+              <span className="ml-2 text-xs text-tx-3">(con IVA {ivaPct.toString()}% sin guardar)</span>
+            )}
+          </span>
           <span className="font-mono text-base font-semibold text-tx">
-            {formatCurrency(cotizacion.total)}
+            {formatCurrency(totalDecimal.toFixed(2))}
           </span>
         </div>
 
