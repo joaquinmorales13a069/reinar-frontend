@@ -60,7 +60,7 @@ export function CotizacionesTabla({ data, loading, page, pageSize, total, onPage
             <th className="text-right font-medium px-4 py-2.5">Total</th>
             <th className="text-left font-medium px-4 py-2.5">Creado</th>
             <th className="text-left font-medium px-4 py-2.5">Vence</th>
-            <th className="w-12 px-4 py-2.5" />
+            <th className="text-center font-medium px-4 py-2.5 w-20">Acciones</th>
           </tr>
         </thead>
         <tbody>
