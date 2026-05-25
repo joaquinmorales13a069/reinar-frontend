@@ -136,17 +136,29 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
                     </select>
                   </td>
                   <td className="px-3 py-2 text-right">
-                    <input
-                      key={`cant-${it.id}-${it.cantidad}`}
-                      type="number"
-                      min={1}
-                      className="w-16 text-right font-mono bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
-                      defaultValue={it.cantidad}
-                      onBlur={(e) => {
-                        const n = parseInt(e.target.value, 10) || 1;
-                        if (n !== it.cantidad) patch(it, { cantidad: n });
-                      }}
-                    />
+                    {it.tipo === 'EQUIPO' ? (
+                      // EQUIPO siempre es cantidad 1 (unidad fisica unica). El
+                      // backend rechaza cualquier otro valor; el input se muestra
+                      // como texto fijo para que sea evidente.
+                      <span
+                        className="font-mono text-tx-3 cursor-not-allowed"
+                        title="Cada equipo es una unidad. Agregue otro equipo como linea separada."
+                      >
+                        {it.cantidad}
+                      </span>
+                    ) : (
+                      <input
+                        key={`cant-${it.id}-${it.cantidad}`}
+                        type="number"
+                        min={1}
+                        className="w-16 text-right font-mono bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
+                        defaultValue={it.cantidad}
+                        onBlur={(e) => {
+                          const n = parseInt(e.target.value, 10) || 1;
+                          if (n !== it.cantidad) patch(it, { cantidad: n });
+                        }}
+                      />
+                    )}
                   </td>
                   <td className="px-3 py-2 text-right font-mono">
                     {/* Edit inline de la tarifa: si tipea algo distinto se guarda como tarifaCustom.

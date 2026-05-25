@@ -709,7 +709,9 @@ export type AgregarItemDto =
   | {
       tipo: 'EQUIPO';
       equipoId: string;
-      cantidad?: number;
+      // Siempre 1: cada Equipo es una unidad fisica unica. El backend ahora
+      // rechaza cualquier otro valor; el frontend ni siquiera expone el input.
+      cantidad?: 1;
       periodo?: PeriodoItem;
       periodoCustomLabel?: string;
       tarifaCustom?: string;
