@@ -87,11 +87,13 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
       id: cotizacion.id,
       data: {
         tipoDocumentoFiscal: values.tipoDocumentoFiscal,
-        condicionesPago: values.condicionesPago ?? undefined,
-        contactoFacturacionId: values.contactoFacturacionId ?? undefined,
+        // || en vez de ?? para convertir "" del <select> a undefined; el backend
+        // valida cuid()/enum y rechaza string vacio como invalido.
+        condicionesPago: values.condicionesPago || undefined,
+        contactoFacturacionId: values.contactoFacturacionId || undefined,
         porcentajeIva: values.porcentajeIva,
-        notas: values.notas ?? undefined,
-        notasInternas: values.notasInternas ?? undefined,
+        notas: values.notas || undefined,
+        notasInternas: values.notasInternas || undefined,
         // Mutuamente excluyentes: solo enviamos el que corresponde al modo.
         depositoPorcentaje: values.depositoModo === 'PORCENTAJE' ? (values.depositoPorcentaje ?? undefined) : undefined,
         depositoMonto: values.depositoModo === 'MONTO' ? (values.depositoMonto ?? undefined) : undefined,

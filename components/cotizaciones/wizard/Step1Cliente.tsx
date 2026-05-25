@@ -119,8 +119,11 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
     const fechaIso = fechaSVToIso(values.fechaVencimiento);
     const payload = {
       clienteId: values.clienteId,
-      proyectoId: values.proyectoId ?? undefined,
-      contactoSolicitanteId: values.contactoSolicitanteId ?? undefined,
+      // El backend valida cuid() y rechaza string vacio. El <select> sin
+      // seleccion devuelve "" (no null), asi que usamos || para convertir
+      // cualquier falsy (incluido "") a undefined.
+      proyectoId: values.proyectoId || undefined,
+      contactoSolicitanteId: values.contactoSolicitanteId || undefined,
       fechaVencimiento: fechaIso,
     };
 
