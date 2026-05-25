@@ -48,6 +48,12 @@ type Props = { cotizacion: Cotizacion; onBack: () => void; onNext: () => void };
 
 export function Step2Items({ cotizacion, onBack, onNext }: Props) {
   const [modal, setModal] = useState(false);
+  // itemId -> label tentativo cuando el usuario acaba de cambiar el dropdown
+  // a CUSTOM pero todavia no escribio el label. Mientras esta en el map, NO
+  // hacemos PATCH (el backend rechaza con "Datos invalidos" si periodo=CUSTOM
+  // viene sin periodoCustomLabel). El item se commitea recien al primer blur
+  // del input de label con valor no vacio.
+  const [customPendiente, setCustomPendiente] = useState<Record<string, true>>({});
   const editar = useEditarItemCotizacion();
   const eliminar = useEliminarItemCotizacion();
 
@@ -117,23 +123,73 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
                     />
                   </td>
                   <td className="px-3 py-2">
-                    <select
-                      key={`per-${it.id}-${it.periodo}`}
-                      className="text-sm bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
-                      defaultValue={it.periodo}
-                      onChange={(e) => patch(it, { periodo: e.target.value as PeriodoItem })}
-                    >
-                      {PERIODOS_SELECCIONABLES.map((p) => (
-                        <option key={p} value={p}>
-                          {PERIODO_LABEL[p]}
-                        </option>
-                      ))}
-                      {/* Si el item ya tiene QUINCENA persistida (historico), la incluimos
-                          como opcion para no perderla al editar otro campo. */}
-                      {it.periodo === 'QUINCENA' && (
-                        <option value="QUINCENA">{PERIODO_LABEL.QUINCENA}</option>
+                    <div className="flex flex-col gap-1">
+                      <select
+                        key={`per-${it.id}-${it.periodo}`}
+                        className="text-sm bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
+                        defaultValue={it.periodo}
+                        onChange={(e) => {
+                          const nuevo = e.target.value as PeriodoItem;
+                          if (nuevo === 'CUSTOM') {
+                            // El backend exige periodoCustomLabel + tarifaCustom
+                            // cuando periodo=CUSTOM. No hacemos PATCH todavia;
+                            // marcamos como pendiente para que aparezca el input
+                            // de label y se commiteen los 3 campos juntos al blur.
+                            setCustomPendiente((m) => ({ ...m, [it.id]: true }));
+                          } else {
+                            setCustomPendiente((m) => {
+                              const { [it.id]: _omit, ...rest } = m;
+                              return rest;
+                            });
+                            patch(it, { periodo: nuevo });
+                          }
+                        }}
+                      >
+                        {PERIODOS_SELECCIONABLES.map((p) => (
+                          <option key={p} value={p}>
+                            {PERIODO_LABEL[p]}
+                          </option>
+                        ))}
+                        {/* Si el item ya tiene QUINCENA persistida (historico), la incluimos
+                            como opcion para no perderla al editar otro campo. */}
+                        {it.periodo === 'QUINCENA' && (
+                          <option value="QUINCENA">{PERIODO_LABEL.QUINCENA}</option>
+                        )}
+                      </select>
+
+                      {(it.periodo === 'CUSTOM' || customPendiente[it.id]) && (
+                        <input
+                          key={`per-label-${it.id}-${it.periodoCustomLabel ?? ''}`}
+                          type="text"
+                          placeholder="Etiqueta (ej. 2 semanas)"
+                          autoFocus={!!customPendiente[it.id]}
+                          defaultValue={it.periodoCustomLabel ?? ''}
+                          className="w-32 text-xs bg-transparent border-b border-bd hover:border-accent focus:border-accent focus:outline-none"
+                          onBlur={(e) => {
+                            const label = e.target.value.trim();
+                            // Sin label no podemos commitear: dejamos el estado
+                            // pendiente para que el usuario lo complete o cambie
+                            // el periodo a otro valor.
+                            if (!label) return;
+                            // Idempotente: si ya estaba en CUSTOM con el mismo label,
+                            // no hace falta volver a llamar al backend.
+                            if (it.periodo === 'CUSTOM' && label === it.periodoCustomLabel) return;
+                            setCustomPendiente((m) => {
+                              const { [it.id]: _omit, ...rest } = m;
+                              return rest;
+                            });
+                            patch(it, {
+                              periodo: 'CUSTOM',
+                              periodoCustomLabel: label,
+                              // Backend exige tarifaCustom no nula cuando periodo=CUSTOM.
+                              // Usamos la tarifa visible actual como punto de partida; el
+                              // usuario puede ajustarla despues en el input de tarifa.
+                              tarifaCustom: it.tarifaAplicada,
+                            });
+                          }}
+                        />
                       )}
-                    </select>
+                    </div>
                   </td>
                   <td className="px-3 py-2 text-right">
                     {it.tipo === 'EQUIPO' ? (
