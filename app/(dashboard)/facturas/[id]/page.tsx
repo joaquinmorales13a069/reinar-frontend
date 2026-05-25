@@ -8,6 +8,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { FacturaEstadoBadge } from '@/components/facturas/FacturaEstadoBadge';
 import { ClienteFechasCard } from '@/components/facturas/detalle/ClienteFechasCard';
 import { ItemsFacturadosCard } from '@/components/facturas/detalle/ItemsFacturadosCard';
+import { ProgresoCobroCard } from '@/components/facturas/detalle/ProgresoCobroCard';
+import { ActasVinculadasCard } from '@/components/facturas/detalle/ActasVinculadasCard';
 import { useFactura } from '@/hooks/use-facturas';
 
 export default function FacturaDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -55,6 +57,10 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
         <div className="lg:col-span-2 space-y-4">
           <ClienteFechasCard factura={factura} />
           <ItemsFacturadosCard factura={factura} />
+          <ActasVinculadasCard factura={factura} />
+        </div>
+        <div className="space-y-4">
+          <ProgresoCobroCard factura={factura} />
         </div>
       </div>
     </div>
