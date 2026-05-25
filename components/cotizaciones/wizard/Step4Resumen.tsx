@@ -48,7 +48,7 @@ export function Step4Resumen({ cotizacion, onBack }: Props) {
           Ítems ({cotizacion.items.length})
         </div>
         <table className="w-full text-sm">
-          <thead className="bg-bg-sunken text-tx-3 text-xs uppercase tracking-wider">
+          <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
             <tr>
               <th className="text-left px-3 py-2 font-medium">Descripción</th>
               <th className="text-right px-3 py-2 font-medium w-20">Cant.</th>

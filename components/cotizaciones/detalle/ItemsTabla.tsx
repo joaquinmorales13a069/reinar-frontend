@@ -19,7 +19,7 @@ export function ItemsTabla({ cotizacion }: { cotizacion: Cotizacion }) {
         <span className="text-xs text-tx-3">{items.length} líneas</span>
       </div>
       <table className="w-full text-sm">
-        <thead className="bg-bg-sunken text-tx-3 text-xs uppercase tracking-wider">
+        <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
           <tr>
             <th className="text-left px-3 py-2 font-medium">Descripción</th>
             <th className="text-left px-3 py-2 font-medium w-28">Período</th>

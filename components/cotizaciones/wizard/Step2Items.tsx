@@ -61,7 +61,7 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
       ) : (
         <div className="border border-bd rounded-md overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-bg-sunken text-tx-3 text-xs uppercase tracking-wider">
+            <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
               <tr>
                 <th className="text-left px-3 py-2 font-medium w-32">Tipo</th>
                 <th className="text-left px-3 py-2 font-medium">Descripción</th>

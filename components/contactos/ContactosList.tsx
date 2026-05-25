@@ -29,7 +29,7 @@ type EstadoFilter = 'ACTIVO' | 'INACTIVO' | null;
 const btnSec = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-bd text-tx-2 bg-surface text-xs font-medium hover:bg-bg-sunken transition-colors';
 const btnPri = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-accent text-navy text-xs font-semibold hover:bg-accent-dim transition-colors';
 const iconBtn = 'inline-flex items-center justify-center w-7 h-7 rounded text-tx-3 hover:bg-bg-sunken hover:text-tx transition-colors';
-const thCls = 'px-4 py-2.5 text-left text-xs font-medium text-tx-3 bg-bg-sunken';
+const thCls = 'px-4 py-2.5 text-left text-2xs uppercase tracking-wider font-medium text-tx-3 bg-bg-sunken';
 const tdCls = 'px-4 py-3 text-sm text-tx';
 
 export function ContactosList() {

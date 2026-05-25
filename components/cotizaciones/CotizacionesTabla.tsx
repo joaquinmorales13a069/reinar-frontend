@@ -50,7 +50,7 @@ export function CotizacionesTabla({ data, loading, page, pageSize, total, onPage
   return (
     <div className="border border-bd rounded-b-md overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="bg-bg-sunken text-tx-3 text-xs uppercase tracking-wider">
+        <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
           <tr>
             <th className="text-right font-medium px-4 py-2.5 w-12">#</th>
             <th className="text-left font-medium px-4 py-2.5">Número</th>
