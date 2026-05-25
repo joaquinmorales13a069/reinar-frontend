@@ -15,7 +15,7 @@ import { useCliente, useCrearCliente, useEditarCliente, useCambiarEstadoCliente 
 import { DEPARTAMENTOS_SV, DISTRITOS_SV, getMunicipiosByDept, getDistritosByMuniDept } from '@/lib/sv-geo';
 import { SECTORES_CAT019, ACTIVIDADES_ECONOMICAS_SV } from '@/lib/cat019';
 import { PhoneInputField } from '@/components/ui/PhoneInputField';
-import { formatNIT, formatNCR, formatDUI } from '@/lib/format-documentos';
+import { formatNIT, formatNCR, formatDUI, formatNitFlexible } from '@/lib/format-documentos';
 
 const schema = z.object({
   tipo: z.enum(['EMPRESA', 'PARTICULAR']),
@@ -50,8 +50,11 @@ const schema = z.object({
       ctx.addIssue({ code: 'custom', path: ['nombre'], message: 'El nombre es obligatorio.' });
     if (d.dui && !/^\d{8}-\d$/.test(d.dui))
       ctx.addIssue({ code: 'custom', path: ['dui'], message: 'Formato: NNNNNNNN-N' });
-    if (d.nit && !/^\d{4}-\d{6}-\d{3}-\d$/.test(d.nit))
-      ctx.addIssue({ code: 'custom', path: ['nit'], message: 'Formato: NNNN-NNNNNN-NNN-N' });
+    // PARTICULAR acepta NIT en formato DUI (9d) o NIT viejo (14d). El primero
+    // corresponde al cambio de MH del 15-ene-2026 (NIT = DUI); el segundo es
+    // para extranjeros, menores y datos heredados.
+    if (d.nit && !/^(\d{8}-\d|\d{4}-\d{6}-\d{3}-\d)$/.test(d.nit))
+      ctx.addIssue({ code: 'custom', path: ['nit'], message: 'Formato: NNNNNNNN-N (DUI) o NNNN-NNNNNN-NNN-N' });
     if (d.ncr && !/^(\d{4}-\d|\d{6}-\d)$/.test(d.ncr))
       ctx.addIssue({ code: 'custom', path: ['ncr'], message: 'Formato: NNNN-N o NNNNNN-N' });
   }
@@ -82,6 +85,10 @@ export function ClienteForm({ id }: { id?: string }) {
   const isNew = !id;
   const router = useRouter();
   const [confirmDesact, setConfirmDesact] = useState(false);
+  // Toggle para PARTICULAR: por defecto el NIT es el mismo DUI (regla MH
+  // 15-ene-2026). Si se activa, el usuario puede tipear un NIT distinto
+  // (extranjero, menor, o legacy de 14 digitos).
+  const [nitDistintoDelDui, setNitDistintoDelDui] = useState(false);
 
   const { data: existing, isLoading: loadingExisting } = useCliente(id ?? '');
   const crear = useCrearCliente();
@@ -138,6 +145,15 @@ export function ClienteForm({ id }: { id?: string }) {
         Object.entries(existing).map(([k, v]) => [k, v ?? ''])
       );
       reset({ ...DEFAULTS, ...(clean as Partial<FormData>) });
+      // Inferimos el estado inicial del toggle: si el cliente PARTICULAR tiene
+      // un NIT que difiere del DUI, fue capturado expresamente y debe
+      // permanecer editable. Si NIT vacio o NIT === DUI, asumimos el default
+      // MH (NIT = DUI) y el input NIT queda oculto.
+      if (existing.tipo === 'PARTICULAR' && existing.nit && existing.nit !== existing.dui) {
+        setNitDistintoDelDui(true);
+      } else {
+        setNitDistintoDelDui(false);
+      }
     }
   }, [existing, reset]);
 
@@ -151,6 +167,12 @@ export function ClienteForm({ id }: { id?: string }) {
   }
 
   async function onSubmit(data: FormData) {
+    // Regla MH 15-ene-2026: el NIT de una persona natural SV es su DUI. Si el
+    // usuario no activo el toggle de NIT distinto, mandamos nit = dui al backend
+    // para que el DTE/Facturallama tenga el campo poblado sin pedirlo dos veces.
+    if (data.tipo === 'PARTICULAR' && !nitDistintoDelDui) {
+      data = { ...data, nit: data.dui ?? '' };
+    }
     if (isNew) {
       crear.mutate(data as any, {
         onSuccess: () => { toast.success('Cliente creado correctamente.'); router.push('/clientes'); },
@@ -336,23 +358,44 @@ export function ClienteForm({ id }: { id?: string }) {
                   <label className="text-xs font-medium text-tx-2">Ocupación</label>
                   <input className={inputOk} {...register('ocupacion')} placeholder="Ej. Arquitecto independiente" />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-tx-2">NIT (opcional)</label>
-                  <input
-                    className={`${errors.nit ? inputErr : inputOk} ${monoBase}`}
-                    inputMode="numeric"
-                    maxLength={17}
-                    {...nitReg}
-                    onChange={(e) => {
-                      e.target.value = formatNIT(e.target.value);
-                      void nitReg.onChange(e);
-                    }}
-                    placeholder="0614-140346-001-7"
-                  />
-                  <p className="text-xs text-tx-3 mt-0.5">Solo para particulares con obligación tributaria.</p>
-                  {errors.nit && <p className="text-xs text-danger mt-0.5">{errors.nit.message}</p>}
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                  <label className="inline-flex items-center gap-2 text-xs text-tx-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="rounded border-bd"
+                      checked={nitDistintoDelDui}
+                      onChange={(e) => {
+                        const next = e.target.checked;
+                        setNitDistintoDelDui(next);
+                        // Al desmarcar: limpiamos el NIT manual para que onSubmit
+                        // lo rellene con el DUI sin arrastrar un valor stale.
+                        if (!next) setValue('nit', '');
+                      }}
+                    />
+                    Tiene NIT distinto al DUI
+                  </label>
+                  <p className="text-xs text-tx-3 mt-0.5">
+                    Desde el 15-ene-2026 el Ministerio de Hacienda usa el DUI como NIT para personas naturales salvadoreñas mayores de edad. Marcá esta opción solo si la persona tiene un NIT propio (extranjeros, menores, o NIT viejo legacy).
+                  </p>
                 </div>
-                <div className="flex flex-col gap-1">
+                {nitDistintoDelDui && (
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-tx-2">NIT</label>
+                    <input
+                      className={`${errors.nit ? inputErr : inputOk} ${monoBase}`}
+                      inputMode="numeric"
+                      maxLength={17}
+                      {...nitReg}
+                      onChange={(e) => {
+                        e.target.value = formatNitFlexible(e.target.value);
+                        void nitReg.onChange(e);
+                      }}
+                      placeholder="12345678-9 o 0614-140346-001-7"
+                    />
+                    {errors.nit && <p className="text-xs text-danger mt-0.5">{errors.nit.message}</p>}
+                  </div>
+                )}
+                <div className={`flex flex-col gap-1${nitDistintoDelDui ? '' : ' sm:col-span-2'}`}>
                   <label className="text-xs font-medium text-tx-2">NCR (opcional)</label>
                   <input
                     className={`${errors.ncr ? inputErr : inputOk} ${monoBase}`}

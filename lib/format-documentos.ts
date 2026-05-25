@@ -33,3 +33,13 @@ export function formatDUI(value: string): string {
   if (d.length <= 8) return d;
   return `${d.slice(0, 8)}-${d.slice(8)}`;
 }
+
+// NIT flexible para PARTICULAR: desde el 15-ene-2026 el MH usa el DUI como
+// NIT para personas naturales SV mayores de edad. Pero extranjeros, menores
+// y datos legacy pueden tener el NIT viejo de 14 dígitos.
+// Detección por longitud: ≤9 dígitos formato DUI; ≥10 dígitos formato viejo.
+export function formatNitFlexible(value: string): string {
+  const d = soloDigitos(value).slice(0, 14);
+  if (d.length <= 9) return formatDUI(d);
+  return formatNIT(d);
+}
