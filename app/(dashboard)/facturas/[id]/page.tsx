@@ -7,6 +7,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FacturaEstadoBadge } from '@/components/facturas/FacturaEstadoBadge';
 import { ClienteFechasCard } from '@/components/facturas/detalle/ClienteFechasCard';
+import { ItemsFacturadosCard } from '@/components/facturas/detalle/ItemsFacturadosCard';
 import { useFactura } from '@/hooks/use-facturas';
 
 export default function FacturaDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -53,6 +54,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
         <div className="lg:col-span-2 space-y-4">
           <ClienteFechasCard factura={factura} />
+          <ItemsFacturadosCard factura={factura} />
         </div>
       </div>
     </div>
