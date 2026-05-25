@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Icon } from '@/components/ui/Icon';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Spinner } from '@/components/ui/Spinner';
@@ -11,6 +12,7 @@ import { Step1Cliente } from './Step1Cliente';
 import { Step2Items } from './Step2Items';
 import { Step3Terminos } from './Step3Terminos';
 import { Step4Resumen } from './Step4Resumen';
+import type { Cotizacion } from '@/types/api';
 
 type StepId = 0 | 1 | 2 | 3;
 
@@ -31,6 +33,7 @@ type Props = {
 
 export function CotizacionWizard({ cotizacionId, initialStep = 0 }: Props) {
   const router = useRouter();
+  const qc = useQueryClient();
   const [step, setStep] = useState<StepId>(initialStep);
   const [activeId, setActiveId] = useState<string | undefined>(cotizacionId);
 
@@ -49,11 +52,22 @@ export function CotizacionWizard({ cotizacionId, initialStep = 0 }: Props) {
     }
   }, [cot, router]);
 
-  // Al crear la cotización por primera vez (al final del paso 1), reescribimos
+  // Al crear la cotización por primera vez (al final del paso 1), actualizamos
   // la URL para que recargar el browser no pierda el borrador.
-  function handleCotizacionCreated(id: string) {
-    setActiveId(id);
-    router.replace(`/cotizaciones/${id}/editar`);
+  //
+  // Usamos `window.history.replaceState` en vez de `router.replace` porque
+  // navegar de /cotizaciones/nueva a /cotizaciones/{id}/editar dispara remount
+  // del componente (son dos page.tsx distintos): el setStep(1) se ejecutaba
+  // en el componente que se desmontaba y el nuevo arrancaba en step 0,
+  // obligando al usuario a hacer click en "Siguiente" dos veces.
+  //
+  // Además seedea el cache de React Query con la cotización recién devuelta
+  // por el POST para que useCotizacion(id) tenga `data` al instante y el Step 2
+  // no quede en blanco esperando el GET.
+  function handleCotizacionCreated(created: Cotizacion) {
+    qc.setQueryData(['cotizacion', created.id], created);
+    setActiveId(created.id);
+    window.history.replaceState(null, '', `/cotizaciones/${created.id}/editar`);
     setStep(1);
   }
 

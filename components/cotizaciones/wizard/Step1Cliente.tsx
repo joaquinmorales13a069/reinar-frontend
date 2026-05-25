@@ -28,7 +28,7 @@ type ClienteResumen = {
 
 type Props = {
   cotizacion: Cotizacion | null;
-  onCreated: (id: string) => void;
+  onCreated: (cot: Cotizacion) => void;
   onUpdated: () => void;
 };
 
@@ -101,7 +101,7 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
       onUpdated();
     } else {
       const created = await crear.mutateAsync(payload);
-      onCreated(created.id);
+      onCreated(created);
     }
   }
 
