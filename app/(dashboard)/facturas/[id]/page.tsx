@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { FacturaEstadoBadge } from '@/components/facturas/FacturaEstadoBadge';
 import { ClienteFechasCard } from '@/components/facturas/detalle/ClienteFechasCard';
 import { ItemsFacturadosCard } from '@/components/facturas/detalle/ItemsFacturadosCard';
+import { PagosCard } from '@/components/facturas/detalle/PagosCard';
 import { ProgresoCobroCard } from '@/components/facturas/detalle/ProgresoCobroCard';
 import { ActasVinculadasCard } from '@/components/facturas/detalle/ActasVinculadasCard';
 import { DteSection } from '@/components/dte/DteSection';
@@ -50,6 +51,8 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
   const isAdmin = user?.rol === 'ADMIN';
   // OPERADOR+ = puede emitir DTE, asignar tipo, registrar pagos. VISUALIZADOR no.
   const isOperador = user?.rol === 'ADMIN' || user?.rol === 'GERENTE' || user?.rol === 'OPERADOR';
+  // Eliminar pagos es accion reversible solo para ADMIN/GERENTE — OPERADOR no.
+  const isAdminOGerente = user?.rol === 'ADMIN' || user?.rol === 'GERENTE';
 
   // Subtitle: nombre del cliente segun tipo (EMPRESA -> razonSocial, PARTICULAR -> nombre+apellido).
   const nombreCliente =
@@ -113,6 +116,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             onDescargarPdf={() => { void descargarPdfOficial(); }}
           />
           <ItemsFacturadosCard factura={factura} />
+          <PagosCard factura={factura} isOperador={isOperador} isAdminOGerente={isAdminOGerente} />
           <ActasVinculadasCard factura={factura} />
         </div>
         <div className="space-y-4">
