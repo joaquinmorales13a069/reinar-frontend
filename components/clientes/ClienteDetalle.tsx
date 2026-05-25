@@ -132,7 +132,7 @@ export function ClienteDetalle({ id }: { id: string }) {
               </div>
               <div>
                 <div className="text-2xs font-semibold text-tx-3 uppercase tracking-wider">Proyectos</div>
-                <div className="font-mono text-2xl font-medium text-tx mt-1">{cliente.proyectos ?? 0}</div>
+                <div className="font-mono text-2xl font-medium text-tx mt-1">{cliente._count?.proyectos ?? cliente.proyectos ?? 0}</div>
               </div>
             </div>
           </div>

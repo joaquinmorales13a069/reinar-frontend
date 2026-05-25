@@ -55,7 +55,11 @@ export type Cliente = {
   notas?: string;
   estado: 'ACTIVO' | 'INACTIVO' | 'PROSPECTO';
   facturado?: string;
+  // proyectos era un campo plano que el backend nunca devolvio — siempre era
+  // undefined y caia al ?? 0. Ahora el detalle devuelve _count.proyectos.
+  // Lo mantenemos opcional como fallback historico.
   proyectos?: number;
+  _count?: { proyectos?: number };
 };
 
 export type Contacto = {
