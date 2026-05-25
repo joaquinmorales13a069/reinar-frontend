@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
 // ── Emitir DTE ─────────────────────────────────────────────────────────
+// El backend usa FC (Factura Consumidor) para DTE; NO confundir con CF
+// (Consumidor Final) que se usa en TipoDocumentoFiscal de cotizaciones.
+// Son enums distintos en Prisma: TipoDTE vs TipoDocumentoCotizacion.
 export const emitirDTESchema = z.object({
   tipoDTE: z.enum(['FC', 'CCF', 'SUJETO_EXCLUIDO']),
 });
@@ -10,7 +13,9 @@ export type EmitirDTEForm = z.infer<typeof emitirDTESchema>;
 // PAGADA se omite intencionalmente: el backend la rechaza porque ese estado
 // se asigna automaticamente al registrar pagos que cubran el total.
 export const ajustarEstadoSchema = z.object({
-  estado: z.enum(['PENDIENTE', 'PARCIAL', 'VENCIDA', 'ANULADA']),
+  estado: z.enum(['PENDIENTE', 'PARCIAL', 'VENCIDA', 'ANULADA'], {
+    message: 'Selecciona el nuevo estado',
+  }),
   motivo: z.string().min(10, 'El motivo debe tener al menos 10 caracteres'),
 });
 export type AjustarEstadoForm = z.infer<typeof ajustarEstadoSchema>;
@@ -29,11 +34,15 @@ export type AnularFacturaForm = z.infer<typeof anularFacturaSchema>;
 export const registrarPagoSchema = z.object({
   monto: z
     .string()
-    .regex(/^\d+(\.\d{1,2})?$/, 'Debe ser un decimal con hasta 2 decimales')
+    .regex(/^\d+(\.\d{1,2})?$/, 'Usa el formato 0.00 (máximo 2 decimales)')
     .refine((v) => Number(v) > 0, 'El monto debe ser mayor a cero'),
-  fecha: z.string().min(1, 'Selecciona la fecha del pago'),
-  metodoPago: z.enum(['EFECTIVO', 'TRANSFERENCIA', 'CHEQUE', 'TARJETA', 'OTRO']),
-  referencia: z.string().optional(),
+  fecha: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida (formato YYYY-MM-DD)'),
+  metodoPago: z.enum(['EFECTIVO', 'TRANSFERENCIA', 'CHEQUE', 'TARJETA', 'OTRO'], {
+    message: 'Selecciona el método de pago',
+  }),
+  referencia: z.string().max(50, 'Máximo 50 caracteres').optional(),
   notas: z.string().max(200, 'Máximo 200 caracteres').optional(),
 });
 export type RegistrarPagoForm = z.infer<typeof registrarPagoSchema>;
