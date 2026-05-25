@@ -134,7 +134,10 @@ export function ClientesList() {
                 >
                   <td className={`${tdCls} font-mono text-tx-3 text-xs`}>{(page - 1) * 10 + i + 1}</td>
                   <td className={`${tdCls} hidden sm:table-cell`}>
-                    <Badge status={c.tipo === 'EMPRESA' ? 'Empresa' : 'Particular'} kind="neutral" />
+                    <Badge
+                      status={c.tipo === 'EMPRESA' ? 'Empresa' : 'Particular'}
+                      kind={c.tipo === 'EMPRESA' ? 'info' : 'neutral'}
+                    />
                   </td>
                   <td className={tdCls}>
                     <div className="font-medium">

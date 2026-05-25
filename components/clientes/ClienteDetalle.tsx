@@ -51,7 +51,10 @@ export function ClienteDetalle({ id }: { id: string }) {
         title={displayName}
         subtitle={
           <div className="flex flex-wrap items-center gap-2 mt-1">
-            <Badge status={cliente.tipo === 'EMPRESA' ? 'Empresa' : 'Particular'} kind="neutral" />
+            <Badge
+              status={cliente.tipo === 'EMPRESA' ? 'Empresa' : 'Particular'}
+              kind={cliente.tipo === 'EMPRESA' ? 'info' : 'neutral'}
+            />
             <Badge status={cliente.estado} />
             <span className="font-mono text-xs text-tx-3">· {cliente.id}</span>
           </div>

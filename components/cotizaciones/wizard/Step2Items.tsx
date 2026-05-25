@@ -23,6 +23,18 @@ const PERIODO_LABEL: Record<PeriodoItem, string> = {
 // QUINCENA se conserva en PERIODO_LABEL para items historicos que ya la tengan.
 const PERIODOS_SELECCIONABLES: PeriodoItem[] = ['DIA', 'SEMANA', 'MES', 'CUSTOM'];
 
+// Color por tipo para que la tabla sea escaneable de un vistazo. Cada tipo
+// tiene un kind distinto del Badge para que el vendedor distinga sin leer
+// la etiqueta.
+const TIPO_KIND: Record<TipoItemCotizacion, 'ok' | 'warn' | 'danger' | 'info' | 'neutral' | 'accent'> = {
+  EQUIPO:        'info',
+  HERRAMIENTA:   'ok',
+  SERVICIO:      'accent',
+  CONSUMIBLE:    'neutral',
+  PIEZA_ANDAMIO: 'warn',
+  CUSTOM:        'danger',
+};
+
 const TIPO_LABEL: Record<TipoItemCotizacion, string> = {
   EQUIPO: 'Equipo',
   HERRAMIENTA: 'Herramienta',
@@ -85,7 +97,7 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
               {items.map((it) => (
                 <tr key={it.id} className="border-t border-bd">
                   <td className="px-3 py-2">
-                    <Badge status={TIPO_LABEL[it.tipo]} kind="neutral" />
+                    <Badge status={TIPO_LABEL[it.tipo]} kind={TIPO_KIND[it.tipo]} />
                   </td>
                   <td className="px-3 py-2">
                     {/* key incluye el valor del cache para que cuando el backend
