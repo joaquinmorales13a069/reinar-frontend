@@ -33,7 +33,10 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
   const editar = useEditarItemCotizacion();
   const eliminar = useEliminarItemCotizacion();
 
-  const items = cotizacion.items;
+  // Fallback a [] porque el backend POST /cotizaciones devuelve los escalares
+  // sin la relacion items; el seed inicial puede llegar sin el campo si en
+  // algun edge case se hidrata con la respuesta cruda del create.
+  const items = cotizacion.items ?? [];
 
   function patch(item: CotizacionItem, data: EditarItemDto) {
     editar.mutate({ cotizacionId: cotizacion.id, itemId: item.id, data });
