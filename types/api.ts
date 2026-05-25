@@ -173,6 +173,27 @@ export type EquipoMantenimientoResumen = {
   estado: string;
 };
 
+// Fila del historial de rentas — usado tanto en el detalle de equipo
+// como en el de unidad de herramienta. El backend devuelve cliente con
+// los 5 campos para que el componente componga el nombre segun tipo
+// (EMPRESA -> razonSocial; PARTICULAR -> nombre + apellido), igual que
+// en cotizaciones y facturas.
+export type HistorialRentaItem = {
+  cotizacionId: string;
+  numeroCotizacion: string;
+  fechaAprobacion: string | null;
+  cliente: {
+    id: string;
+    tipo: 'EMPRESA' | 'PARTICULAR';
+    razonSocial: string | null;
+    nombre: string | null;
+    apellido: string | null;
+  };
+  periodo: PeriodoItem | null;
+  periodoCustomLabel: string | null;
+  fechaServicio: string | null;
+};
+
 // ============================================================
 // Herramientas & Consumibles (Rama 6)
 // ============================================================

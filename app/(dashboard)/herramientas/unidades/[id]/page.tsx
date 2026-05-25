@@ -11,9 +11,11 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Icon } from '@/components/ui/Icon';
 import { UnidadEstadoSelector } from '@/components/herramientas/UnidadEstadoSelector';
 import { UnidadMantenimientosCard } from '@/components/herramientas/UnidadMantenimientosCard';
+import { HistorialRentasCard } from '@/components/inventario/HistorialRentasCard';
 import {
   useHerramientaTipo,
   useUnidadesPorTipo,
+  useRentasUnidad,
 } from '@/hooks/use-herramientas';
 import { useAuthStore } from '@/stores/auth.store';
 import {
@@ -150,8 +152,15 @@ function UnidadDetalleClient({ unidadId }: { unidadId: string }) {
           )}
         </div>
 
+        <HistorialRentasUnidad unidadId={unidad.id} />
         <UnidadMantenimientosCard unidadId={unidad.id} />
       </div>
     </div>
   );
+}
+
+// Wrapper local: conecta el hook con el componente compartido del inventario.
+function HistorialRentasUnidad({ unidadId }: { unidadId: string }) {
+  const { data, isLoading } = useRentasUnidad(unidadId);
+  return <HistorialRentasCard data={data} isLoading={isLoading} />;
 }

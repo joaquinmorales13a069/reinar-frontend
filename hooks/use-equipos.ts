@@ -13,6 +13,7 @@ import type {
   EstadoEquipoEditable,
   FichaTecnica,
   EquipoMantenimientoResumen,
+  HistorialRentaItem,
 } from '@/types/api';
 
 function extractErrorMessage(err: unknown, fallback: string): string {
@@ -63,6 +64,18 @@ export function useEquipoMantenimientos(id: string) {
       api
         .get<PaginatedResponse<EquipoMantenimientoResumen>>(`/equipos/${id}/mantenimientos`)
         .then((r) => r.data),
+    enabled: !!id,
+  });
+}
+
+export function useEquipoRentas(id: string) {
+  return useQuery({
+    queryKey: ['equipos', id, 'rentas'],
+    queryFn: () =>
+      api.get<ApiResponse<HistorialRentaItem[]>>(`/equipos/${id}/rentas`).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
     enabled: !!id,
   });
 }

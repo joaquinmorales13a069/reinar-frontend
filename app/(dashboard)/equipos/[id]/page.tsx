@@ -12,9 +12,9 @@ import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { EquipoCategoriaBadge } from '@/components/equipos/EquipoCategoriaBadge';
 import { EquipoImagenUpload } from '@/components/equipos/EquipoImagenUpload';
 import { EquipoMantenimientosResumen } from '@/components/equipos/EquipoMantenimientosResumen';
-import { EquipoRentasPlaceholder } from '@/components/equipos/EquipoRentasPlaceholder';
+import { HistorialRentasCard } from '@/components/inventario/HistorialRentasCard';
 import { EquipoReservaPlaceholder } from '@/components/equipos/EquipoReservaPlaceholder';
-import { useEquipo, useEquipoFichaTecnica, useSubirImagenEquipo, useCambiarEstadoEquipo } from '@/hooks/use-equipos';
+import { useEquipo, useEquipoFichaTecnica, useSubirImagenEquipo, useCambiarEstadoEquipo, useEquipoRentas } from '@/hooks/use-equipos';
 import { useEquiposRealtime } from '@/hooks/use-equipos-realtime';
 import { useAuthStore } from '@/stores/auth.store';
 import { ESTADO_LABELS, ESTADO_BADGE_KIND, puedeEjecutar } from '@/lib/equipos';
@@ -121,7 +121,17 @@ function EquipoDetalleClient({ id }: { id: string }) {
         }
       />
 
-      {puedeCambiarEstado && (
+      {puedeCambiarEstado && equipo.estado === 'RENTADO' && (
+        // Mismo patron que UnidadEstadoSelector de herramientas: cuando el equipo
+        // esta rentado, no ofrecemos el selector porque cualquier cambio manual
+        // desincronizaria el contrato con la cotizacion. La devolucion va por el
+        // flujo de Actas (recepcion) que cambia el estado automaticamente.
+        <p className="text-sm text-tx-2 mb-4">
+          Este equipo está rentado. Para devolverlo al inventario, registrá una recepción en el acta de entrega correspondiente.
+        </p>
+      )}
+
+      {puedeCambiarEstado && equipo.estado !== 'RENTADO' && (
         <div className="flex flex-wrap items-center gap-2 mb-4 text-sm">
           <span className="text-xs text-tx-3 mr-1">Cambiar estado:</span>
           {(['DISPONIBLE', 'USO_INTERNO', 'INACTIVO'] as const).map((e) => (
@@ -265,10 +275,17 @@ function EquipoDetalleClient({ id }: { id: string }) {
             </div>
           </div>
 
-          <EquipoRentasPlaceholder />
+          <HistorialRentasEquipo equipoId={equipo.id} />
           <EquipoMantenimientosResumen equipoId={equipo.id} />
         </div>
       </div>
     </div>
   );
+}
+
+// Wrapper que conecta el hook de rentas con el componente compartido. Se
+// declara local para no exportar un componente extra que solo se usa aqui.
+function HistorialRentasEquipo({ equipoId }: { equipoId: string }) {
+  const { data, isLoading } = useEquipoRentas(equipoId);
+  return <HistorialRentasCard data={data} isLoading={isLoading} />;
 }

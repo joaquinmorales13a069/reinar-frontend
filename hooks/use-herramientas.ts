@@ -15,6 +15,7 @@ import type {
   CrearUnidadDto,
   EstadoUnidadEditable,
   UnidadMantenimientoResumen,
+  HistorialRentaItem,
 } from '@/types/api';
 
 // Helper duplicado intencionalmente en cada archivo de hooks: evita una
@@ -186,6 +187,22 @@ export function useMantenimientosUnidad(unidadId: string) {
           `/herramientas/unidades/${unidadId}/mantenimientos`,
         )
         .then((r) => r.data),
+    enabled: !!unidadId,
+  });
+}
+
+export function useRentasUnidad(unidadId: string) {
+  return useQuery({
+    queryKey: ['herramientas', 'unidades', unidadId, 'rentas'],
+    queryFn: () =>
+      api
+        .get<ApiResponse<HistorialRentaItem[]>>(
+          `/herramientas/unidades/${unidadId}/rentas`,
+        )
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
     enabled: !!unidadId,
   });
 }
