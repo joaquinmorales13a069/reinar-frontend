@@ -1,5 +1,6 @@
 'use client';
 
+import Decimal from 'decimal.js';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Icon } from '@/components/ui/Icon';
@@ -7,6 +8,7 @@ import { FormSection } from '@/components/ui/FormSection';
 import { useContactos } from '@/hooks/use-contactos';
 import { useActualizarCotizacion } from '@/hooks/use-cotizaciones';
 import { step3Schema } from '@/lib/schemas/cotizacion';
+import { formatCurrency } from '@/lib/utils';
 import type { z } from 'zod';
 import type { Cotizacion, CondicionesPago, TipoDocumentoFiscal } from '@/types/api';
 
@@ -54,7 +56,23 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
 
   const tipoDoc = watch('tipoDocumentoFiscal');
   const modo = watch('depositoModo');
+  const depPorcentaje = watch('depositoPorcentaje');
+  const depMonto = watch('depositoMonto');
   const requiereContactoFact = tipoDoc === 'CCF' || tipoDoc === 'SUJETO_EXCLUIDO';
+
+  // Calculos en vivo para que el vendedor vea el contexto del deposito.
+  // El total viene del backend como string Decimal — siempre operar con decimal.js.
+  const totalDecimal = new Decimal(cotizacion.total);
+  const depositoCalculado =
+    modo === 'PORCENTAJE' && depPorcentaje
+      ? totalDecimal.mul(depPorcentaje).div(100).toDecimalPlaces(2)
+      : modo === 'MONTO' && depMonto
+        ? new Decimal(depMonto)
+        : null;
+  const porcentajeEquivalente =
+    modo === 'MONTO' && depMonto && totalDecimal.greaterThan(0)
+      ? new Decimal(depMonto).div(totalDecimal).mul(100).toDecimalPlaces(2)
+      : null;
 
   async function onSubmit(values: Step3Form) {
     await actualizar.mutateAsync({
@@ -144,6 +162,14 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
       </FormSection>
 
       <FormSection title="Depósito (opcional)">
+        {/* Total de referencia: ayuda al vendedor a dimensionar el deposito. */}
+        <div className="flex items-baseline justify-between mb-3 p-3 bg-bg-sunken rounded-md">
+          <span className="text-sm text-tx-2">Total de la cotización</span>
+          <span className="font-mono text-base font-semibold text-tx">
+            {formatCurrency(cotizacion.total)}
+          </span>
+        </div>
+
         <Controller
           control={control}
           name="depositoModo"
@@ -178,6 +204,11 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
             {errors.depositoPorcentaje && (
               <p className="text-xs text-danger mt-1">{errors.depositoPorcentaje.message}</p>
             )}
+            {depositoCalculado && (
+              <p className="text-xs text-tx-2 mt-2">
+                Equivale a <span className="font-mono font-semibold text-tx">{formatCurrency(depositoCalculado.toFixed(2))}</span>
+              </p>
+            )}
           </div>
         )}
 
@@ -193,6 +224,11 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
             />
             {errors.depositoMonto && (
               <p className="text-xs text-danger mt-1">{errors.depositoMonto.message}</p>
+            )}
+            {porcentajeEquivalente && (
+              <p className="text-xs text-tx-2 mt-2">
+                Equivale al <span className="font-mono font-semibold text-tx">{porcentajeEquivalente.toString()}%</span> del total
+              </p>
             )}
           </div>
         )}
