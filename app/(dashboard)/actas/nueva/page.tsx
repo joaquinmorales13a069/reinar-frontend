@@ -12,6 +12,7 @@ import { SelectorFactura } from '@/components/actas-recepciones/SelectorFactura'
 import { CondicionSelect } from '@/components/actas-recepciones/CondicionSelect';
 import { ItemRow } from '@/components/actas-recepciones/ItemRow';
 import { useBodegas } from '@/hooks/use-bodegas';
+import { useFactura } from '@/hooks/use-facturas';
 import { useItemsDisponiblesDespacho, useCrearActa } from '@/hooks/use-actas';
 import { crearActaFormSchema, type CrearActaForm } from '@/lib/schemas/acta';
 import type { ActaItem, CrearActaDto, CondicionItem, FacturaListItem } from '@/types/api';
@@ -80,13 +81,26 @@ function NuevaActaPage() {
     },
   });
 
+  // Cuando entramos con ?facturaId=X (desde el detalle de una factura),
+  // resolvemos la factura completa para poblar facturaSeleccionada y disparar
+  // la carga de items. Sin esto, el usuario tendría que buscar y elegir
+  // manualmente la misma factura que ya seleccionó al venir de su detalle.
+  const { data: facturaInicial } = useFactura(facturaIdInicial || null);
+
   useEffect(() => {
-    // Si venimos con un facturaId en la URL pero no tenemos la entidad resuelta
-    // aún, al menos sincronizamos el campo del form para que la validación pase.
-    if (facturaIdInicial && !facturaSeleccionada) {
-      form.setValue('facturaId', facturaIdInicial);
-    }
-  }, [facturaIdInicial, facturaSeleccionada, form]);
+    if (!facturaIdInicial) return;
+    if (facturaSeleccionada) return;
+    form.setValue('facturaId', facturaIdInicial);
+    if (!facturaInicial) return;
+    const c = facturaInicial.cliente;
+    const razonSocial = c?.razonSocial ?? c?.nombre ?? '—';
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFacturaSeleccionada({
+      id: facturaInicial.id,
+      numeroFactura: facturaInicial.numeroFactura,
+      razonSocial,
+    });
+  }, [facturaIdInicial, facturaInicial, facturaSeleccionada, form]);
 
   useEffect(() => {
     if (!itemsDisp) return;
