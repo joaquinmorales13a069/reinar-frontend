@@ -104,7 +104,13 @@ function NuevaActaPage() {
 
   useEffect(() => {
     if (!itemsDisp) return;
-    const inicial: RowState[] = itemsDisp.map((it) => ({
+    // Defensa: filtra cualquier item que no sea físico (servicio, etc.). El
+    // backend ya lo hace, pero esto evita que una versión vieja muestre líneas
+    // sin nombre/tipo identificable.
+    const fisicos = itemsDisp.filter(
+      (it) => it.equipo || it.herramientaUnidad || it.consumible || it.piezaTipo,
+    );
+    const inicial: RowState[] = fisicos.map((it) => ({
       ...it,
       incluido: true,
       condicionSalidaEdit: 'BUENO' as CondicionItem,
