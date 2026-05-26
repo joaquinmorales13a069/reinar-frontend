@@ -76,6 +76,10 @@ export default function NuevaRecepcionPage() {
         combustibleRetorno: '',
       })),
     );
+    // El usuario edita cada row (condición retorno, observaciones, horómetro, combustible),
+    // así que necesitamos una copia mutable derivada del query data. setState desde
+    // useEffect es la forma estándar de sincronizar con datos externos en RHF + React Query.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRows(initial);
   }, [grupos, actaIdInicial]);
 

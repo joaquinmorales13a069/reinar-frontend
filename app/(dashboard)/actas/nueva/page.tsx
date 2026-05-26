@@ -86,6 +86,10 @@ export default function NuevaActaPage() {
       condicionSalidaEdit: 'BUENO' as CondicionItem,
       observacionesSalidaEdit: '',
     }));
+    // El usuario edita cada row (toggle incluido, condición salida, observaciones),
+    // así que necesitamos una copia mutable derivada del query data. setState desde
+    // useEffect es la forma estándar de sincronizar con datos externos en RHF + React Query.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRows(inicial);
   }, [itemsDisp]);
 
