@@ -259,7 +259,7 @@ function NuevaActaPage() {
       {/* ── Logística ───────────────────────────────────────────────── */}
       <div className="rounded-lg border border-bd bg-surface p-4 mb-4">
         <h3 className="text-sm font-semibold text-tx mb-3">Logística</h3>
-        <div className="grid sm:grid-cols-2 gap-3 mb-3">
+        <div className="grid sm:grid-cols-2 gap-3">
           <div>
             <label className={labelCls}>
               Bodega de origen <span className="text-danger">*</span>
@@ -284,25 +284,6 @@ function NuevaActaPage() {
               </div>
             )}
           </div>
-        </div>
-
-        {/* Dirección de entrega en su propia fila por los 4 sub-campos. */}
-        <div className="mb-3">
-          <label className={labelCls}>Dirección de entrega</label>
-          <Controller
-            control={form.control}
-            name="direccionEntrega"
-            render={({ field }) => (
-              <DireccionCompleta
-                value={field.value ?? ''}
-                onChange={field.onChange}
-                error={form.formState.errors.direccionEntrega?.message}
-              />
-            )}
-          />
-        </div>
-
-        <div className="grid sm:grid-cols-2 gap-3">
           <div>
             <label className={labelCls}>Período renta — inicio</label>
             <input
@@ -334,6 +315,22 @@ function NuevaActaPage() {
             />
           </div>
         </div>
+      </div>
+
+      {/* ── Dirección de entrega ─────────────────────────────────────── */}
+      <div className="rounded-lg border border-bd bg-surface p-4 mb-4">
+        <h3 className="text-sm font-semibold text-tx mb-3">Dirección de entrega</h3>
+        <Controller
+          control={form.control}
+          name="direccionEntrega"
+          render={({ field }) => (
+            <DireccionCompleta
+              value={field.value ?? ''}
+              onChange={field.onChange}
+              error={form.formState.errors.direccionEntrega?.message}
+            />
+          )}
+        />
       </div>
 
       {/* ── Ítems a despachar ────────────────────────────────────────── */}
