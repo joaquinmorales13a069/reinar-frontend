@@ -224,6 +224,10 @@ function NuevaActaPage() {
         items,
       };
 
+      // DEBUG: payload de crear acta — remover una vez confirmado el flujo end-to-end.
+      // eslint-disable-next-line no-console
+      console.log('[crear acta] facturaId:', facturaSeleccionada.id, 'dto:', JSON.stringify(dto, null, 2));
+
       try {
         const acta = await crear.mutateAsync({ facturaId: facturaSeleccionada.id, data: dto });
         router.push(`/actas/${acta.id}`);

@@ -18,16 +18,17 @@ import type {
   EntregarActaDto,
 } from '@/types/api';
 
-// Backend devuelve { error: { code, message, details?: Array<{path, message}> } }.
-// Sumamos los `details` al mensaje cuando existen — sin esto el usuario solo ve
-// "Datos inválidos" y no sabe qué campo falló.
+// Backend devuelve { error: { code, message, details?: Array<{field, message}> } }
+// (la convención del middleware validate del server). Concatenamos los details
+// al toast para que un fallo de schema te diga qué campo falló, no solo
+// "Datos inválidos".
 function extractErrorMessage(err: unknown, fallback: string): string {
   const e = err as {
     response?: {
       data?: {
         error?: {
           message?: string;
-          details?: Array<{ path?: Array<string | number>; message?: string }>;
+          details?: Array<{ field?: string; message?: string }>;
         };
       };
     };
@@ -36,10 +37,7 @@ function extractErrorMessage(err: unknown, fallback: string): string {
   const details = e?.response?.data?.error?.details;
   if (Array.isArray(details) && details.length > 0) {
     const lineas = details
-      .map((d) => {
-        const path = Array.isArray(d.path) ? d.path.join('.') : '';
-        return path ? `${path}: ${d.message}` : d.message;
-      })
+      .map((d) => (d.field ? `${d.field}: ${d.message}` : d.message))
       .filter(Boolean)
       .join(' · ');
     return top ? `${top} (${lineas})` : lineas;
