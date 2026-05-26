@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
@@ -55,19 +56,17 @@ function NuevaRecepcionPage() {
   const { data: grupos, isLoading: gruposLoading } = useItemsPendientesDevolucion(facturaSeleccionada?.id ?? null);
 
   const form = useForm<CrearRecepcionForm>({
-    // Mismo workaround que en /actas/nueva: el resolver de @hookform/resolvers v5
-    // genera un falso error de tipos con z.coerce.number() en items anidados.
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error see comment above
     resolver: zodResolver(crearRecepcionFormSchema),
     defaultValues: {
       facturaId: facturaIdInicial,
       numeroActaFisico: '',
       horaRecepcion: '',
       observaciones: '',
-      items: [],
     },
   });
+
+  // Errores de items se manejan manualmente fuera de Zod (ver schema).
+  const [itemsError, setItemsError] = useState<string | null>(null);
 
   // Cargar filas al recibir grupos
   useEffect(() => {
@@ -95,29 +94,55 @@ function NuevaRecepcionPage() {
 
   const crear = useCrearRecepcion();
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    if (!facturaSeleccionada) return;
-    const itemsIncluidos = rows.filter((r) => r.incluido);
-    const dto: CrearRecepcionDto = {
-      numeroActaFisico: data.numeroActaFisico || undefined,
-      horaRecepcion: data.horaRecepcion || undefined,
-      observaciones: data.observaciones || undefined,
-      items: itemsIncluidos.map((r) => ({
-        actaEntregaItemId: r.actaEntregaItemId,
-        condicionRetorno: r.condicionRetorno,
-        observacionesRetorno: r.observacionesRetorno || undefined,
-        horometroRetorno: r.horometroRetorno ? Number(r.horometroRetorno) : undefined,
-        combustibleRetorno: r.combustibleRetorno || undefined,
-      })),
-    };
+  const onSubmit = form.handleSubmit(
+    async (data) => {
+      if (!facturaSeleccionada) {
+        toast.error('Seleccioná una factura antes de registrar la recepción.');
+        return;
+      }
 
-    try {
-      const recepcion = await crear.mutateAsync({ facturaId: facturaSeleccionada.id, data: dto });
-      router.push(`/recepciones/${recepcion.id}`);
-    } catch {
-      // hook ya toasteó
-    }
-  });
+      const itemsIncluidos = rows.filter((r) => r.incluido);
+      if (itemsIncluidos.length === 0) {
+        setItemsError('Marcá al menos un ítem para devolver.');
+        setStep(0); // volvé al paso 1 para que el usuario seleccione
+        return;
+      }
+      const sinCondicion = itemsIncluidos.find((r) => !r.condicionRetorno);
+      if (sinCondicion) {
+        setItemsError('Cada ítem marcado debe tener condición de retorno.');
+        return;
+      }
+      setItemsError(null);
+
+      const dto: CrearRecepcionDto = {
+        numeroActaFisico: data.numeroActaFisico || undefined,
+        horaRecepcion: data.horaRecepcion || undefined,
+        observaciones: data.observaciones || undefined,
+        items: itemsIncluidos.map((r) => ({
+          actaEntregaItemId: r.actaEntregaItemId,
+          condicionRetorno: r.condicionRetorno,
+          observacionesRetorno: r.observacionesRetorno || undefined,
+          horometroRetorno: r.horometroRetorno ? Number(r.horometroRetorno) : undefined,
+          combustibleRetorno: r.combustibleRetorno || undefined,
+        })),
+      };
+
+      try {
+        const recepcion = await crear.mutateAsync({ facturaId: facturaSeleccionada.id, data: dto });
+        router.push(`/recepciones/${recepcion.id}`);
+      } catch {
+        // hook ya toasteó
+      }
+    },
+    // Surface cualquier error de validación Zod del schema base (factura, etc.)
+    // para que ningún click quede sin feedback.
+    (errors) => {
+      const primero = Object.values(errors).find((e) => e && typeof e === 'object' && 'message' in e) as
+        | { message?: string }
+        | undefined;
+      toast.error(primero?.message ?? 'Hay campos sin completar correctamente.');
+    },
+  );
 
   const itemsIncluidos = rows.filter((r) => r.incluido).length;
   const canAdvance = !!facturaSeleccionada && rows.length > 0 && itemsIncluidos > 0;
@@ -375,6 +400,10 @@ function NuevaRecepcionPage() {
           </button>
         )}
       </div>
+
+      {itemsError && (
+        <div className="text-xs text-danger mt-2 text-right">{itemsError}</div>
+      )}
     </form>
   );
 }
