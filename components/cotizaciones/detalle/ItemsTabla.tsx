@@ -36,13 +36,18 @@ export function ItemsTabla({ cotizacion }: { cotizacion: Cotizacion }) {
                 <div className="text-2xs text-tx-3 mt-0.5">{TIPO_LABEL[it.tipo]}</div>
               </td>
               <td className="px-3 py-2">
-                <Badge
-                  status={
-                    PERIODO_LABEL[it.periodo] +
-                    (it.periodo === 'CUSTOM' && it.periodoCustomLabel ? ` · ${it.periodoCustomLabel}` : '')
-                  }
-                  kind="neutral"
-                />
+                {/* Consumibles se venden por unidad — no aplica período de renta. */}
+                {it.tipo === 'CONSUMIBLE' ? (
+                  <span className="text-xs text-tx-3">—</span>
+                ) : (
+                  <Badge
+                    status={
+                      PERIODO_LABEL[it.periodo] +
+                      (it.periodo === 'CUSTOM' && it.periodoCustomLabel ? ` · ${it.periodoCustomLabel}` : '')
+                    }
+                    kind="neutral"
+                  />
+                )}
               </td>
               <td className="px-3 py-2 text-right tabular-nums">{it.cantidad}</td>
               <td className="px-3 py-2 text-right font-mono">
