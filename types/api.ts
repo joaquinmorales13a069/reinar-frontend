@@ -848,14 +848,27 @@ export type MetodoPago =
   | 'OTRO'
   | 'ANTICIPO';
 
-// Forma libre que devuelve FacturaLlama en el campo dteRespuestaMH.
-// El rechazo del MH viene con codigo + descripcionMsg + lista de observaciones.
-// Si la estructura cambia upstream, esto necesita actualizarse.
-export type DteRespuestaMH = {
-  codigo?: string;
-  descripcionMsg?: string;
-  observaciones?: string[];
-} | null;
+// Forma que devuelve FacturaLlama y persistimos en dteRespuestaMH:
+// { id, controlNumber, status, mhResponse: { data: {...}, status, statusText } }.
+// La data del rechazo del MH viene anidada en mhResponse.data con codigoMsg
+// (no 'codigo'), descripcionMsg y un array observaciones.
+export type DteRespuestaMH =
+  | {
+      id?: string;
+      controlNumber?: string | null;
+      status?: string;
+      mhResponse?: {
+        data?: {
+          estado?: string;
+          codigoMsg?: string;
+          descripcionMsg?: string;
+          observaciones?: string[];
+        };
+        status?: number;
+        statusText?: string;
+      };
+    }
+  | null;
 
 // Forma reducida del listado GET /facturas — solo los campos del select.
 // cliente trae los 5 campos para que la tabla componga el nombre segun tipo
