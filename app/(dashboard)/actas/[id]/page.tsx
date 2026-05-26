@@ -9,7 +9,6 @@ import { Icon } from '@/components/ui/Icon';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { EstadoActaTimeline } from '@/components/actas-recepciones/EstadoActaTimeline';
 import { ItemRow } from '@/components/actas-recepciones/ItemRow';
-import { CondicionBadge } from '@/components/actas-recepciones/CondicionBadge';
 import { ActaPanelAccionContextual } from '@/components/actas/ActaPanelAccionContextual';
 import { CorreccionesAyuda } from '@/components/actas/CorreccionesAyuda';
 import { useActa, useDescargarActaPdf } from '@/hooks/use-actas';
@@ -66,17 +65,10 @@ export default function ActaDetallePage({ params }: { params: Promise<{ id: stri
         <div className="rounded-lg border border-bd bg-surface p-4">
           <h3 className="text-sm font-semibold text-tx mb-3">Ítems del acta ({acta.items.length})</h3>
           <div className="divide-y divide-bd">
+            {/* mode="view" ya renderiza "Salida + CondicionBadge" internamente,
+                así que NO pasamos rightSlot acá para evitar duplicar la columna. */}
             {acta.items.map((it) => (
-              <ItemRow
-                key={it.id}
-                item={it}
-                rightSlot={
-                  <div className="flex flex-col items-end gap-0.5">
-                    <span className="text-2xs text-tx-3 uppercase tracking-wide">Salida</span>
-                    <CondicionBadge condicion={it.condicionSalida} />
-                  </div>
-                }
-              />
+              <ItemRow key={it.id} item={it} />
             ))}
           </div>
         </div>
