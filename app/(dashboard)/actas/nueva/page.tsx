@@ -126,7 +126,10 @@ function NuevaActaPage() {
     form.setValue('facturaId', facturaIdInicial);
     if (!facturaInicial) return;
     const c = facturaInicial.cliente;
-    const razonSocial = c?.razonSocial ?? c?.nombre ?? '—';
+    // Para PARTICULAR la razonSocial es null y queremos nombre + apellido;
+    // antes el código tomaba solo nombre y se perdía el apellido.
+    const nombreCompleto = [c?.nombre, c?.apellido].filter(Boolean).join(' ');
+    const razonSocial = c?.razonSocial ?? (nombreCompleto || '—');
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFacturaSeleccionada({
       id: facturaInicial.id,
