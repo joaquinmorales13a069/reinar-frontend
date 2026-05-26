@@ -14,7 +14,11 @@ import { DireccionCompleta } from '@/components/actas-recepciones/DireccionCompl
 import { ItemRow } from '@/components/actas-recepciones/ItemRow';
 import { useBodegas } from '@/hooks/use-bodegas';
 import { useFactura } from '@/hooks/use-facturas';
-import { useItemsDisponiblesDespacho, useCrearActa } from '@/hooks/use-actas';
+import {
+  useItemsDisponiblesDespacho,
+  useCrearActa,
+  useBodegasConItemsDisponibles,
+} from '@/hooks/use-actas';
 import { crearActaFormSchema, type CrearActaForm } from '@/lib/schemas/acta';
 import type {
   ItemDisponibleDespacho,
@@ -89,9 +93,7 @@ function NuevaActaPage() {
   );
 
   const [facturaSeleccionada, setFacturaSeleccionada] = useState<FacturaRef | null>(null);
-  const { data: itemsDisp, isLoading: itemsLoading } = useItemsDisponiblesDespacho(
-    facturaSeleccionada?.id ?? null,
-  );
+  const { data: bodegasConItems } = useBodegasConItemsDisponibles(facturaSeleccionada?.id ?? null);
   const [rows, setRows] = useState<RowState[]>([]);
 
   const form = useForm<CrearActaForm>({
@@ -105,6 +107,14 @@ function NuevaActaPage() {
       periodoRentaFin: '',
     },
   });
+
+  // Items se filtran por bodegaOrigenId del form — al cambiar la bodega, los
+  // items mostrados cambian a los que están físicamente en esa bodega.
+  const bodegaOrigenId = form.watch('bodegaOrigenId');
+  const { data: itemsDisp, isLoading: itemsLoading } = useItemsDisponiblesDespacho(
+    facturaSeleccionada?.id ?? null,
+    bodegaOrigenId || null,
+  );
 
   // Cuando entramos con ?facturaId=X (desde el detalle de una factura),
   // resolvemos la factura completa para poblar facturaSeleccionada y disparar
@@ -247,6 +257,9 @@ function NuevaActaPage() {
     setFacturaSeleccionada(null);
     setRows([]);
     form.setValue('facturaId', '');
+    // Reseteamos la bodega elegida: las bodegas disponibles dependen de la
+    // factura, así que la selección previa puede ya no ser válida.
+    form.setValue('bodegaOrigenId', '');
   }
 
   return (
@@ -307,16 +320,31 @@ function NuevaActaPage() {
             <Controller
               control={form.control}
               name="bodegaOrigenId"
-              render={({ field }) => (
-                <select {...field} className={inputBase}>
-                  <option value="">— Seleccioná —</option>
-                  {bodegasPrincipales.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.nombre}
+              render={({ field }) => {
+                // Mostramos solo las bodegas que tienen al menos un item
+                // despachable para esta factura. Cae al listado general si la
+                // factura aún no está seleccionada.
+                const idsPermitidos = bodegasConItems
+                  ? new Set(bodegasConItems.map((b) => b.id))
+                  : null;
+                const opciones = facturaSeleccionada && idsPermitidos
+                  ? bodegasPrincipales.filter((b) => idsPermitidos.has(b.id))
+                  : bodegasPrincipales;
+                return (
+                  <select {...field} className={inputBase}>
+                    <option value="">
+                      {facturaSeleccionada && opciones.length === 0
+                        ? 'Sin bodegas con items disponibles'
+                        : '— Seleccioná —'}
                     </option>
-                  ))}
-                </select>
-              )}
+                    {opciones.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.nombre}
+                      </option>
+                    ))}
+                  </select>
+                );
+              }}
             />
             {form.formState.errors.bodegaOrigenId && (
               <div className="text-xs text-danger mt-1">

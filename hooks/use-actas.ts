@@ -77,14 +77,39 @@ export function useActa(id: string | null | undefined) {
   });
 }
 
-export function useItemsDisponiblesDespacho(facturaId: string | null | undefined) {
+export function useItemsDisponiblesDespacho(
+  facturaId: string | null | undefined,
+  bodegaId?: string | null,
+) {
   return useQuery({
-    queryKey: ['items-disponibles-despacho', facturaId],
+    queryKey: ['items-disponibles-despacho', facturaId, bodegaId ?? null],
+    queryFn: () => {
+      const qs = bodegaId ? `?bodegaId=${encodeURIComponent(bodegaId)}` : '';
+      return api
+        .get<ApiResponse<ItemDisponibleDespacho[]>>(`/facturas/${facturaId}/actas/items-disponibles-despacho${qs}`)
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        });
+    },
+    enabled: !!facturaId,
+  });
+}
+
+// Devuelve solo las bodegas principales que tienen al menos un item
+// despachable para la factura — usado por el selector de bodegaOrigen.
+export function useBodegasConItemsDisponibles(facturaId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['bodegas-con-items-disponibles', facturaId],
     queryFn: () =>
-      api.get<ApiResponse<ItemDisponibleDespacho[]>>(`/facturas/${facturaId}/actas/items-disponibles-despacho`).then((r) => {
-        if (!r.data.success) throw new Error(r.data.error.message);
-        return r.data.data;
-      }),
+      api
+        .get<ApiResponse<Array<{ id: string; nombre: string }>>>(
+          `/facturas/${facturaId}/actas/bodegas-con-items-disponibles`,
+        )
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
     enabled: !!facturaId,
   });
 }
