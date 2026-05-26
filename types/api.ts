@@ -1014,7 +1014,9 @@ export type ActaListItem = {
     id: string;
     numeroFactura: string;
     clienteId: string;
-    cliente: { id: string; razonSocial: string };
+    // razonSocial es null para clientes PARTICULAR; el frontend hace fallback
+    // a nombre+apellido para renderizar el nombre legible.
+    cliente: { id: string; razonSocial: string | null; nombre: string | null; apellido: string | null };
   };
   _count: { items: number };
 };
@@ -1099,7 +1101,7 @@ export type RecepcionListItem = {
     id: string;
     numeroFactura: string;
     clienteId: string;
-    cliente: { id: string; razonSocial: string };
+    cliente: { id: string; razonSocial: string | null; nombre: string | null; apellido: string | null };
   };
   _count: { items: number };
 };

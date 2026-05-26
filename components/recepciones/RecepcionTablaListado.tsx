@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { formatDate } from '@/lib/utils';
+import { formatDate, nombreCliente } from '@/lib/utils';
 import type { RecepcionListItem } from '@/types/api';
 
 export function RecepcionTablaListado({ recepciones }: { recepciones: RecepcionListItem[] }) {
@@ -29,7 +29,7 @@ export function RecepcionTablaListado({ recepciones }: { recepciones: RecepcionL
                 <Link href={`/recepciones/${r.id}`} className="font-mono font-medium text-tx hover:text-accent">{r.numeroActa}</Link>
               </td>
               <td className="px-3 py-2 font-mono text-xs text-tx-2">{r.factura.numeroFactura}</td>
-              <td className="px-3 py-2 truncate max-w-xs">{r.factura.cliente.razonSocial}</td>
+              <td className="px-3 py-2 truncate max-w-xs">{nombreCliente(r.factura.cliente)}</td>
               <td className="px-3 py-2 font-mono text-xs">{formatDate(r.fechaRecepcion)}</td>
               <td className="px-3 py-2 text-xs">{r._count.items}</td>
               <td className="px-3 py-2 text-xs">{r.usuarioRecepcion.nombre} {r.usuarioRecepcion.apellido}</td>

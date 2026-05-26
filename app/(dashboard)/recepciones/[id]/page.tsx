@@ -10,18 +10,14 @@ import { CondicionBadge } from '@/components/actas-recepciones/CondicionBadge';
 import { describirItem } from '@/components/actas-recepciones/ItemRow';
 import { useRecepcion, useDescargarRecepcionPdf } from '@/hooks/use-recepciones';
 import { useActasRealtime } from '@/hooks/use-actas-realtime';
-import { formatDate } from '@/lib/utils';
+import { formatDate, nombreCliente } from '@/lib/utils';
 import type { Recepcion } from '@/types/api';
 
-// Devuelve el nombre del cliente a mostrar — defensivo porque backends viejos
-// no incluyen factura.cliente en obtenerRecepcion (PR #43 server lo agrega).
-// Para clientes PARTICULAR la razonSocial es null, por eso el fallback a
-// nombre+apellido.
+// Defensa contra backends viejos que aún no incluyen factura.cliente.
 function nombreClienteRecepcion(r: Recepcion): string {
-  const c = (r.factura as { cliente?: { razonSocial?: string | null; nombre?: string | null; apellido?: string | null } }).cliente;
+  const c = r.factura.cliente as Recepcion['factura']['cliente'] | undefined;
   if (!c) return '—';
-  if (c.razonSocial) return c.razonSocial;
-  return [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
+  return nombreCliente(c);
 }
 
 export default function RecepcionDetallePage({ params }: { params: Promise<{ id: string }> }) {
