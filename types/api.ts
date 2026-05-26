@@ -1056,6 +1056,25 @@ export type FiltrosActas = {
   clienteId?: string;
 };
 
+// Respuesta de GET /facturas/:id/actas/items-disponibles-despacho.
+// Cada elemento es un CotizacionItem (no un ActaEntregaItem). El `id` ES el
+// cotizacionItemId que va al DTO al crear el acta. La `cantidad` se usa para
+// consumibles/piezas (cantidadConsumible/cantidadRecibida en el acta).
+export type ItemDisponibleDespacho = {
+  id: string;
+  cotizacionId: string;
+  equipoId: string | null;
+  herramientaTipoId: string | null;
+  consumibleId: string | null;
+  piezaTipoId: string | null;
+  cantidad: number;
+  descripcion: string;
+  equipo:          { id: string; nombre: string; codigo: string } | null;
+  herramientaTipo: { id: string; nombre: string } | null;
+  consumible:      { id: string; nombre: string } | null;
+  piezaTipo:       { id: string; nombre: string } | null;
+};
+
 export type RecepcionItem = {
   id: string;
   actaEntregaItemId: string;

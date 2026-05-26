@@ -10,7 +10,7 @@ import type {
   PaginatedResponse,
   Acta,
   ActaListItem,
-  ActaItem,
+  ItemDisponibleDespacho,
   FiltrosActas,
   CrearActaDto,
   EditarActaDto,
@@ -18,10 +18,33 @@ import type {
   EntregarActaDto,
 } from '@/types/api';
 
-// Mismo helper que use-facturas.ts — duplicado intencional para evitar acoplamiento.
+// Backend devuelve { error: { code, message, details?: Array<{path, message}> } }.
+// Sumamos los `details` al mensaje cuando existen — sin esto el usuario solo ve
+// "Datos inválidos" y no sabe qué campo falló.
 function extractErrorMessage(err: unknown, fallback: string): string {
-  const e = err as { response?: { data?: { error?: { message?: string } } } };
-  return e?.response?.data?.error?.message ?? fallback;
+  const e = err as {
+    response?: {
+      data?: {
+        error?: {
+          message?: string;
+          details?: Array<{ path?: Array<string | number>; message?: string }>;
+        };
+      };
+    };
+  };
+  const top = e?.response?.data?.error?.message;
+  const details = e?.response?.data?.error?.details;
+  if (Array.isArray(details) && details.length > 0) {
+    const lineas = details
+      .map((d) => {
+        const path = Array.isArray(d.path) ? d.path.join('.') : '';
+        return path ? `${path}: ${d.message}` : d.message;
+      })
+      .filter(Boolean)
+      .join(' · ');
+    return top ? `${top} (${lineas})` : lineas;
+  }
+  return top ?? fallback;
 }
 
 // ─── Queries ─────────────────────────────────────────────────────────
@@ -59,7 +82,7 @@ export function useItemsDisponiblesDespacho(facturaId: string | null | undefined
   return useQuery({
     queryKey: ['items-disponibles-despacho', facturaId],
     queryFn: () =>
-      api.get<ApiResponse<ActaItem[]>>(`/facturas/${facturaId}/actas/items-disponibles-despacho`).then((r) => {
+      api.get<ApiResponse<ItemDisponibleDespacho[]>>(`/facturas/${facturaId}/actas/items-disponibles-despacho`).then((r) => {
         if (!r.data.success) throw new Error(r.data.error.message);
         return r.data.data;
       }),

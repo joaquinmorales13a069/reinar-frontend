@@ -17,13 +17,45 @@ import { useBodegas } from '@/hooks/use-bodegas';
 import { useFactura } from '@/hooks/use-facturas';
 import { useItemsDisponiblesDespacho, useCrearActa } from '@/hooks/use-actas';
 import { crearActaFormSchema, type CrearActaForm } from '@/lib/schemas/acta';
-import type { ActaItem, CrearActaDto, CondicionItem, FacturaListItem } from '@/types/api';
+import type {
+  ItemDisponibleDespacho,
+  CrearActaDto,
+  CondicionItem,
+  FacturaListItem,
+  ActaItem,
+} from '@/types/api';
+
+// Adapta un CotizacionItem (lo que viene de items-disponibles-despacho) al
+// shape que espera ItemRow (ActaItem). El componente ItemRow se diseñó para
+// renderizar items DE UN ACTA ya existente; reutilizarlo aquí ahorra duplicar
+// el resolver polimórfico (4 tipos). Mapeamos herramientaTipo → un pseudo
+// herramientaUnidad solo para fines de display (codigoInterno vacío, ya que
+// la unidad real se asigna después).
+function rowToActaItemDisplay(r: ItemDisponibleDespacho): ActaItem {
+  return {
+    id: r.id,
+    cotizacionItemId: r.id,
+    equipo: r.equipo,
+    herramientaUnidad: r.herramientaTipo
+      ? {
+          id: r.herramientaTipo.id,
+          codigoInterno: '',
+          herramientaTipo: { nombre: r.herramientaTipo.nombre },
+        }
+      : null,
+    consumible: r.consumible,
+    piezaTipo: r.piezaTipo,
+    cantidadConsumible: r.consumible ? r.cantidad : null,
+    cantidadRecibida: r.piezaTipo ? r.cantidad : null,
+    estado: 'PENDIENTE_DEVOLUCION',
+  };
+}
 
 const inputBase =
   'w-full px-3 py-2 text-sm rounded-md border border-bd bg-surface text-tx placeholder:text-tx-3 focus:outline-none focus:border-accent transition-colors';
 const labelCls = 'block text-xs font-medium text-tx-2 mb-1';
 
-type RowState = ActaItem & {
+type RowState = ItemDisponibleDespacho & {
   incluido: boolean;
   condicionSalidaEdit: CondicionItem;
   observacionesSalidaEdit: string;
@@ -103,8 +135,11 @@ function NuevaActaPage() {
     // Defensa: filtra cualquier item que no sea físico (servicio, etc.). El
     // backend ya lo hace, pero esto evita que una versión vieja muestre líneas
     // sin nombre/tipo identificable.
+    // CotizacionItem expone herramientaTipo (no herramientaUnidad — la unidad
+     // se resuelve recién al despachar). Aquí solo aseguramos que hay algún
+     // FK físico para excluir servicios u otras líneas no despachables.
     const fisicos = itemsDisp.filter(
-      (it) => it.equipo || it.herramientaUnidad || it.consumible || it.piezaTipo,
+      (it) => it.equipo || it.herramientaTipo || it.consumible || it.piezaTipo,
     );
     const inicial: RowState[] = fisicos.map((it) => ({
       ...it,
@@ -133,19 +168,24 @@ function NuevaActaPage() {
       .filter((r) => r.incluido)
       .map((r) => {
         const base: Partial<CrearActaDto['items'][number]> = {};
-        if (r.equipo) {
-          base.equipoId = r.equipo.id;
-        } else if (r.herramientaUnidad) {
-          base.herramientaUnidadId = r.herramientaUnidad.id;
-        } else if (r.consumible) {
-          base.consumibleId = r.consumible.id;
-          base.cantidadConsumible = r.cantidadConsumible ?? 1;
-        } else if (r.piezaTipo) {
-          base.piezaTipoId = r.piezaTipo.id;
-          base.cantidadRecibida = r.cantidadRecibida ?? 1;
+        // r es un CotizacionItem; resolvemos qué tipo es según qué *Id está
+        // poblado y mapeamos al campo correspondiente del DTO de ActaEntregaItem.
+        // Nota: herramientas requieren elegir una HerramientaUnidad específica
+        // (no el tipo). Esa selección aún no está en el form — TODO cuando se
+        // agregue soporte para herramientas en el flujo de despacho.
+        if (r.equipoId && r.equipo) {
+          base.equipoId = r.equipoId;
+        } else if (r.consumibleId && r.consumible) {
+          base.consumibleId = r.consumibleId;
+          base.cantidadConsumible = r.cantidad;
+        } else if (r.piezaTipoId && r.piezaTipo) {
+          base.piezaTipoId = r.piezaTipoId;
+          base.cantidadRecibida = r.cantidad;
         }
         return {
-          cotizacionItemId: r.cotizacionItemId,
+          // El backend exige cotizacionItemId como cuid — es el id propio del
+          // CotizacionItem (la fila de la cotización), NO el FK al equipo/etc.
+          cotizacionItemId: r.id,
           ...base,
           condicionSalida: r.condicionSalidaEdit,
           observacionesSalida: r.observacionesSalidaEdit || undefined,
@@ -381,7 +421,7 @@ function NuevaActaPage() {
                     }
                   />
                   <div className="flex-1 min-w-0">
-                    <ItemRow item={r} mode="compact" />
+                    <ItemRow item={rowToActaItemDisplay(r)} mode="compact" />
                     <div className="grid sm:grid-cols-3 gap-2 mt-2">
                       <div>
                         <label className={labelCls}>Cond. salida</label>
