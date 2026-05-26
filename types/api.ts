@@ -969,3 +969,197 @@ export type CrearPagoDto = {
   referencia?: string;
   notas?: string;
 };
+
+// ── Actas y Recepciones (RAMA 12) ─────────────────────────────────────────────
+
+export type ActaItemTipo = 'EQUIPO' | 'HERRAMIENTA' | 'CONSUMIBLE' | 'PIEZA';
+export type CondicionItem = 'BUENO' | 'REGULAR' | 'MALO';
+export type EstadoActa = 'PENDIENTE' | 'DESPACHADO' | 'ENTREGADO' | 'DEVUELTA_PARCIAL' | 'DEVUELTO';
+export type EstadoActaItem = 'PENDIENTE_DEVOLUCION' | 'DEVUELTO';
+
+export type ActaItem = {
+  id: string;
+  cotizacionItemId: string;
+  equipo?: { id: string; nombre: string; codigoInterno: string } | null;
+  herramientaUnidad?: {
+    id: string;
+    codigoInterno: string;
+    herramientaTipo: { nombre: string };
+  } | null;
+  consumible?: { id: string; nombre: string } | null;
+  piezaTipo?:  { id: string; nombre: string } | null;
+  cantidadConsumible?: number | null;
+  cantidadRecibida?:   number | null;
+  condicionSalida?:    CondicionItem | null;
+  observacionesSalida?: string | null;
+  horometroSalida?:    string | null;
+  combustibleSalida?:  string | null;
+  estadoOperacional?:  boolean | null;
+  accesoriosCompletos?: boolean | null;
+  limpieza?:           boolean | null;
+  estado: EstadoActaItem;
+};
+
+export type ActaListItem = {
+  id: string;
+  numeroActa: string;
+  estado: EstadoActa;
+  fechaDespacho: string | null;
+  fechaEntrega: string | null;
+  fechaDevolucion: string | null;
+  createdAt: string;
+  bodegaOrigen: { id: string; nombre: string };
+  usuarioDespacho: { id: string; nombre: string; apellido: string } | null;
+  factura: {
+    id: string;
+    numeroFactura: string;
+    clienteId: string;
+    cliente: { id: string; razonSocial: string };
+  };
+  _count: { items: number };
+};
+
+export type Acta = {
+  id: string;
+  numeroActa: string;
+  estado: EstadoActa;
+  facturaId: string;
+  bodegaOrigenId: string;
+  bodegaOrigen: { id: string; nombre: string };
+  direccionEntrega: string | null;
+  notas: string | null;
+  observacionesSalida: string | null;
+  numeroActaFisico: string | null;
+  horaDespacho: string | null;
+  horaEntrega: string | null;
+  fechaDespacho: string | null;
+  fechaEntrega: string | null;
+  fechaDevolucion: string | null;
+  periodoRentaInicio: string | null;
+  periodoRentaFin: string | null;
+  usuarioDespacho: { id: string; nombre: string; apellido: string } | null;
+  contactoReceptor: { id: string; nombre: string } | null;
+  receptorNombre: string | null;
+  receptorDocumento: string | null;
+  factura: { id: string; numeroFactura: string; clienteId: string };
+  items: ActaItem[];
+  createdAt: string;
+};
+
+export type FiltrosActas = {
+  page?: number;
+  limit?: number;
+  estado?: EstadoActa;
+  busqueda?: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
+  clienteId?: string;
+};
+
+export type RecepcionItem = {
+  id: string;
+  actaEntregaItemId: string;
+  condicionRetorno?: CondicionItem | null;
+  observacionesRetorno?: string | null;
+  horometroRetorno?: string | null;
+  combustibleRetorno?: string | null;
+  actaEntregaItem: ActaItem & {
+    actaEntrega: { id: string; numeroActa: string };
+  };
+};
+
+export type RecepcionListItem = {
+  id: string;
+  numeroActa: string;
+  numeroActaFisico: string | null;
+  fechaRecepcion: string;
+  horaRecepcion: string | null;
+  observaciones: string | null;
+  usuarioRecepcion: { id: string; nombre: string; apellido: string };
+  factura: {
+    id: string;
+    numeroFactura: string;
+    clienteId: string;
+    cliente: { id: string; razonSocial: string };
+  };
+  _count: { items: number };
+};
+
+export type Recepcion = RecepcionListItem & { items: RecepcionItem[] };
+
+export type FiltrosRecepciones = Omit<FiltrosActas, 'estado'>;
+
+// Items pendientes de devolución agrupados por acta (GET /facturas/:id/actas/items-pendientes-devolucion)
+export type GrupoPendienteDevolucion = {
+  actaEntregaId: string;
+  numeroActa: string;
+  fechaEntrega: string | null;
+  items: ActaItem[];
+};
+
+// DTOs de mutaciones
+export type CrearActaDto = {
+  bodegaOrigenId: string;
+  direccionEntrega?: string;
+  notas?: string;
+  observacionesSalida?: string;
+  numeroActaFisico?: string;
+  horaDespacho?: string;
+  horaEntrega?: string;
+  periodoRentaInicio?: string;
+  periodoRentaFin?: string;
+  items: Array<{
+    cotizacionItemId: string;
+    equipoId?: string;
+    herramientaUnidadId?: string;
+    consumibleId?: string;
+    piezaTipoId?: string;
+    cantidadConsumible?: number;
+    cantidadRecibida?: number;
+    condicionSalida?: CondicionItem;
+    observacionesSalida?: string;
+    horometroSalida?: number;
+    combustibleSalida?: string;
+    estadoOperacional?: boolean;
+    accesoriosCompletos?: boolean;
+    limpieza?: boolean;
+  }>;
+};
+
+export type EditarActaDto = {
+  bodegaOrigenId?: string;
+  direccionEntrega?: string;
+  notas?: string;
+  observacionesSalida?: string;
+  numeroActaFisico?: string;
+  horaDespacho?: string;
+  periodoRentaInicio?: string;
+  periodoRentaFin?: string;
+};
+
+export type DespacharActaDto = {
+  estado: 'DESPACHADO';
+  usuarioDespachoId: string;
+  observacionesSalida?: string;
+};
+
+export type EntregarActaDto = {
+  estado: 'ENTREGADO';
+  contactoReceptorId?: string;
+  receptorNombre?: string;
+  receptorDocumento?: string;
+  horaEntrega?: string;
+};
+
+export type CrearRecepcionDto = {
+  numeroActaFisico?: string;
+  horaRecepcion?: string;
+  observaciones?: string;
+  items: Array<{
+    actaEntregaItemId: string;
+    condicionRetorno?: CondicionItem;
+    observacionesRetorno?: string;
+    horometroRetorno?: number;
+    combustibleRetorno?: string;
+  }>;
+};
