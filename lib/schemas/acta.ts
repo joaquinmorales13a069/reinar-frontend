@@ -55,7 +55,9 @@ export const entregaFormSchema = z.object({
   contactoReceptorId: z.string().optional(),
   receptorNombre: z.string().optional(),
   receptorDocumento: z.string().optional(),
+  receptorEmail: z.string().email('Email inválido').optional().or(z.literal('')),
   horaEntrega: z.string().optional(),
+  enviarCorreo: z.boolean().optional(),
 }).refine(
   (d) => !!d.contactoReceptorId || !!(d.receptorNombre && d.receptorNombre.trim()),
   { message: 'Indicá un contacto o un nombre del receptor', path: ['receptorNombre'] },

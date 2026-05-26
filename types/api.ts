@@ -1167,7 +1167,9 @@ export type EntregarActaDto = {
   contactoReceptorId?: string;
   receptorNombre?: string;
   receptorDocumento?: string;
+  receptorEmail?: string;
   horaEntrega?: string;
+  enviarCorreo?: boolean;
 };
 
 export type CrearRecepcionDto = {

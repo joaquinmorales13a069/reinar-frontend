@@ -31,7 +31,9 @@ export default function EntregaPage({ params }: { params: Promise<{ id: string }
       contactoReceptorId: '',
       receptorNombre: '',
       receptorDocumento: '',
+      receptorEmail: '',
       horaEntrega: '',
+      enviarCorreo: true,
     },
   });
 
@@ -87,6 +89,13 @@ export default function EntregaPage({ params }: { params: Promise<{ id: string }
     );
   }
 
+  // El contacto seleccionado (si hay) es la fuente de verdad del email;
+  // si es receptor libre, usamos el email capturado en el form.
+  const contactoSeleccionado = contactos.find((c) => c.id === contactoId);
+  const enviarCorreo = form.watch('enviarCorreo') ?? true;
+  const receptorEmailLibre = form.watch('receptorEmail') ?? '';
+  const emailEfectivo = contactoSeleccionado?.email ?? receptorEmailLibre;
+
   const onSubmit = form.handleSubmit(async (data) => {
     try {
       await cambiar.mutateAsync({
@@ -96,7 +105,14 @@ export default function EntregaPage({ params }: { params: Promise<{ id: string }
           contactoReceptorId: data.contactoReceptorId || undefined,
           receptorNombre: data.receptorNombre || undefined,
           receptorDocumento: data.receptorDocumento || undefined,
+          // Solo enviamos receptorEmail si NO hay contacto seleccionado — el
+          // backend ignora el campo cuando hay contactoReceptorId (usa el email
+          // del contacto). Limpiarlo evita persistir un valor obsoleto.
+          receptorEmail: !data.contactoReceptorId && data.receptorEmail
+            ? data.receptorEmail
+            : undefined,
           horaEntrega: data.horaEntrega || undefined,
+          enviarCorreo: data.enviarCorreo ?? true,
         },
       });
       router.push(`/actas/${id}`);
@@ -179,6 +195,67 @@ export default function EntregaPage({ params }: { params: Promise<{ id: string }
             />
           </div>
         </div>
+      </div>
+
+      {/* ── Notificación por correo ─────────────────────────────────── */}
+      <div className="rounded-lg border border-bd bg-surface p-4 mb-4">
+        <h3 className="text-sm font-semibold text-tx mb-3">Notificación por correo</h3>
+
+        <label className="flex items-center gap-2 text-sm text-tx cursor-pointer mb-3">
+          <input
+            type="checkbox"
+            {...form.register('enviarCorreo')}
+            className="rounded border-bd"
+          />
+          Enviar acta por correo al receptor al confirmar la entrega
+        </label>
+
+        {enviarCorreo && (
+          <>
+            {contactoSeleccionado ? (
+              // Contacto seleccionado: usamos su email como fuente de verdad.
+              <div className="text-xs text-tx-2">
+                {contactoSeleccionado.email ? (
+                  <>Se enviará a <span className="font-mono text-tx">{contactoSeleccionado.email}</span> (email del contacto).</>
+                ) : (
+                  <span className="text-warn">
+                    El contacto seleccionado no tiene email registrado. No se podrá enviar.
+                  </span>
+                )}
+              </div>
+            ) : (
+              // Receptor libre: pedimos email manual.
+              <div>
+                <label className={labelCls}>Email del receptor</label>
+                <input
+                  type="email"
+                  {...form.register('receptorEmail')}
+                  className={inputBase}
+                  placeholder="correo@empresa.com"
+                />
+                {form.formState.errors.receptorEmail && (
+                  <div className="text-xs text-danger mt-1">
+                    {form.formState.errors.receptorEmail.message}
+                  </div>
+                )}
+                {!receptorEmailLibre && (
+                  <div className="text-xs text-tx-3 mt-1">
+                    Sin email no se enviará la notificación (el acta igual quedará registrada).
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {!enviarCorreo && (
+          <div className="text-xs text-tx-3">
+            El acta se registrará como entregada sin enviar correo automático.
+          </div>
+        )}
+
+        {/* Hint silencioso: emailEfectivo se calcula para mostrarlo más claro a futuro si se necesita */}
+        <input type="hidden" value={emailEfectivo} readOnly />
       </div>
 
       <div className="flex justify-end gap-2">
