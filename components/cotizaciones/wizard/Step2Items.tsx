@@ -123,6 +123,12 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
                     />
                   </td>
                   <td className="px-3 py-2">
+                    {/* Consumibles se venden por unidad, no por período de renta;
+                        el campo periodo en BD se conserva con su default DIA pero
+                        no se ofrece como editable porque el concepto no aplica. */}
+                    {it.tipo === 'CONSUMIBLE' ? (
+                      <span className="text-xs text-tx-3">—</span>
+                    ) : (
                     <div className="flex flex-col gap-1">
                       <select
                         key={`per-${it.id}-${it.periodo}`}
@@ -190,6 +196,7 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
                         />
                       )}
                     </div>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-right">
                     {it.tipo === 'EQUIPO' ? (

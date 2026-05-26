@@ -848,14 +848,27 @@ export type MetodoPago =
   | 'OTRO'
   | 'ANTICIPO';
 
-// Forma libre que devuelve FacturaLlama en el campo dteRespuestaMH.
-// El rechazo del MH viene con codigo + descripcionMsg + lista de observaciones.
-// Si la estructura cambia upstream, esto necesita actualizarse.
-export type DteRespuestaMH = {
-  codigo?: string;
-  descripcionMsg?: string;
-  observaciones?: string[];
-} | null;
+// Forma que devuelve FacturaLlama y persistimos en dteRespuestaMH:
+// { id, controlNumber, status, mhResponse: { data: {...}, status, statusText } }.
+// La data del rechazo del MH viene anidada en mhResponse.data con codigoMsg
+// (no 'codigo'), descripcionMsg y un array observaciones.
+export type DteRespuestaMH =
+  | {
+      id?: string;
+      controlNumber?: string | null;
+      status?: string;
+      mhResponse?: {
+        data?: {
+          estado?: string;
+          codigoMsg?: string;
+          descripcionMsg?: string;
+          observaciones?: string[];
+        };
+        status?: number;
+        statusText?: string;
+      };
+    }
+  | null;
 
 // Forma reducida del listado GET /facturas — solo los campos del select.
 // cliente trae los 5 campos para que la tabla componga el nombre segun tipo
@@ -968,4 +981,230 @@ export type CrearPagoDto = {
   metodoPago: Exclude<MetodoPago, 'ANTICIPO'>;
   referencia?: string;
   notas?: string;
+};
+
+// ── Actas y Recepciones (RAMA 12) ─────────────────────────────────────────────
+
+export type ActaItemTipo = 'EQUIPO' | 'HERRAMIENTA' | 'CONSUMIBLE' | 'PIEZA';
+export type CondicionItem = 'BUENO' | 'REGULAR' | 'MALO';
+export type EstadoActa = 'PENDIENTE' | 'DESPACHADO' | 'ENTREGADO' | 'DEVUELTA_PARCIAL' | 'DEVUELTO';
+export type EstadoActaItem = 'PENDIENTE_DEVOLUCION' | 'DEVUELTO';
+
+export type ActaItem = {
+  id: string;
+  cotizacionItemId: string;
+  equipo?: { id: string; nombre: string; codigo: string } | null;
+  herramientaUnidad?: {
+    id: string;
+    codigoInterno: string;
+    herramientaTipo: { nombre: string };
+  } | null;
+  consumible?: { id: string; nombre: string } | null;
+  piezaTipo?:  { id: string; nombre: string } | null;
+  cantidadConsumible?: number | null;
+  cantidadRecibida?:   number | null;
+  condicionSalida?:    CondicionItem | null;
+  observacionesSalida?: string | null;
+  horometroSalida?:    string | null;
+  combustibleSalida?:  string | null;
+  estadoOperacional?:  boolean | null;
+  accesoriosCompletos?: boolean | null;
+  limpieza?:           boolean | null;
+  estado: EstadoActaItem;
+};
+
+export type ActaListItem = {
+  id: string;
+  numeroActa: string;
+  estado: EstadoActa;
+  fechaDespacho: string | null;
+  fechaEntrega: string | null;
+  fechaDevolucion: string | null;
+  createdAt: string;
+  bodegaOrigen: { id: string; nombre: string };
+  usuarioDespacho: { id: string; nombre: string; apellido: string } | null;
+  factura: {
+    id: string;
+    numeroFactura: string;
+    clienteId: string;
+    // razonSocial es null para clientes PARTICULAR; el frontend hace fallback
+    // a nombre+apellido para renderizar el nombre legible.
+    cliente: { id: string; razonSocial: string | null; nombre: string | null; apellido: string | null };
+  };
+  _count: { items: number };
+};
+
+export type Acta = {
+  id: string;
+  numeroActa: string;
+  estado: EstadoActa;
+  facturaId: string;
+  bodegaOrigenId: string;
+  bodegaOrigen: { id: string; nombre: string };
+  direccionEntrega: string | null;
+  notas: string | null;
+  observacionesSalida: string | null;
+  numeroActaFisico: string | null;
+  horaDespacho: string | null;
+  horaEntrega: string | null;
+  fechaDespacho: string | null;
+  fechaEntrega: string | null;
+  fechaDevolucion: string | null;
+  periodoRentaInicio: string | null;
+  periodoRentaFin: string | null;
+  usuarioDespacho: { id: string; nombre: string; apellido: string } | null;
+  contactoReceptor: { id: string; nombre: string } | null;
+  receptorNombre: string | null;
+  receptorDocumento: string | null;
+  factura: { id: string; numeroFactura: string; clienteId: string };
+  items: ActaItem[];
+  createdAt: string;
+};
+
+export type FiltrosActas = {
+  page?: number;
+  limit?: number;
+  estado?: EstadoActa;
+  busqueda?: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
+  clienteId?: string;
+};
+
+// Respuesta de GET /facturas/:id/actas/items-disponibles-despacho.
+// Cada elemento es un CotizacionItem (no un ActaEntregaItem). El `id` ES el
+// cotizacionItemId que va al DTO al crear el acta. La `cantidad` se usa para
+// consumibles/piezas (cantidadConsumible/cantidadRecibida en el acta).
+export type ItemDisponibleDespacho = {
+  id: string;
+  cotizacionId: string;
+  equipoId: string | null;
+  herramientaTipoId: string | null;
+  consumibleId: string | null;
+  piezaTipoId: string | null;
+  cantidad: number;
+  descripcion: string;
+  equipo:          { id: string; nombre: string; codigo: string } | null;
+  herramientaTipo: { id: string; nombre: string } | null;
+  consumible:      { id: string; nombre: string } | null;
+  piezaTipo:       { id: string; nombre: string } | null;
+};
+
+export type RecepcionItem = {
+  id: string;
+  actaEntregaItemId: string;
+  condicionRetorno?: CondicionItem | null;
+  observacionesRetorno?: string | null;
+  horometroRetorno?: string | null;
+  combustibleRetorno?: string | null;
+  actaEntregaItem: ActaItem & {
+    actaEntrega: { id: string; numeroActa: string };
+  };
+};
+
+export type RecepcionListItem = {
+  id: string;
+  numeroActa: string;
+  numeroActaFisico: string | null;
+  fechaRecepcion: string;
+  horaRecepcion: string | null;
+  observaciones: string | null;
+  usuarioRecepcion: { id: string; nombre: string; apellido: string };
+  factura: {
+    id: string;
+    numeroFactura: string;
+    clienteId: string;
+    cliente: { id: string; razonSocial: string | null; nombre: string | null; apellido: string | null };
+  };
+  _count: { items: number };
+};
+
+export type Recepcion = RecepcionListItem & { items: RecepcionItem[] };
+
+export type FiltrosRecepciones = Omit<FiltrosActas, 'estado'>;
+
+// Items pendientes de devolución agrupados por acta (GET /facturas/:id/actas/items-pendientes-devolucion)
+export type GrupoPendienteDevolucion = {
+  actaEntregaId: string;
+  numeroActa: string;
+  fechaEntrega: string | null;
+  items: ActaItem[];
+};
+
+// DTOs de mutaciones
+// Crear acta solo selecciona ítems. Los datos de inspección (condicionSalida,
+// horometroSalida, etc.) se capturan después vía useActualizarInspeccion.
+// numeroActaFisico y observacionesSalida ahora van en DespacharActaDto.
+export type CrearActaDto = {
+  bodegaOrigenId: string;
+  direccionEntrega?: string;
+  notas?: string;
+  horaEntrega?: string;
+  periodoRentaInicio?: string;
+  periodoRentaFin?: string;
+  items: Array<{
+    cotizacionItemId: string;
+    equipoId?: string;
+    herramientaUnidadId?: string;
+    consumibleId?: string;
+    piezaTipoId?: string;
+    cantidadConsumible?: number;
+    cantidadRecibida?: number;
+  }>;
+};
+
+export type EditarActaDto = {
+  bodegaOrigenId?: string;
+  direccionEntrega?: string;
+  notas?: string;
+  observacionesSalida?: string;
+  numeroActaFisico?: string;
+  horaDespacho?: string;
+  periodoRentaInicio?: string;
+  periodoRentaFin?: string;
+};
+
+// Para PATCH /actas/:id/items — captura datos de inspección por línea cuando
+// el bodeguero copia los valores del picking físico al sistema.
+export type ActualizarInspeccionDto = {
+  items: Array<{
+    id: string;
+    condicionSalida?: CondicionItem;
+    observacionesSalida?: string;
+    horometroSalida?: number;
+    combustibleSalida?: string;
+    estadoOperacional?: boolean;
+    accesoriosCompletos?: boolean;
+    limpieza?: boolean;
+  }>;
+};
+
+export type DespacharActaDto = {
+  estado: 'DESPACHADO';
+  usuarioDespachoId: string;
+  numeroActaFisico: string;
+  observacionesSalida?: string;
+};
+
+export type EntregarActaDto = {
+  estado: 'ENTREGADO';
+  contactoReceptorId?: string;
+  receptorNombre?: string;
+  receptorDocumento?: string;
+  receptorEmail?: string;
+  horaEntrega?: string;
+  enviarCorreo?: boolean;
+};
+
+export type CrearRecepcionDto = {
+  numeroActaFisico?: string;
+  horaRecepcion?: string;
+  observaciones?: string;
+  items: Array<{
+    actaEntregaItemId: string;
+    condicionRetorno?: CondicionItem;
+    observacionesRetorno?: string;
+    horometroRetorno?: number;
+    combustibleRetorno?: string;
+  }>;
 };

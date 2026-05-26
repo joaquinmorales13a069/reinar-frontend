@@ -266,16 +266,24 @@ export function DteSection(props: Props) {
             <Icon name="alertTriangle" size={14} />
             <span>El Ministerio de Hacienda rechazó este documento.</span>
           </div>
-          {doc.dteRespuestaMH && (
-            <div className="mt-3">
-              <div className="text-2xs uppercase tracking-wider text-tx-3 font-medium mb-2">Motivo del rechazo</div>
-              <pre className="p-3 bg-danger-soft border border-danger rounded-md text-xs font-mono whitespace-pre-wrap text-tx">
-{`Código: ${doc.dteRespuestaMH.codigo ?? '—'}
-Descripción: ${doc.dteRespuestaMH.descripcionMsg ?? '—'}
-${(doc.dteRespuestaMH.observaciones ?? []).map((o) => '- ' + o).join('\n')}`}
-              </pre>
-            </div>
-          )}
+          {doc.dteRespuestaMH && (() => {
+            // El payload real del MH vive en dteRespuestaMH.mhResponse.data —
+            // antes leíamos campos planos (.codigo, .descripcionMsg, .observaciones)
+            // que no existen en ese nivel y la sección salía con "—" / vacía.
+            const mh = doc.dteRespuestaMH.mhResponse?.data;
+            const codigo = mh?.codigoMsg;
+            const descripcion = mh?.descripcionMsg;
+            const observaciones = mh?.observaciones ?? [];
+            return (
+              <div className="mt-3">
+                <div className="text-2xs uppercase tracking-wider text-tx-3 font-medium mb-2">Motivo del rechazo</div>
+                <pre className="p-3 bg-danger-soft border border-danger rounded-md text-xs font-mono whitespace-pre-wrap text-tx">
+{`Código: ${codigo ?? '—'}
+Descripción: ${descripcion ?? '—'}${observaciones.length > 0 ? '\n\nObservaciones:\n' + observaciones.map((o: string) => '- ' + o).join('\n') : ''}`}
+                </pre>
+              </div>
+            );
+          })()}
           {isOperador && (
             <button
               type="button"

@@ -70,3 +70,17 @@ export function getInitials(nombre: string): string {
     .map((w) => w[0].toUpperCase())
     .join('');
 }
+
+// Resuelve el nombre del cliente para mostrar — razonSocial para EMPRESA,
+// nombre + apellido para PARTICULAR. Devuelve '—' si ningún campo está poblado.
+// Patrón usado en cualquier tabla/chip que muestre nombre de cliente desde
+// una factura/cotización (donde el shape es { razonSocial, nombre, apellido }).
+export function nombreCliente(cliente: {
+  razonSocial: string | null;
+  nombre: string | null;
+  apellido: string | null;
+}): string {
+  if (cliente.razonSocial) return cliente.razonSocial;
+  const completo = [cliente.nombre, cliente.apellido].filter(Boolean).join(' ');
+  return completo || '—';
+}
