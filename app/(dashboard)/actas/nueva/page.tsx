@@ -59,6 +59,10 @@ type RowState = ItemDisponibleDespacho & {
   incluido: boolean;
   condicionSalidaEdit: CondicionItem;
   observacionesSalidaEdit: string;
+  // Horómetro y combustible solo aplican a equipos. Para herramientas/
+  // consumibles/piezas estos campos se ignoran al armar el DTO.
+  horometroSalidaEdit: string;
+  combustibleSalidaEdit: string;
 };
 
 type FacturaRef = {
@@ -101,6 +105,7 @@ function NuevaActaPage() {
     defaultValues: {
       facturaId: facturaIdInicial,
       bodegaOrigenId: '',
+      numeroActaFisico: '',
       direccionEntrega: '',
       notas: '',
       observacionesSalida: '',
@@ -146,6 +151,8 @@ function NuevaActaPage() {
       incluido: true,
       condicionSalidaEdit: 'BUENO' as CondicionItem,
       observacionesSalidaEdit: '',
+      horometroSalidaEdit: '',
+      combustibleSalidaEdit: '',
     }));
     // El usuario edita cada row (toggle incluido, condición salida, observaciones),
     // así que necesitamos una copia mutable derivada del query data. setState desde
@@ -175,6 +182,15 @@ function NuevaActaPage() {
         // agregue soporte para herramientas en el flujo de despacho.
         if (r.equipoId && r.equipo) {
           base.equipoId = r.equipoId;
+          // Horómetro y combustible solo aplican a equipos. Coerce a number
+          // para horómetro porque el backend valida z.number().nonnegative().
+          if (r.horometroSalidaEdit.trim() !== '') {
+            const horo = Number(r.horometroSalidaEdit);
+            if (Number.isFinite(horo) && horo >= 0) base.horometroSalida = horo;
+          }
+          if (r.combustibleSalidaEdit.trim() !== '') {
+            base.combustibleSalida = r.combustibleSalidaEdit;
+          }
         } else if (r.consumibleId && r.consumible) {
           base.consumibleId = r.consumibleId;
           base.cantidadConsumible = r.cantidad;
@@ -212,6 +228,7 @@ function NuevaActaPage() {
 
       const dto: CrearActaDto = {
         bodegaOrigenId: data.bodegaOrigenId,
+        numeroActaFisico: data.numeroActaFisico || undefined,
         direccionEntrega: data.direccionEntrega || undefined,
         notas: data.notas || undefined,
         observacionesSalida: data.observacionesSalida || undefined,
@@ -331,6 +348,14 @@ function NuevaActaPage() {
             )}
           </div>
           <div>
+            <label className={labelCls}>N° de acta físico</label>
+            <input
+              {...form.register('numeroActaFisico')}
+              className={`${inputBase} font-mono`}
+              placeholder="Correlativo del documento en papel"
+            />
+          </div>
+          <div>
             <label className={labelCls}>Período renta — inicio</label>
             <input
               type="date"
@@ -422,6 +447,7 @@ function NuevaActaPage() {
                   />
                   <div className="flex-1 min-w-0">
                     <ItemRow item={rowToActaItemDisplay(r)} mode="compact" />
+                    {/* Cond. salida + Observaciones aplican a todos los tipos */}
                     <div className="grid sm:grid-cols-3 gap-2 mt-2">
                       <div>
                         <label className={labelCls}>Cond. salida</label>
@@ -456,6 +482,50 @@ function NuevaActaPage() {
                         />
                       </div>
                     </div>
+                    {/* Horómetro y combustible son específicos de equipos */}
+                    {r.equipo && (
+                      <div className="grid sm:grid-cols-2 gap-2 mt-2">
+                        <div>
+                          <label className={labelCls}>Horómetro salida</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            className={`${inputBase} font-mono disabled:opacity-60`}
+                            disabled={!r.incluido}
+                            value={r.horometroSalidaEdit}
+                            onChange={(e) =>
+                              setRows((prev) =>
+                                prev.map((row, i) =>
+                                  i === idx
+                                    ? { ...row, horometroSalidaEdit: e.target.value }
+                                    : row,
+                                ),
+                              )
+                            }
+                            placeholder="0.0"
+                          />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Combustible salida (%)</label>
+                          <input
+                            className={`${inputBase} font-mono disabled:opacity-60`}
+                            disabled={!r.incluido}
+                            value={r.combustibleSalidaEdit}
+                            onChange={(e) =>
+                              setRows((prev) =>
+                                prev.map((row, i) =>
+                                  i === idx
+                                    ? { ...row, combustibleSalidaEdit: e.target.value }
+                                    : row,
+                                ),
+                              )
+                            }
+                            placeholder="100"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
