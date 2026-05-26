@@ -67,7 +67,7 @@ export default function InspeccionPage({ params }: { params: Promise<{ id: strin
   if (!estadoEditable) {
     return (
       <div>
-        <PageHeader title={`Inspección — ${acta.numeroActa}`} back />
+        <PageHeader title={`Inspección — ${acta.numeroActa}`} back backLabel="Detalle" />
         <EmptyState
           icon="clipboard"
           title="Datos congelados"
@@ -110,6 +110,7 @@ export default function InspeccionPage({ params }: { params: Promise<{ id: strin
           </>
         }
         back
+        backLabel="Detalle"
       />
 
       <div className="rounded-md border border-info-soft bg-info-soft/40 border-l-4 border-l-info p-4 mb-4 text-sm text-tx">

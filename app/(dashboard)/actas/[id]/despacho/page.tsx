@@ -32,7 +32,7 @@ export default function DespachoPage({ params }: { params: Promise<{ id: string 
   if (acta.estado !== 'PENDIENTE') {
     return (
       <div>
-        <PageHeader title={`Despacho — ${acta.numeroActa}`} back />
+        <PageHeader title={`Despacho — ${acta.numeroActa}`} back backLabel="Detalle" />
         <EmptyState
           icon="clipboard"
           title="No aplica"
@@ -67,6 +67,7 @@ export default function DespachoPage({ params }: { params: Promise<{ id: string 
         title="Registrar despacho"
         subtitle={<><span className="font-mono">{acta.numeroActa}</span> · <Badge status={acta.estado} /></>}
         back
+        backLabel="Detalle"
       />
 
       <div className="rounded-md border border-info-soft bg-info-soft/40 border-l-4 border-l-info p-4 mb-4 text-sm text-tx">

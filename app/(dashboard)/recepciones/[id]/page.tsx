@@ -37,6 +37,7 @@ export default function RecepcionDetallePage({ params }: { params: Promise<{ id:
     <div>
       <PageHeader
         title={recepcion.numeroActa}
+        backLabel="Recepciones"
         subtitle={<>Recepción de <Link href={`/facturas/${recepcion.factura.id}`} className="font-mono text-accent hover:underline">{recepcion.factura.numeroFactura}</Link></>}
         back
         actions={

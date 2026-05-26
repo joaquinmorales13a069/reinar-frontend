@@ -79,7 +79,7 @@ export default function EntregaPage({ params }: { params: Promise<{ id: string }
   if (acta.estado !== 'DESPACHADO') {
     return (
       <div>
-        <PageHeader title={`Entrega — ${acta.numeroActa}`} back />
+        <PageHeader title={`Entrega — ${acta.numeroActa}`} back backLabel="Detalle" />
         <EmptyState
           icon="clipboard"
           title="No aplica"
@@ -131,6 +131,7 @@ export default function EntregaPage({ params }: { params: Promise<{ id: string }
           </>
         }
         back
+        backLabel="Detalle"
       />
 
       {/* Aviso contextual — explica el cambio de estado que ocurrirá */}

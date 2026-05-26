@@ -255,6 +255,7 @@ function NuevaActaPage() {
         title="Nueva acta de entrega"
         subtitle="Generá un acta para despachar equipos a una factura."
         back
+        backLabel="Actas"
       />
 
       {/* ── Factura origen ──────────────────────────────────────────── */}

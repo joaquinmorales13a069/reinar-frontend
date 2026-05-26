@@ -157,7 +157,7 @@ function NuevaRecepcionPage() {
 
   return (
     <form onSubmit={onSubmit}>
-      <PageHeader title="Nueva recepción" subtitle="Documentá la devolución y cerrá el ciclo de renta." back />
+      <PageHeader title="Nueva recepción" subtitle="Documentá la devolución y cerrá el ciclo de renta." back backLabel="Recepciones" />
 
       {/* Stepper */}
       <div className="flex items-center gap-2 mb-6">

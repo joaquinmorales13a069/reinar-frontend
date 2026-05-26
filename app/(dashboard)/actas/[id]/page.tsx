@@ -43,6 +43,7 @@ export default function ActaDetallePage({ params }: { params: Promise<{ id: stri
         title={acta.numeroActa}
         subtitle={<><Badge status={acta.estado} /></>}
         back
+        backLabel="Actas"
         actions={
           pdfDisponible ? (
             <button
