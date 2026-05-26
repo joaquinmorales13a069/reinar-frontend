@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -32,7 +32,17 @@ type FacturaRef = {
   razonSocial: string;
 };
 
-export default function NuevaActaPage() {
+export default function NuevaActaPageWrapper() {
+  // useSearchParams requiere Suspense para que Next.js pueda prerenderizar
+  // estáticamente la página sin esperar a los query params del cliente.
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><Spinner /></div>}>
+      <NuevaActaPage />
+    </Suspense>
+  );
+}
+
+function NuevaActaPage() {
   const router = useRouter();
   const sp = useSearchParams();
   const facturaIdInicial = sp.get('facturaId') ?? '';
