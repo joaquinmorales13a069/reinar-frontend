@@ -1,8 +1,8 @@
 const STATUS_KIND: Record<string, string> = {
-  APROBADA: 'ok', PAGADA: 'ok', ENTREGADA: 'ok', ACTIVO: 'ok', DISPONIBLE: 'ok', COMPLETADO: 'ok',
-  PENDIENTE: 'warn', PARCIAL: 'warn', PROGRAMADA: 'warn', MANTENIMIENTO: 'warn',
+  APROBADA: 'ok', PAGADA: 'ok', ENTREGADA: 'ok', ENTREGADO: 'ok', DEVUELTO: 'ok', ACTIVO: 'ok', DISPONIBLE: 'ok', COMPLETADO: 'ok',
+  PENDIENTE: 'warn', PARCIAL: 'warn', DEVUELTA_PARCIAL: 'warn', PROGRAMADA: 'warn', MANTENIMIENTO: 'warn',
   RECHAZADA: 'danger', VENCIDA: 'danger', BAJA: 'danger', INACTIVO: 'danger',
-  ENVIADA: 'info', RENTADO: 'info', NUEVO: 'info', PROCESANDO: 'info',
+  ENVIADA: 'info', DESPACHADO: 'info', RENTADO: 'info', NUEVO: 'info', PROCESANDO: 'info',
   BORRADOR: 'neutral', ANULADA: 'neutral', CANCELADA: 'neutral', PROSPECTO: 'neutral',
 };
 

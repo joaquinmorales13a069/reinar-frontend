@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { FormSection } from '@/components/ui/FormSection';
 import { Icon } from '@/components/ui/Icon';
+import { BodegaSelect } from '@/components/ui/BodegaSelect';
 import {
   piezaCrearSchema,
   piezaEditarSchema,
@@ -52,13 +53,16 @@ function PiezaFormCrear({
     register,
     handleSubmit,
     setError,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<PiezaCrearInput>({
     resolver: zodResolver(piezaCrearSchema) as never,
     defaultValues: {
       nombre: '',
       descripcion: '',
-      stockActual: 0,
+      stockInicialBodegaId: '',
+      stockInicialCantidad: 0,
       stockMinimo: 0,
       tarifaDia: undefined as unknown as number,
       tarifaSemana: undefined as unknown as number,
@@ -68,10 +72,13 @@ function PiezaFormCrear({
 
   async function onSubmit(values: PiezaCrearInput) {
     try {
+      const stockInicial = values.stockInicialBodegaId && values.stockInicialCantidad && values.stockInicialCantidad > 0
+        ? [{ bodegaId: values.stockInicialBodegaId, cantidad: values.stockInicialCantidad }]
+        : undefined;
       await crear.mutateAsync({
         nombre: values.nombre.trim(),
         descripcion: values.descripcion?.trim() || undefined,
-        stockActual: values.stockActual,
+        stockInicial,
         stockMinimo: values.stockMinimo,
         tarifaDia: values.tarifaDia,
         tarifaSemana: values.tarifaSemana,
@@ -93,7 +100,7 @@ function PiezaFormCrear({
       onSubmit={handleSubmit(onSubmit)}
       isSubmitting={isSubmitting || crear.isPending}
     >
-      <CamposInformacion register={register} errors={errors} mostrarStockInicial />
+      <CamposInformacion register={register} errors={errors} mostrarStockInicial setValue={setValue} watch={watch} />
       <CamposTarifas register={register} errors={errors} />
     </Layout>
   );
@@ -205,12 +212,18 @@ function CamposInformacion({
   register,
   errors,
   mostrarStockInicial,
+  setValue,
+  watch,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   register: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   errors: any;
   mostrarStockInicial: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setValue?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  watch?: any;
 }) {
   return (
     <FormSection title="Información">
@@ -236,17 +249,29 @@ function CamposInformacion({
         </div>
 
         {mostrarStockInicial && (
-          <div>
-            <label className={labelCls}>Stock inicial</label>
-            <input
-              type="number"
-              min="0"
-              step="1"
-              className={`${errors.stockActual ? inputErr : inputOk} font-mono`}
-              {...register('stockActual')}
-            />
-            {errors.stockActual && <p className={errorCls}>{errors.stockActual.message}</p>}
-          </div>
+          <>
+            <div>
+              <label className={labelCls}>Bodega de stock inicial</label>
+              <BodegaSelect
+                value={(watch?.('stockInicialBodegaId') as string) ?? ''}
+                onChange={(id) => setValue?.('stockInicialBodegaId', id)}
+                error={!!errors.stockInicialBodegaId}
+              />
+              {errors.stockInicialBodegaId && <p className={errorCls}>{errors.stockInicialBodegaId.message}</p>}
+              <p className={hintCls}>Opcional. Luego podés agregar stock en más bodegas con &quot;Ajustar stock&quot;.</p>
+            </div>
+            <div>
+              <label className={labelCls}>Stock inicial</label>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                className={`${errors.stockInicialCantidad ? inputErr : inputOk} font-mono`}
+                {...register('stockInicialCantidad')}
+              />
+              {errors.stockInicialCantidad && <p className={errorCls}>{errors.stockInicialCantidad.message}</p>}
+            </div>
+          </>
         )}
 
         <div>
