@@ -11,6 +11,7 @@ import { EstadoActaTimeline } from '@/components/actas-recepciones/EstadoActaTim
 import { ItemRow } from '@/components/actas-recepciones/ItemRow';
 import { CondicionBadge } from '@/components/actas-recepciones/CondicionBadge';
 import { ActaPanelAccionContextual } from '@/components/actas/ActaPanelAccionContextual';
+import { CorreccionesAyuda } from '@/components/actas/CorreccionesAyuda';
 import { useActa, useDescargarActaPdf } from '@/hooks/use-actas';
 import { useActasRealtime } from '@/hooks/use-actas-realtime';
 import { formatDate } from '@/lib/utils';
@@ -28,6 +29,14 @@ export default function ActaDetallePage({ params }: { params: Promise<{ id: stri
     return <EmptyState icon="clipboard" title="Acta no encontrada" message="La acta no existe o fue eliminada." />;
   }
 
+  // PDF disponible solo desde ENTREGADO. Antes el documento no tiene firma del
+  // receptor ni folio físico definitivo — descargarlo prematuramente generaría
+  // copias en circulación con datos incompletos.
+  const pdfDisponible =
+    acta.estado === 'ENTREGADO' || acta.estado === 'DEVUELTA_PARCIAL' || acta.estado === 'DEVUELTO';
+  // Datos congelados: mostramos panel de ayuda con procedimientos de corrección.
+  const datosCongelados = pdfDisponible;
+
   return (
     <div>
       <PageHeader
@@ -35,14 +44,16 @@ export default function ActaDetallePage({ params }: { params: Promise<{ id: stri
         subtitle={<><Badge status={acta.estado} /></>}
         back
         actions={
-          <button
-            type="button"
-            disabled={pdf.isLoading}
-            onClick={() => pdf.descargar(acta.id, acta.numeroActa)}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-bd bg-surface text-tx text-xs font-semibold hover:bg-bg-sunken transition-colors disabled:opacity-60"
-          >
-            <Icon name="download" size={14} /> {pdf.isLoading ? 'Generando…' : 'Descargar PDF'}
-          </button>
+          pdfDisponible ? (
+            <button
+              type="button"
+              disabled={pdf.isLoading}
+              onClick={() => pdf.descargar(acta.id, acta.numeroActa)}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-bd bg-surface text-tx text-xs font-semibold hover:bg-bg-sunken transition-colors disabled:opacity-60"
+            >
+              <Icon name="download" size={14} /> {pdf.isLoading ? 'Generando…' : 'Descargar PDF'}
+            </button>
+          ) : null
         }
       />
 
@@ -104,6 +115,8 @@ export default function ActaDetallePage({ params }: { params: Promise<{ id: stri
           )}
         </div>
       </div>
+
+      {datosCongelados && <CorreccionesAyuda />}
     </div>
   );
 }

@@ -6,12 +6,18 @@ import { useDescargarPickingPdf } from '@/hooks/use-actas';
 import { useAuthStore } from '@/stores/auth.store';
 import type { Acta } from '@/types/api';
 
-// Panel de acción contextual que cambia según el estado del acta. Replica el
-// diseño del prototipo (actas.jsx) usando tokens de Tailwind del proyecto.
+// Panel de acción contextual que cambia según el estado del acta.
+// El flujo operativo es: crear → picking físico → capturar inspección →
+// despachar → confirmar entrega → recepción.
 export function ActaPanelAccionContextual({ acta, onIrRecepcion }: { acta: Acta; onIrRecepcion?: () => void }) {
   const user = useAuthStore((s) => s.user);
   const puedeEscribir = user && user.rol !== 'VISUALIZADOR';
   const picking = useDescargarPickingPdf();
+
+  // Inspección incompleta si algún ítem no tiene condicionSalida. El backend
+  // bloquea el despacho en ese caso; reflejamos la misma regla en la UI para
+  // que el botón "Registrar despacho" quede deshabilitado con explicación.
+  const inspeccionCompleta = acta.items.every((i) => !!i.condicionSalida);
 
   if (acta.estado === 'PENDIENTE') {
     return (
@@ -20,26 +26,44 @@ export function ActaPanelAccionContextual({ acta, onIrRecepcion }: { acta: Acta;
           <Icon name="send" size={20} />
           <div className="flex-1">
             <div className="text-sm text-tx">
-              El acta está creada y pendiente de ser despachada desde bodega. Imprimí la lista de picking
-              para que la cuadrilla verifique físicamente los ítems antes de registrar el despacho.
+              El acta está creada y pendiente de despacho. Flujo: <b>imprimí la lista de picking</b> →
+              cuadrilla verifica físicamente y anota horómetro/combustible →{' '}
+              <b>capturá esos datos en el sistema</b> → registrá el despacho con el folio físico Reinar.
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              {puedeEscribir && (
-                <Link
-                  href={`/actas/${acta.id}/despacho`}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-accent text-navy text-xs font-semibold hover:bg-accent-dim transition-colors"
-                >
-                  <Icon name="send" size={14} /> Registrar despacho
-                </Link>
-              )}
               <button
                 type="button"
                 disabled={picking.isLoading}
                 onClick={() => picking.descargar(acta.id, acta.numeroActa)}
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-bd bg-surface text-tx text-xs font-semibold hover:bg-bg-sunken transition-colors disabled:opacity-60"
               >
-                <Icon name="clipboard" size={14} /> {picking.isLoading ? 'Generando…' : 'Lista de picking'}
+                <Icon name="clipboard" size={14} /> {picking.isLoading ? 'Generando…' : 'Imprimir picking'}
               </button>
+              {puedeEscribir && (
+                <Link
+                  href={`/actas/${acta.id}/inspeccion`}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-bd bg-surface text-tx text-xs font-semibold hover:bg-bg-sunken transition-colors"
+                >
+                  <Icon name="edit" size={14} /> Capturar datos del picking
+                </Link>
+              )}
+              {puedeEscribir && (
+                inspeccionCompleta ? (
+                  <Link
+                    href={`/actas/${acta.id}/despacho`}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-accent text-navy text-xs font-semibold hover:bg-accent-dim transition-colors"
+                  >
+                    <Icon name="send" size={14} /> Registrar despacho
+                  </Link>
+                ) : (
+                  <span
+                    title="Capturá la condición de salida de todos los ítems antes de despachar."
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-accent text-navy text-xs font-semibold opacity-50 cursor-not-allowed"
+                  >
+                    <Icon name="send" size={14} /> Registrar despacho
+                  </span>
+                )
+              )}
             </div>
           </div>
         </div>
@@ -60,13 +84,21 @@ export function ActaPanelAccionContextual({ acta, onIrRecepcion }: { acta: Acta;
                   <Icon name="check" size={14} /> Confirmar entrega al cliente
                 </Link>
               )}
+              {puedeEscribir && (
+                <Link
+                  href={`/actas/${acta.id}/inspeccion`}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-bd bg-surface text-tx text-xs font-semibold hover:bg-bg-sunken transition-colors"
+                >
+                  <Icon name="edit" size={14} /> Editar inspección
+                </Link>
+              )}
               <button
                 type="button"
                 disabled={picking.isLoading}
                 onClick={() => picking.descargar(acta.id, acta.numeroActa)}
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-bd bg-surface text-tx text-xs font-semibold hover:bg-bg-sunken transition-colors disabled:opacity-60"
               >
-                <Icon name="clipboard" size={14} /> {picking.isLoading ? 'Generando…' : 'Lista de picking'}
+                <Icon name="clipboard" size={14} /> {picking.isLoading ? 'Generando…' : 'Reimprimir picking'}
               </button>
             </div>
           </div>
