@@ -980,7 +980,7 @@ export type EstadoActaItem = 'PENDIENTE_DEVOLUCION' | 'DEVUELTO';
 export type ActaItem = {
   id: string;
   cotizacionItemId: string;
-  equipo?: { id: string; nombre: string; codigoInterno: string } | null;
+  equipo?: { id: string; nombre: string; codigo: string } | null;
   herramientaUnidad?: {
     id: string;
     codigoInterno: string;

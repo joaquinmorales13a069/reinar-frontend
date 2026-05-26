@@ -5,7 +5,7 @@ import type { ActaItem } from '@/types/api';
 // El backend garantiza que exactamente uno de equipo/herramientaUnidad/consumible/piezaTipo
 // está poblado por línea.
 function describirItem(item: ActaItem): { titulo: string; codigo: string | null; tipo: 'EQUIPO' | 'HERRAMIENTA' | 'CONSUMIBLE' | 'PIEZA' } {
-  if (item.equipo) return { titulo: item.equipo.nombre, codigo: item.equipo.codigoInterno, tipo: 'EQUIPO' };
+  if (item.equipo) return { titulo: item.equipo.nombre, codigo: item.equipo.codigo, tipo: 'EQUIPO' };
   if (item.herramientaUnidad) {
     return { titulo: item.herramientaUnidad.herramientaTipo.nombre, codigo: item.herramientaUnidad.codigoInterno, tipo: 'HERRAMIENTA' };
   }
