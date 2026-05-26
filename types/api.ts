@@ -1117,13 +1117,13 @@ export type GrupoPendienteDevolucion = {
 };
 
 // DTOs de mutaciones
+// Crear acta solo selecciona ítems. Los datos de inspección (condicionSalida,
+// horometroSalida, etc.) se capturan después vía useActualizarInspeccion.
+// numeroActaFisico y observacionesSalida ahora van en DespacharActaDto.
 export type CrearActaDto = {
   bodegaOrigenId: string;
   direccionEntrega?: string;
   notas?: string;
-  observacionesSalida?: string;
-  numeroActaFisico?: string;
-  horaDespacho?: string;
   horaEntrega?: string;
   periodoRentaInicio?: string;
   periodoRentaFin?: string;
@@ -1135,13 +1135,6 @@ export type CrearActaDto = {
     piezaTipoId?: string;
     cantidadConsumible?: number;
     cantidadRecibida?: number;
-    condicionSalida?: CondicionItem;
-    observacionesSalida?: string;
-    horometroSalida?: number;
-    combustibleSalida?: string;
-    estadoOperacional?: boolean;
-    accesoriosCompletos?: boolean;
-    limpieza?: boolean;
   }>;
 };
 
@@ -1156,9 +1149,25 @@ export type EditarActaDto = {
   periodoRentaFin?: string;
 };
 
+// Para PATCH /actas/:id/items — captura datos de inspección por línea cuando
+// el bodeguero copia los valores del picking físico al sistema.
+export type ActualizarInspeccionDto = {
+  items: Array<{
+    id: string;
+    condicionSalida?: CondicionItem;
+    observacionesSalida?: string;
+    horometroSalida?: number;
+    combustibleSalida?: string;
+    estadoOperacional?: boolean;
+    accesoriosCompletos?: boolean;
+    limpieza?: boolean;
+  }>;
+};
+
 export type DespacharActaDto = {
   estado: 'DESPACHADO';
   usuarioDespachoId: string;
+  numeroActaFisico: string;
   observacionesSalida?: string;
 };
 

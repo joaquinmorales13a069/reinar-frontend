@@ -22,7 +22,10 @@ export default function DespachoPage({ params }: { params: Promise<{ id: string 
   const user = useAuthStore((s) => s.user);
   const { data: acta, isLoading } = useActa(id);
   const cambiar = useCambiarEstadoActa();
-  const form = useForm<DespachoForm>({ resolver: zodResolver(despachoFormSchema), defaultValues: { observacionesSalida: '' } });
+  const form = useForm<DespachoForm>({
+    resolver: zodResolver(despachoFormSchema),
+    defaultValues: { numeroActaFisico: '', observacionesSalida: '' },
+  });
 
   if (isLoading) return <div className="flex justify-center py-12"><Spinner /></div>;
   if (!acta) return <EmptyState icon="clipboard" title="Acta no encontrada" message="El acta solicitada no existe o fue eliminada." />;
@@ -47,14 +50,14 @@ export default function DespachoPage({ params }: { params: Promise<{ id: string 
         data: {
           estado: 'DESPACHADO',
           // Auto-asigna al usuario actual: quien registra el despacho es quien lo hace.
-          // Si en el futuro se requiere registrar a nombre de otro, agregar selector + endpoint server.
           usuarioDespachoId: user.id,
+          numeroActaFisico: data.numeroActaFisico.trim(),
           observacionesSalida: data.observacionesSalida || undefined,
         },
       });
       router.push(`/actas/${id}`);
     } catch {
-      // hook ya toasteó el error
+      // hook ya toasteó el error (incluye INSPECCION_INCOMPLETA del backend)
     }
   });
 
@@ -76,9 +79,28 @@ export default function DespachoPage({ params }: { params: Promise<{ id: string 
           <div className="text-sm text-tx font-medium">{user.nombre} {user.apellido}</div>
           <div className="text-xs text-tx-3 mt-0.5">Se asigna automáticamente al usuario actual.</div>
         </div>
+        <div className="mb-3">
+          <label className={labelCls}>
+            Folio físico (correlativo Reinar) <span className="text-danger">*</span>
+          </label>
+          <input
+            {...form.register('numeroActaFisico')}
+            className={`${inputBase} font-mono`}
+            placeholder="Ej. A-0001234"
+          />
+          {form.formState.errors.numeroActaFisico && (
+            <div className="text-xs text-danger mt-1">{form.formState.errors.numeroActaFisico.message}</div>
+          )}
+          <div className="text-xs text-tx-3 mt-1">Número del talonario físico solicitado al control de acta.</div>
+        </div>
         <div>
           <label className={labelCls}>Observaciones de salida</label>
-          <textarea {...form.register('observacionesSalida')} rows={3} className={inputBase} placeholder="Condiciones del despacho, transporte, etc." />
+          <textarea
+            {...form.register('observacionesSalida')}
+            rows={3}
+            className={inputBase}
+            placeholder="Condiciones del despacho, transporte, etc."
+          />
         </div>
       </div>
 

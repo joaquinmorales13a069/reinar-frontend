@@ -16,6 +16,7 @@ import type {
   EditarActaDto,
   DespacharActaDto,
   EntregarActaDto,
+  ActualizarInspeccionDto,
 } from '@/types/api';
 
 // Backend devuelve { error: { code, message, details?: Array<{field, message}> } }
@@ -126,6 +127,27 @@ export function useEditarActa() {
     },
     onError: (err) => {
       toast.error(extractErrorMessage(err, 'No se pudo actualizar el acta.'));
+    },
+  });
+}
+
+// PATCH /actas/:id/items — el bodeguero copia los datos del picking físico
+// (horómetro, combustible, condición de salida y observaciones) al sistema.
+// Solo permitido si el acta está en PENDIENTE o DESPACHADO.
+export function useActualizarInspeccion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: ActualizarInspeccionDto }) =>
+      api.patch<ApiResponse<unknown>>(`/actas/${id}/items`, data).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['acta', id] });
+      toast.success('Datos de inspección guardados.');
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo guardar la inspección.'));
     },
   });
 }

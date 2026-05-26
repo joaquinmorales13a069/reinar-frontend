@@ -10,7 +10,6 @@ import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SelectorFactura } from '@/components/actas-recepciones/SelectorFactura';
-import { CondicionSelect } from '@/components/actas-recepciones/CondicionSelect';
 import { DireccionCompleta } from '@/components/actas-recepciones/DireccionCompleta';
 import { ItemRow } from '@/components/actas-recepciones/ItemRow';
 import { useBodegas } from '@/hooks/use-bodegas';
@@ -20,7 +19,6 @@ import { crearActaFormSchema, type CrearActaForm } from '@/lib/schemas/acta';
 import type {
   ItemDisponibleDespacho,
   CrearActaDto,
-  CondicionItem,
   FacturaListItem,
   ActaItem,
 } from '@/types/api';
@@ -55,14 +53,10 @@ const inputBase =
   'w-full px-3 py-2 text-sm rounded-md border border-bd bg-surface text-tx placeholder:text-tx-3 focus:outline-none focus:border-accent transition-colors';
 const labelCls = 'block text-xs font-medium text-tx-2 mb-1';
 
+// Crear acta solo necesita saber qué ítems van. Los datos de inspección viven
+// en otro paso (página /actas/[id]/inspeccion).
 type RowState = ItemDisponibleDespacho & {
   incluido: boolean;
-  condicionSalidaEdit: CondicionItem;
-  observacionesSalidaEdit: string;
-  // Horómetro y combustible solo aplican a equipos. Para herramientas/
-  // consumibles/piezas estos campos se ignoran al armar el DTO.
-  horometroSalidaEdit: string;
-  combustibleSalidaEdit: string;
 };
 
 type FacturaRef = {
@@ -105,10 +99,8 @@ function NuevaActaPage() {
     defaultValues: {
       facturaId: facturaIdInicial,
       bodegaOrigenId: '',
-      numeroActaFisico: '',
       direccionEntrega: '',
       notas: '',
-      observacionesSalida: '',
       periodoRentaInicio: '',
       periodoRentaFin: '',
     },
@@ -152,10 +144,6 @@ function NuevaActaPage() {
     const inicial: RowState[] = fisicos.map((it) => ({
       ...it,
       incluido: true,
-      condicionSalidaEdit: 'BUENO' as CondicionItem,
-      observacionesSalidaEdit: '',
-      horometroSalidaEdit: '',
-      combustibleSalidaEdit: '',
     }));
     // El usuario edita cada row (toggle incluido, condición salida, observaciones),
     // así que necesitamos una copia mutable derivada del query data. setState desde
@@ -170,30 +158,18 @@ function NuevaActaPage() {
 
   const crear = useCrearActa();
 
-  // Construye el array de items en el shape que esperan tanto Zod (form schema)
-  // como el DTO del backend. Centralizado para que validación y submit usen
-  // exactamente lo mismo y no se desfasen.
+  // Crear acta = solo SELECCIONA qué ítems van. Los datos de inspección
+  // (horómetro, combustible, condición, observaciones por ítem) se capturan
+  // después en /actas/[id]/inspeccion cuando el bodeguero copia el picking
+  // físico al sistema. Acá solo enviamos el id de la cotización y, según el
+  // tipo, el FK + cantidad.
   function buildItems(): CrearActaDto['items'] {
     return rows
       .filter((r) => r.incluido)
       .map((r) => {
         const base: Partial<CrearActaDto['items'][number]> = {};
-        // r es un CotizacionItem; resolvemos qué tipo es según qué *Id está
-        // poblado y mapeamos al campo correspondiente del DTO de ActaEntregaItem.
-        // Nota: herramientas requieren elegir una HerramientaUnidad específica
-        // (no el tipo). Esa selección aún no está en el form — TODO cuando se
-        // agregue soporte para herramientas en el flujo de despacho.
         if (r.equipoId && r.equipo) {
           base.equipoId = r.equipoId;
-          // Horómetro y combustible solo aplican a equipos. Coerce a number
-          // para horómetro porque el backend valida z.number().nonnegative().
-          if (r.horometroSalidaEdit.trim() !== '') {
-            const horo = Number(r.horometroSalidaEdit);
-            if (Number.isFinite(horo) && horo >= 0) base.horometroSalida = horo;
-          }
-          if (r.combustibleSalidaEdit.trim() !== '') {
-            base.combustibleSalida = r.combustibleSalidaEdit;
-          }
         } else if (r.consumibleId && r.consumible) {
           base.consumibleId = r.consumibleId;
           base.cantidadConsumible = r.cantidad;
@@ -201,13 +177,12 @@ function NuevaActaPage() {
           base.piezaTipoId = r.piezaTipoId;
           base.cantidadRecibida = r.cantidad;
         }
+        // Nota: herramientas requieren elegir una HerramientaUnidad específica
+        // (no el tipo). Esa selección aún no está en el form — TODO cuando se
+        // agregue soporte para herramientas en el flujo de despacho.
         return {
-          // El backend exige cotizacionItemId como cuid — es el id propio del
-          // CotizacionItem (la fila de la cotización), NO el FK al equipo/etc.
           cotizacionItemId: r.id,
           ...base,
-          condicionSalida: r.condicionSalidaEdit,
-          observacionesSalida: r.observacionesSalidaEdit || undefined,
         } as CrearActaDto['items'][number];
       });
   }
@@ -231,10 +206,8 @@ function NuevaActaPage() {
 
       const dto: CrearActaDto = {
         bodegaOrigenId: data.bodegaOrigenId,
-        numeroActaFisico: data.numeroActaFisico || undefined,
         direccionEntrega: data.direccionEntrega || undefined,
         notas: data.notas || undefined,
-        observacionesSalida: data.observacionesSalida || undefined,
         periodoRentaInicio: data.periodoRentaInicio
           ? new Date(data.periodoRentaInicio).toISOString()
           : undefined,
@@ -351,14 +324,6 @@ function NuevaActaPage() {
             )}
           </div>
           <div>
-            <label className={labelCls}>N° de acta físico</label>
-            <input
-              {...form.register('numeroActaFisico')}
-              className={`${inputBase} font-mono`}
-              placeholder="Correlativo del documento en papel"
-            />
-          </div>
-          <div>
             <label className={labelCls}>Período renta — inicio</label>
             <input
               type="date"
@@ -379,16 +344,11 @@ function NuevaActaPage() {
               </div>
             )}
           </div>
-          <div className="sm:col-span-2">
-            <label className={labelCls}>Observaciones de salida</label>
-            <textarea
-              {...form.register('observacionesSalida')}
-              rows={2}
-              className={inputBase}
-              placeholder="Condiciones del despacho, transporte, etc."
-            />
-          </div>
         </div>
+        <p className="text-xs text-tx-3 mt-3">
+          El folio físico Reinar y las observaciones del despacho se capturan
+          al momento de registrar el despacho, no al crear el acta.
+        </p>
       </div>
 
       {/* ── Dirección de entrega ─────────────────────────────────────── */}
@@ -450,91 +410,16 @@ function NuevaActaPage() {
                   />
                   <div className="flex-1 min-w-0">
                     <ItemRow item={rowToActaItemDisplay(r)} mode="compact" />
-                    {/* Cond. salida + Observaciones aplican a todos los tipos */}
-                    <div className="grid sm:grid-cols-3 gap-2 mt-2">
-                      <div>
-                        <label className={labelCls}>Cond. salida</label>
-                        <CondicionSelect
-                          value={r.condicionSalidaEdit}
-                          disabled={!r.incluido}
-                          onChange={(v) =>
-                            setRows((prev) =>
-                              prev.map((row, i) =>
-                                i === idx ? { ...row, condicionSalidaEdit: v } : row,
-                              ),
-                            )
-                          }
-                        />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <label className={labelCls}>Observaciones</label>
-                        <input
-                          className={`${inputBase} disabled:opacity-60`}
-                          disabled={!r.incluido}
-                          value={r.observacionesSalidaEdit}
-                          onChange={(e) =>
-                            setRows((prev) =>
-                              prev.map((row, i) =>
-                                i === idx
-                                  ? { ...row, observacionesSalidaEdit: e.target.value }
-                                  : row,
-                              ),
-                            )
-                          }
-                          placeholder="Observaciones para este ítem"
-                        />
-                      </div>
-                    </div>
-                    {/* Horómetro y combustible son específicos de equipos */}
-                    {r.equipo && (
-                      <div className="grid sm:grid-cols-2 gap-2 mt-2">
-                        <div>
-                          <label className={labelCls}>Horómetro salida</label>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            className={`${inputBase} font-mono disabled:opacity-60`}
-                            disabled={!r.incluido}
-                            value={r.horometroSalidaEdit}
-                            onChange={(e) =>
-                              setRows((prev) =>
-                                prev.map((row, i) =>
-                                  i === idx
-                                    ? { ...row, horometroSalidaEdit: e.target.value }
-                                    : row,
-                                ),
-                              )
-                            }
-                            placeholder="0.0"
-                          />
-                        </div>
-                        <div>
-                          <label className={labelCls}>Combustible salida (%)</label>
-                          <input
-                            className={`${inputBase} font-mono disabled:opacity-60`}
-                            disabled={!r.incluido}
-                            value={r.combustibleSalidaEdit}
-                            onChange={(e) =>
-                              setRows((prev) =>
-                                prev.map((row, i) =>
-                                  i === idx
-                                    ? { ...row, combustibleSalidaEdit: e.target.value }
-                                    : row,
-                                ),
-                              )
-                            }
-                            placeholder="100"
-                          />
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
             ))}
           </div>
         )}
+        <p className="text-xs text-tx-3 mt-3">
+          Condición de salida, horómetro y combustible se capturan después,
+          desde el botón &quot;Capturar datos del picking&quot; en el detalle del acta.
+        </p>
         {itemsError && (
           <div className="text-xs text-danger mt-2">{itemsError}</div>
         )}

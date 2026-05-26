@@ -12,15 +12,13 @@ export const condicionSchema = z.enum(['BUENO', 'REGULAR', 'MALO']);
 // silenciosamente cuando el error caía en items.<n> en lugar de items.message.
 // El backend revalida los items con el mismo refine, así que no perdemos
 // seguridad por validarlos en cliente con código simple.
+// Crear acta no captura datos de inspección ni folio físico — esos viven
+// en /actas/[id]/inspeccion y /actas/[id]/despacho respectivamente.
 export const crearActaFormSchema = z.object({
   facturaId: z.string().min(1, 'Seleccioná una factura'),
   bodegaOrigenId: z.string().min(1, 'Seleccioná bodega de origen'),
   direccionEntrega: z.string().optional(),
   notas: z.string().optional(),
-  observacionesSalida: z.string().optional(),
-  numeroActaFisico: z.string().optional(),
-  horaDespacho: z.string().optional(),
-  horaEntrega: z.string().optional(),
   periodoRentaInicio: z.string().optional(),
   periodoRentaFin: z.string().optional(),
 }).refine(
@@ -47,6 +45,8 @@ export const editarActaFormSchema = z.object({
 export type EditarActaForm = z.infer<typeof editarActaFormSchema>;
 
 export const despachoFormSchema = z.object({
+  // Folio del talonario Reinar — se asigna al momento del despacho, no antes.
+  numeroActaFisico: z.string().trim().min(1, 'El folio físico es obligatorio'),
   observacionesSalida: z.string().optional(),
 });
 export type DespachoForm = z.infer<typeof despachoFormSchema>;
