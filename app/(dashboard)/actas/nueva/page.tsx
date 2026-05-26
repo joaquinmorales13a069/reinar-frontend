@@ -130,10 +130,11 @@ function NuevaActaPage() {
 
   const crear = useCrearActa();
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    if (!facturaSeleccionada) return;
-
-    const items: CrearActaDto['items'] = rows
+  // Construye el array de items en el shape que esperan tanto Zod (form schema)
+  // como el DTO del backend. Centralizado para que validación y submit usen
+  // exactamente lo mismo y no se desfasen.
+  function buildItems(): CrearActaDto['items'] {
+    return rows
       .filter((r) => r.incluido)
       .map((r) => {
         const base: Partial<CrearActaDto['items'][number]> = {};
@@ -155,6 +156,22 @@ function NuevaActaPage() {
           observacionesSalida: r.observacionesSalidaEdit || undefined,
         } as CrearActaDto['items'][number];
       });
+  }
+
+  // Sincroniza el array de items del form con las rows del usuario para que la
+  // validación Zod (que exige items.length >= 1 y un tipo válido por línea)
+  // tenga el snapshot correcto al hacer submit. Sin esto, form.values.items
+  // siempre quedaba [] y se mostraba "El acta debe tener al menos un ítem"
+  // aunque el checkbox estuviera activo.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    form.setValue('items', buildItems(), { shouldValidate: false });
+    // buildItems es estable dentro del render; solo dependemos de rows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows]);
+
+  const onSubmit = form.handleSubmit(async (data) => {
+    if (!facturaSeleccionada) return;
 
     const dto: CrearActaDto = {
       bodegaOrigenId: data.bodegaOrigenId,
@@ -167,7 +184,7 @@ function NuevaActaPage() {
       periodoRentaFin: data.periodoRentaFin
         ? new Date(data.periodoRentaFin).toISOString()
         : undefined,
-      items,
+      items: buildItems(),
     };
 
     try {
