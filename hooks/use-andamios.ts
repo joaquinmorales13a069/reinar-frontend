@@ -17,6 +17,7 @@ import type {
   ExpandirCuerpoItem,
   FiltrosPiezas,
   FiltrosCuerpos,
+  TransferirStockDto,
 } from '@/types/api';
 
 // Mismo patrón que use-herramientas.ts: helper duplicado intencionalmente para
@@ -139,6 +140,29 @@ export function useAjustarStockPieza() {
     onError: (err) => {
       // El backend devuelve ESTADO_INVALIDO con el valor que quedaría — toast lo muestra.
       toast.error(extractErrorMessage(err, 'No se pudo ajustar el stock.'));
+    },
+  });
+}
+
+export function useTransferirStockPieza() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: TransferirStockDto }) =>
+      api
+        .patch<ApiResponse<PiezaTipo>>(`/andamios/piezas/${id}/transferir-stock`, data)
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['andamios', 'piezas'] });
+      qc.invalidateQueries({ queryKey: ['andamios', 'piezas', id] });
+      qc.invalidateQueries({ queryKey: ['andamios', 'cuerpos'] });
+      qc.invalidateQueries({ queryKey: ['reporte-inventario'] });
+      toast.success('Stock transferido entre bodegas.');
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo transferir el stock.'));
     },
   });
 }

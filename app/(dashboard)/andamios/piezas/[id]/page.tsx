@@ -14,7 +14,8 @@ import { PiezaStockCard } from '@/components/andamios/piezas/PiezaStockCard';
 import { PiezaTarifasCard } from '@/components/andamios/piezas/PiezaTarifasCard';
 import { AjusteStockPiezaPanel } from '@/components/andamios/piezas/AjusteStockPiezaPanel';
 import { CuerposQueLaUsanCard } from '@/components/andamios/piezas/CuerposQueLaUsanCard';
-import { usePieza, useCambiarEstadoPieza } from '@/hooks/use-andamios';
+import { TransferirStockPanel } from '@/components/ui/TransferirStockPanel';
+import { usePieza, useCambiarEstadoPieza, useTransferirStockPieza } from '@/hooks/use-andamios';
 import { useAuthStore } from '@/stores/auth.store';
 import { puedeEjecutarAndamios } from '@/lib/andamios';
 
@@ -27,7 +28,9 @@ export default function PiezaDetallePage({ params }: { params: Promise<{ id: str
   const rol = useAuthStore((s) => s.user?.rol);
   const { data: pieza, isLoading, isError } = usePieza(id);
   const cambiarEstado = useCambiarEstadoPieza();
+  const transferir = useTransferirStockPieza();
   const [ajusteOpen, setAjusteOpen] = useState(false);
+  const [transferirOpen, setTransferirOpen] = useState(false);
   const [confirmEstado, setConfirmEstado] = useState(false);
 
   const puedeEditar  = puedeEjecutarAndamios('editarPieza', rol);
@@ -77,6 +80,15 @@ export default function PiezaDetallePage({ params }: { params: Promise<{ id: str
                 <Icon name="refresh" size={14} /> Ajustar stock
               </button>
             )}
+            {puedeAjustar && (
+              <button
+                type="button"
+                className={btnSec}
+                onClick={() => setTransferirOpen((v) => !v)}
+              >
+                <Icon name="refresh" size={14} /> Transferir entre bodegas
+              </button>
+            )}
             {puedeEditar && (
               <Link href={`/andamios/piezas/${pieza.id}/editar`} className={btnSec}>
                 <Icon name="edit" size={14} /> Editar
@@ -103,6 +115,21 @@ export default function PiezaDetallePage({ params }: { params: Promise<{ id: str
             stockActual={pieza.stockActual}
             stockMinimo={pieza.stockMinimo}
             onClose={() => setAjusteOpen(false)}
+          />
+        </div>
+      )}
+
+      {transferirOpen && (
+        <div className="mb-4 max-w-2xl">
+          <TransferirStockPanel
+            isPending={transferir.isPending}
+            onCancel={() => setTransferirOpen(false)}
+            onConfirm={(data) =>
+              transferir.mutate(
+                { id: pieza.id, data },
+                { onSuccess: () => setTransferirOpen(false) },
+              )
+            }
           />
         </div>
       )}

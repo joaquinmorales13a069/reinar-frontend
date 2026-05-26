@@ -16,6 +16,7 @@ import type {
   EstadoUnidadEditable,
   UnidadMantenimientoResumen,
   HistorialRentaItem,
+  MoverBodegaDto,
 } from '@/types/api';
 
 // Helper duplicado intencionalmente en cada archivo de hooks: evita una
@@ -174,6 +175,30 @@ export function useCambiarEstadoUnidad() {
     },
     onError: (err) => {
       toast.error(extractErrorMessage(err, 'No se pudo cambiar el estado de la unidad.'));
+    },
+  });
+}
+
+export function useMoverBodegaUnidad() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ unidadId, data }: { unidadId: string; tipoId: string; data: MoverBodegaDto }) =>
+      api
+        .patch<ApiResponse<HerramientaUnidad>>(`/herramientas/unidades/${unidadId}/bodega`, data)
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    onSuccess: (_data, { unidadId, tipoId }) => {
+      qc.invalidateQueries({ queryKey: ['herramientas'] });
+      qc.invalidateQueries({ queryKey: ['herramientas', tipoId] });
+      qc.invalidateQueries({ queryKey: ['herramientas', tipoId, 'unidades'] });
+      qc.invalidateQueries({ queryKey: ['herramientas', 'unidades', unidadId] });
+      qc.invalidateQueries({ queryKey: ['reporte-inventario'] });
+      toast.success('Unidad movida a la nueva bodega.');
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo mover la unidad.'));
     },
   });
 }

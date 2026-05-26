@@ -12,9 +12,11 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { StockBar } from '@/components/herramientas/StockBar';
 import { AjusteStockPanel } from '@/components/herramientas/AjusteStockPanel';
+import { TransferirStockPanel } from '@/components/ui/TransferirStockPanel';
 import {
   useConsumible,
   useDesactivarConsumible,
+  useTransferirStock,
 } from '@/hooks/use-consumibles';
 import { useAuthStore } from '@/stores/auth.store';
 import { CATEGORIAS_CONSUMIBLE_LABEL, puedeEjecutar } from '@/lib/herramientas';
@@ -38,8 +40,10 @@ function ConsumibleDetalleClient({ id }: { id: string }) {
 
   const { data: c, isLoading, isError } = useConsumible(id);
   const desactivar = useDesactivarConsumible();
+  const transferir = useTransferirStock();
 
   const [ajusteOpen, setAjusteOpen] = useState(false);
+  const [transferirOpen, setTransferirOpen] = useState(false);
   const [confirmToggle, setConfirmToggle] = useState(false);
 
   const puedeEditar = puedeEjecutar('editarConsumible', rol);
@@ -99,6 +103,11 @@ function ConsumibleDetalleClient({ id }: { id: string }) {
                 <Icon name="refresh" size={14} /> Ajustar stock
               </button>
             )}
+            {puedeAjustar && (
+              <button type="button" className={btnSec} onClick={() => setTransferirOpen((v) => !v)}>
+                <Icon name="refresh" size={14} /> Transferir entre bodegas
+              </button>
+            )}
             {puedeDesactivar && (
               <button type="button" className={btnSec} onClick={() => setConfirmToggle(true)}>
                 <Icon name={c.activo ? 'x' : 'refresh'} size={14} />
@@ -133,6 +142,22 @@ function ConsumibleDetalleClient({ id }: { id: string }) {
             stockActual={c.stockActual}
             unidad={c.unidad}
             onClose={() => setAjusteOpen(false)}
+          />
+        </div>
+      )}
+
+      {transferirOpen && (
+        <div className="mb-4 max-w-2xl">
+          <TransferirStockPanel
+            unidad={c.unidad}
+            isPending={transferir.isPending}
+            onCancel={() => setTransferirOpen(false)}
+            onConfirm={(data) =>
+              transferir.mutate(
+                { id: c.id, data },
+                { onSuccess: () => setTransferirOpen(false) },
+              )
+            }
           />
         </div>
       )}
