@@ -19,14 +19,28 @@ export function ActaPanelAccionContextual({ acta, onIrRecepcion }: { acta: Acta;
         <div className="flex items-start gap-3">
           <Icon name="send" size={20} />
           <div className="flex-1">
-            <div className="text-sm text-tx">El acta está creada y pendiente de ser despachada desde bodega.</div>
-            {puedeEscribir && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Link href={`/actas/${acta.id}/despacho`} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-accent text-navy text-xs font-semibold hover:bg-accent-dim transition-colors">
+            <div className="text-sm text-tx">
+              El acta está creada y pendiente de ser despachada desde bodega. Imprimí la lista de picking
+              para que la cuadrilla verifique físicamente los ítems antes de registrar el despacho.
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {puedeEscribir && (
+                <Link
+                  href={`/actas/${acta.id}/despacho`}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-accent text-navy text-xs font-semibold hover:bg-accent-dim transition-colors"
+                >
                   <Icon name="send" size={14} /> Registrar despacho
                 </Link>
-              </div>
-            )}
+              )}
+              <button
+                type="button"
+                disabled={picking.isLoading}
+                onClick={() => picking.descargar(acta.id, acta.numeroActa)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-bd bg-surface text-tx text-xs font-semibold hover:bg-bg-sunken transition-colors disabled:opacity-60"
+              >
+                <Icon name="clipboard" size={14} /> {picking.isLoading ? 'Generando…' : 'Lista de picking'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
