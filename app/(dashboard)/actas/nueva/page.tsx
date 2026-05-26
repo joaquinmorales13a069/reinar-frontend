@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { toast } from 'sonner';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
@@ -64,11 +65,6 @@ function NuevaActaPage() {
   const [rows, setRows] = useState<RowState[]>([]);
 
   const form = useForm<CrearActaForm>({
-    // El resolver de @hookform/resolvers v5 + z.coerce genera un falso error de
-    // tipos cuando el schema tiene z.coerce.number() en items anidados. El
-    // comportamiento en runtime es correcto; suprimimos el error estático.
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error ver comentario arriba
     resolver: zodResolver(crearActaFormSchema),
     defaultValues: {
       facturaId: facturaIdInicial,
@@ -78,7 +74,6 @@ function NuevaActaPage() {
       observacionesSalida: '',
       periodoRentaInicio: '',
       periodoRentaFin: '',
-      items: [],
     },
   });
 
@@ -158,42 +153,53 @@ function NuevaActaPage() {
       });
   }
 
-  // Sincroniza el array de items del form con las rows del usuario para que la
-  // validación Zod (que exige items.length >= 1 y un tipo válido por línea)
-  // tenga el snapshot correcto al hacer submit. Sin esto, form.values.items
-  // siempre quedaba [] y se mostraba "El acta debe tener al menos un ítem"
-  // aunque el checkbox estuviera activo.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    form.setValue('items', buildItems(), { shouldValidate: false });
-    // buildItems es estable dentro del render; solo dependemos de rows.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows]);
+  // Errores de items se manejan manualmente fuera de Zod (ver schema).
+  const [itemsError, setItemsError] = useState<string | null>(null);
 
-  const onSubmit = form.handleSubmit(async (data) => {
-    if (!facturaSeleccionada) return;
+  const onSubmit = form.handleSubmit(
+    async (data) => {
+      if (!facturaSeleccionada) {
+        toast.error('Seleccioná una factura antes de crear el acta.');
+        return;
+      }
 
-    const dto: CrearActaDto = {
-      bodegaOrigenId: data.bodegaOrigenId,
-      direccionEntrega: data.direccionEntrega || undefined,
-      notas: data.notas || undefined,
-      observacionesSalida: data.observacionesSalida || undefined,
-      periodoRentaInicio: data.periodoRentaInicio
-        ? new Date(data.periodoRentaInicio).toISOString()
-        : undefined,
-      periodoRentaFin: data.periodoRentaFin
-        ? new Date(data.periodoRentaFin).toISOString()
-        : undefined,
-      items: buildItems(),
-    };
+      const items = buildItems();
+      if (items.length === 0) {
+        setItemsError('El acta debe tener al menos un ítem seleccionado.');
+        return;
+      }
+      setItemsError(null);
 
-    try {
-      const acta = await crear.mutateAsync({ facturaId: facturaSeleccionada.id, data: dto });
-      router.push(`/actas/${acta.id}`);
-    } catch {
-      // el hook useCrearActa ya muestra toast.error internamente
-    }
-  });
+      const dto: CrearActaDto = {
+        bodegaOrigenId: data.bodegaOrigenId,
+        direccionEntrega: data.direccionEntrega || undefined,
+        notas: data.notas || undefined,
+        observacionesSalida: data.observacionesSalida || undefined,
+        periodoRentaInicio: data.periodoRentaInicio
+          ? new Date(data.periodoRentaInicio).toISOString()
+          : undefined,
+        periodoRentaFin: data.periodoRentaFin
+          ? new Date(data.periodoRentaFin).toISOString()
+          : undefined,
+        items,
+      };
+
+      try {
+        const acta = await crear.mutateAsync({ facturaId: facturaSeleccionada.id, data: dto });
+        router.push(`/actas/${acta.id}`);
+      } catch {
+        // el hook useCrearActa ya muestra toast.error internamente
+      }
+    },
+    // Si el submit falla por validación Zod, surface el primer error con un
+    // toast para no dejar al usuario con un botón que "no hace nada".
+    (errors) => {
+      const primero = Object.values(errors).find((e) => e && typeof e === 'object' && 'message' in e) as
+        | { message?: string }
+        | undefined;
+      toast.error(primero?.message ?? 'Hay campos del formulario sin completar correctamente.');
+    },
+  );
 
   const itemsIncluidos = rows.filter((r) => r.incluido).length;
 
@@ -416,10 +422,8 @@ function NuevaActaPage() {
             ))}
           </div>
         )}
-        {form.formState.errors.items && (
-          <div className="text-xs text-danger mt-2">
-            {form.formState.errors.items.message}
-          </div>
+        {itemsError && (
+          <div className="text-xs text-danger mt-2">{itemsError}</div>
         )}
       </div>
 

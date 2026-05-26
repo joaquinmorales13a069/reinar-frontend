@@ -6,26 +6,12 @@ import { z } from 'zod';
 
 export const condicionSchema = z.enum(['BUENO', 'REGULAR', 'MALO']);
 
-const itemActaSchema = z.object({
-  cotizacionItemId: z.string().min(1),
-  equipoId: z.string().optional(),
-  herramientaUnidadId: z.string().optional(),
-  consumibleId: z.string().optional(),
-  piezaTipoId: z.string().optional(),
-  cantidadConsumible: z.coerce.number().int().positive().optional(),
-  cantidadRecibida: z.coerce.number().int().positive().optional(),
-  condicionSalida: condicionSchema.optional(),
-  observacionesSalida: z.string().optional(),
-  horometroSalida: z.coerce.number().nonnegative().optional(),
-  combustibleSalida: z.string().optional(),
-  estadoOperacional: z.boolean().optional(),
-  accesoriosCompletos: z.boolean().optional(),
-  limpieza: z.boolean().optional(),
-}).refine(
-  (d) => [d.equipoId, d.herramientaUnidadId, d.consumibleId, d.piezaTipoId].filter(Boolean).length === 1,
-  { message: 'Exactamente uno de equipo, herramienta, consumible o pieza es requerido' },
-);
-
+// Los items se validan manualmente en la página (no en Zod) porque viven
+// fuera del estado de RHF (en useState local para soportar checkbox + edición
+// inline). Mezclar arrays con refines en zodResolver bloqueaba el submit
+// silenciosamente cuando el error caía en items.<n> en lugar de items.message.
+// El backend revalida los items con el mismo refine, así que no perdemos
+// seguridad por validarlos en cliente con código simple.
 export const crearActaFormSchema = z.object({
   facturaId: z.string().min(1, 'Seleccioná una factura'),
   bodegaOrigenId: z.string().min(1, 'Seleccioná bodega de origen'),
@@ -37,7 +23,6 @@ export const crearActaFormSchema = z.object({
   horaEntrega: z.string().optional(),
   periodoRentaInicio: z.string().optional(),
   periodoRentaFin: z.string().optional(),
-  items: z.array(itemActaSchema).min(1, 'El acta debe tener al menos un ítem'),
 }).refine(
   (d) => !d.periodoRentaFin || !d.periodoRentaInicio || d.periodoRentaFin >= d.periodoRentaInicio,
   { message: 'La fecha fin no puede ser anterior al inicio', path: ['periodoRentaFin'] },
