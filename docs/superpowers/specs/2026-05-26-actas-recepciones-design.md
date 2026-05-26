@@ -154,8 +154,37 @@ export async function listarActasGlobal(filtros: FiltrosActasGlobal) {
 }
 
 export async function listarRecepcionesGlobal(filtros: FiltrosRecepcionesGlobal) {
-  // Análogo a listarActasGlobal, sobre actaRecepcion. Filtros sobre fechaRecepcion en vez de createdAt.
-  // OR de búsqueda: numeroActa de recepción, numeroFactura, cliente.razonSocial.
+  const { page, limit, busqueda, fechaDesde, fechaHasta, clienteId } = filtros
+  const skip = (page - 1) * limit
+
+  const where: Prisma.ActaRecepcionWhereInput = {
+    ...(fechaDesde && { fechaRecepcion: { gte: new Date(fechaDesde) } }),
+    ...(fechaHasta && { fechaRecepcion: { lte: new Date(fechaHasta) } }),
+    ...(clienteId && { factura: { clienteId } }),
+    ...(busqueda && {
+      OR: [
+        { numeroActa: { contains: busqueda, mode: 'insensitive' } },
+        { factura: { numeroFactura: { contains: busqueda, mode: 'insensitive' } } },
+        { factura: { cliente: { razonSocial: { contains: busqueda, mode: 'insensitive' } } } },
+      ],
+    }),
+  }
+
+  const [data, total] = await Promise.all([
+    prisma.actaRecepcion.findMany({
+      where, skip, take: limit, orderBy: { fechaRecepcion: 'desc' },
+      select: {
+        id: true, numeroActa: true, numeroActaFisico: true,
+        fechaRecepcion: true, horaRecepcion: true, observaciones: true,
+        usuarioRecepcion: { select: { id: true, nombre: true, apellido: true } },
+        factura:          { select: { id: true, numeroFactura: true, clienteId: true, cliente: { select: { id: true, razonSocial: true } } } },
+        _count:           { select: { items: true } },
+      },
+    }),
+    prisma.actaRecepcion.count({ where }),
+  ])
+
+  return { data, meta: { page, limit, total } }
 }
 ```
 
