@@ -130,6 +130,8 @@ export type Equipo = {
   tarifaMes: string;
   activo: boolean;
   notas: string | null;
+  bodegaId: string;
+  bodega?: { id: string; nombre: string; parentId: string | null };
   createdAt: string;
   updatedAt: string;
 };
@@ -139,6 +141,7 @@ export type CrearEquipoDto = {
   nombre: string;
   descripcion?: string;
   categoria: CategoriaEquipo;
+  bodegaId: string;
   marca?: string;
   modelo?: string;
   anoFabricacion?: number;
@@ -147,6 +150,11 @@ export type CrearEquipoDto = {
   tarifaMes: number;
   notas?: string;
   fichaTecnica?: FichaTecnica;
+};
+
+export type MoverBodegaDto = {
+  bodegaDestinoId: string;
+  notas?: string;
 };
 
 export type ActualizarEquipoDto = Partial<Omit<CrearEquipoDto, 'prefijo'>>;
@@ -257,6 +265,8 @@ export type HerramientaUnidad = {
   herramientaTipoId: string;
   estado: EstadoHerramienta;
   notas: string | null;
+  bodegaId: string;
+  bodega?: { id: string; nombre: string; parentId: string | null };
   createdAt: string;
   updatedAt: string;
 };
@@ -284,7 +294,7 @@ export type FiltrosHerramientas = {
   activo?: boolean;
 };
 
-export type CrearUnidadDto = { notas?: string };
+export type CrearUnidadDto = { bodegaId: string; notas?: string };
 
 export type FiltrosUnidades = { estado?: EstadoHerramienta };
 
@@ -316,22 +326,28 @@ export type Consumible = {
   updatedAt: string;
 };
 
+export type StockInicialPorBodega = {
+  bodegaId: string;
+  cantidad: number;
+};
+
 export type CrearConsumibleDto = {
   codigo: string;
   nombre: string;
   descripcion?: string;
   categoria: CategoriaConsumible;
   precioUnitario: number;
-  stockActual: number;
+  // Stock inicial distribuido por bodega — reemplaza al stockActual único.
+  stockInicial?: StockInicialPorBodega[];
   stockMinimo: number;
   unidad: string;
   notas?: string;
 };
 
 // stockActual no es editable vía PUT — el backend lo rechaza, se ajusta solo
-// vía PATCH /:id/stock (ver AjusteStockDto).
+// vía PATCH /:id/stock (ver AjusteStockDto) y queda distribuido por bodega.
 export type ActualizarConsumibleDto = Partial<
-  Omit<CrearConsumibleDto, 'codigo' | 'stockActual'>
+  Omit<CrearConsumibleDto, 'codigo' | 'stockInicial'>
 >;
 
 export type FiltrosConsumibles = {
@@ -344,9 +360,18 @@ export type FiltrosConsumibles = {
 };
 
 export type AjusteStockDto = {
+  // Bodega donde aplica el ajuste — el stock vive distribuido por bodega.
+  bodegaId: string;
   // El backend valida que sea entero != 0; positivo = entrada, negativo = salida.
   delta: number;
   motivo: string;
+};
+
+export type TransferirStockDto = {
+  bodegaOrigenId: string;
+  bodegaDestinoId: string;
+  cantidad: number;
+  notas?: string;
 };
 
 // ============================================================
@@ -399,7 +424,8 @@ export type CuerpoTipo = {
 export type CrearPiezaTipoDto = {
   nombre: string;
   descripcion?: string;
-  stockActual?: number;
+  // Stock inicial por bodega — reemplaza al stockActual único.
+  stockInicial?: StockInicialPorBodega[];
   stockMinimo?: number;
   tarifaDia: number;
   tarifaSemana: number;

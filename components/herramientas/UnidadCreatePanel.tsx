@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
+import { BodegaSelect } from '@/components/ui/BodegaSelect';
 import { useCrearUnidad } from '@/hooks/use-herramientas';
 
 const inputBase =
@@ -13,13 +14,21 @@ const btnPri =
 
 export function UnidadCreatePanel({ tipoId }: { tipoId: string }) {
   const [open, setOpen] = useState(false);
+  const [bodegaId, setBodegaId] = useState('');
   const [notas, setNotas] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const crear = useCrearUnidad();
 
   async function handleConfirmar() {
+    if (!bodegaId) {
+      setError('La bodega es obligatoria.');
+      return;
+    }
     try {
-      await crear.mutateAsync({ tipoId, data: { notas: notas.trim() || undefined } });
+      await crear.mutateAsync({ tipoId, data: { bodegaId, notas: notas.trim() || undefined } });
       setNotas('');
+      setBodegaId('');
+      setError(null);
       setOpen(false);
     } catch {
       // toast lo dispara el hook
@@ -36,7 +45,14 @@ export function UnidadCreatePanel({ tipoId }: { tipoId: string }) {
 
   return (
     <div className="rounded-md border border-bd bg-bg-sunken p-3 flex flex-col gap-2">
-      <label className="text-xs font-medium text-tx-2">
+      <label className="text-xs font-medium text-tx-2">Bodega *</label>
+      <BodegaSelect
+        value={bodegaId}
+        onChange={(id) => { setBodegaId(id); if (id) setError(null); }}
+        error={!!error}
+      />
+      {error && <p className="text-xs text-danger">{error}</p>}
+      <label className="text-xs font-medium text-tx-2 mt-1">
         Notas (opcional)
       </label>
       <textarea
@@ -56,6 +72,8 @@ export function UnidadCreatePanel({ tipoId }: { tipoId: string }) {
           onClick={() => {
             setOpen(false);
             setNotas('');
+            setBodegaId('');
+            setError(null);
           }}
         >
           Cancelar

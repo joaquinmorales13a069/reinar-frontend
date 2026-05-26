@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { FormSection } from '@/components/ui/FormSection';
 import { Icon } from '@/components/ui/Icon';
+import { BodegaSelect } from '@/components/ui/BodegaSelect';
 import { useCrearConsumible, useEditarConsumible } from '@/hooks/use-consumibles';
 import { CATEGORIAS_CONSUMIBLE_LABEL } from '@/lib/herramientas';
 import type { Consumible, CategoriaConsumible } from '@/types/api';
@@ -27,8 +28,15 @@ const crearSchema = baseSchema.extend({
     .min(1, 'El código es obligatorio.')
     .max(20, 'Máximo 20 caracteres.')
     .regex(/^[A-Z0-9-]+$/, 'Solo letras mayúsculas, números y guiones.'),
-  stockActual: z.coerce.number().int().min(0, 'No puede ser negativo.'),
-});
+  // Stock inicial opcional en una bodega. Si se omite, arranca en 0 y se carga
+  // luego con ajustar-stock. La UI solo permite una bodega al crear; para más
+  // bodegas el usuario usa ajustar-stock después.
+  stockInicialBodegaId: z.string().optional(),
+  stockInicialCantidad: z.coerce.number().int().min(0, 'No puede ser negativo.').optional(),
+}).refine(
+  (d) => !d.stockInicialCantidad || d.stockInicialCantidad === 0 || !!d.stockInicialBodegaId,
+  { message: 'Si cargás stock inicial, elegí una bodega.', path: ['stockInicialBodegaId'] },
+);
 
 type CrearFormData = z.infer<typeof crearSchema>;
 type EditarFormData = z.infer<typeof baseSchema>;
@@ -57,6 +65,8 @@ export function ConsumibleForm(props: Props) {
     register,
     handleSubmit,
     setError,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(isNew ? crearSchema : baseSchema) as never,
@@ -67,7 +77,8 @@ export function ConsumibleForm(props: Props) {
           categoria: 'ABRASIVO' as CategoriaConsumible,
           precioUnitario: undefined as unknown as number,
           unidad: '',
-          stockActual: 0,
+          stockInicialBodegaId: '',
+          stockInicialCantidad: 0,
           stockMinimo: 0,
         }
       : {
@@ -96,13 +107,16 @@ export function ConsumibleForm(props: Props) {
     try {
       if (isNew) {
         const v = values as CrearFormData;
+        const stockInicial = v.stockInicialBodegaId && v.stockInicialCantidad && v.stockInicialCantidad > 0
+          ? [{ bodegaId: v.stockInicialBodegaId, cantidad: v.stockInicialCantidad }]
+          : undefined;
         const consumible = await crear.mutateAsync({
           codigo: v.codigo,
           nombre: v.nombre,
           descripcion: v.descripcion || undefined,
           categoria: v.categoria,
           precioUnitario: v.precioUnitario,
-          stockActual: v.stockActual,
+          stockInicial,
           stockMinimo: v.stockMinimo,
           unidad: v.unidad,
           notas: v.notas || undefined,
@@ -240,20 +254,36 @@ export function ConsumibleForm(props: Props) {
       <FormSection title="Stock">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {isNew ? (
-            <div>
-              <label className={labelCls}>Stock inicial</label>
-              <input
-                className={(errors as Record<string, unknown>).stockActual ? inputErr : `${inputOk} font-mono`}
-                type="number"
-                min="0"
-                {...register('stockActual' as never)}
-              />
-              {(errors as Record<string, { message?: string }>).stockActual && (
-                <p className={errorCls}>
-                  {(errors as Record<string, { message?: string }>).stockActual.message}
-                </p>
-              )}
-            </div>
+            <>
+              <div>
+                <label className={labelCls}>Bodega de stock inicial</label>
+                <BodegaSelect
+                  value={(watch('stockInicialBodegaId' as never) as unknown as string) ?? ''}
+                  onChange={(id) => setValue('stockInicialBodegaId' as never, id as never)}
+                  error={!!(errors as Record<string, unknown>).stockInicialBodegaId}
+                />
+                {(errors as Record<string, { message?: string }>).stockInicialBodegaId && (
+                  <p className={errorCls}>
+                    {(errors as Record<string, { message?: string }>).stockInicialBodegaId.message}
+                  </p>
+                )}
+                <p className={hintCls}>Opcional. Más adelante podés agregar stock en otras bodegas con &quot;Ajustar stock&quot;.</p>
+              </div>
+              <div>
+                <label className={labelCls}>Stock inicial</label>
+                <input
+                  className={(errors as Record<string, unknown>).stockInicialCantidad ? inputErr : `${inputOk} font-mono`}
+                  type="number"
+                  min="0"
+                  {...register('stockInicialCantidad' as never)}
+                />
+                {(errors as Record<string, { message?: string }>).stockInicialCantidad && (
+                  <p className={errorCls}>
+                    {(errors as Record<string, { message?: string }>).stockInicialCantidad.message}
+                  </p>
+                )}
+              </div>
+            </>
           ) : (
             <div>
               <label className={labelCls}>Stock actual</label>

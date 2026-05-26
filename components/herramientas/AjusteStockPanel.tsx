@@ -5,9 +5,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Icon } from '@/components/ui/Icon';
+import { BodegaSelect } from '@/components/ui/BodegaSelect';
 import { useAjustarStock } from '@/hooks/use-consumibles';
 
 const schema = z.object({
+  bodegaId: z.string().min(1, 'La bodega es obligatoria.'),
   signo: z.enum(['entrada', 'salida']),
   // El backend espera delta != 0; en UI separamos el signo del valor absoluto
   // para que el usuario no tenga que pensar en números negativos.
@@ -47,12 +49,13 @@ export function AjusteStockPanel({ consumibleId, stockActual, unidad, onClose }:
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     // zodResolver con z.coerce necesita el cast para evitar el conflicto de tipos
     // entre el input type (unknown) y el output type (number) del resolver.
     resolver: zodResolver(schema) as never,
-    defaultValues: { signo: 'entrada', cantidad: undefined as unknown as number, motivo: '' },
+    defaultValues: { bodegaId: '', signo: 'entrada', cantidad: undefined as unknown as number, motivo: '' },
   });
 
   const cantidadActual = watch('cantidad');
@@ -71,7 +74,7 @@ export function AjusteStockPanel({ consumibleId, stockActual, unidad, onClose }:
     try {
       await ajustar.mutateAsync({
         id: consumibleId,
-        data: { delta, motivo: values.motivo.trim() },
+        data: { bodegaId: values.bodegaId, delta, motivo: values.motivo.trim() },
       });
       onClose();
     } catch {
@@ -94,6 +97,17 @@ export function AjusteStockPanel({ consumibleId, stockActual, unidad, onClose }:
         >
           <Icon name="x" size={14} />
         </button>
+      </div>
+
+      <div>
+        <label className={labelCls}>Bodega *</label>
+        <BodegaSelect
+          value={watch('bodegaId') ?? ''}
+          onChange={(id) => setValue('bodegaId', id, { shouldValidate: true })}
+          error={!!errors.bodegaId}
+        />
+        {errors.bodegaId && <p className={errorCls}>{errors.bodegaId.message}</p>}
+        <input type="hidden" {...register('bodegaId')} />
       </div>
 
       <div>

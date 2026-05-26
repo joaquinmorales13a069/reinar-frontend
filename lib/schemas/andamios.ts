@@ -13,13 +13,19 @@ const piezaBaseSchema = z.object({
 });
 
 export const piezaCrearSchema = piezaBaseSchema.extend({
-  stockActual: z.coerce.number().int().min(0, 'No puede ser negativo'),
-});
+  // Stock inicial opcional en una bodega. Si la cantidad > 0 se requiere bodegaId.
+  stockInicialBodegaId: z.string().optional(),
+  stockInicialCantidad: z.coerce.number().int().min(0, 'No puede ser negativo').optional(),
+}).refine(
+  (d) => !d.stockInicialCantidad || d.stockInicialCantidad === 0 || !!d.stockInicialBodegaId,
+  { message: 'Si cargás stock inicial, elegí una bodega.', path: ['stockInicialBodegaId'] },
+);
 
 export const piezaEditarSchema = piezaBaseSchema;
 
 export const ajusteStockSchema = z.object({
   // signo en UI; en mutationFn se traduce a delta firmado para el backend.
+  bodegaId: z.string().min(1, 'La bodega es obligatoria'),
   signo: z.enum(['entrada', 'salida']),
   cantidad: z.coerce.number().int().positive('Debe ser un entero mayor a 0'),
   motivo: z.string().min(1, 'Indicá el motivo').max(255, 'Máximo 255 caracteres'),

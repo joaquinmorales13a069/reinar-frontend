@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { FormSection } from '@/components/ui/FormSection';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { EquipoImagenUpload } from '@/components/equipos/EquipoImagenUpload';
+import { BodegaSelect } from '@/components/ui/BodegaSelect';
 import { useCrearEquipo, useEditarEquipo, useCambiarEstadoEquipo, useSubirImagenEquipo, useEliminarEquipo } from '@/hooks/use-equipos';
 import { CATEGORIA_LABELS, PREFIJO_POR_CATEGORIA, puedeEjecutar } from '@/lib/equipos';
 import { useAuthStore } from '@/stores/auth.store';
@@ -44,6 +45,7 @@ const crearSchema = baseSchema.extend({
     .min(1, 'El prefijo es obligatorio.')
     .max(10, 'Máximo 10 caracteres.')
     .regex(/^[A-Z0-9]+$/, 'Solo letras mayúsculas y números.'),
+  bodegaId: z.string().min(1, 'La bodega es obligatoria.'),
 });
 
 type CrearFormData = z.infer<typeof crearSchema>;
@@ -92,6 +94,7 @@ export function EquipoForm(props: Props) {
           nombre: '',
           categoria: 'COMPRESOR_GENERADOR' as CategoriaEquipo,
           prefijo: PREFIJO_POR_CATEGORIA.COMPRESOR_GENERADOR,
+          bodegaId: '',
           tarifaDia: undefined as unknown as number,
           tarifaSemana: undefined as unknown as number,
           tarifaMes: undefined as unknown as number,
@@ -152,6 +155,7 @@ export function EquipoForm(props: Props) {
           nombre: v.nombre,
           descripcion: v.descripcion || undefined,
           categoria: v.categoria,
+          bodegaId: v.bodegaId,
           marca: v.marca || undefined,
           modelo: v.modelo || undefined,
           anoFabricacion: typeof v.anoFabricacion === 'number' ? v.anoFabricacion : undefined,
@@ -300,6 +304,21 @@ export function EquipoForm(props: Props) {
               <p className={hintCls}>La categoría no se modifica desde este formulario.</p>
             )}
           </div>
+
+          {isNew && (
+            <div className="sm:col-span-2">
+              <label className={labelCls}>Bodega *</label>
+              <BodegaSelect
+                value={(watch('bodegaId' as never) as unknown as string) ?? ''}
+                onChange={(id) => setValue('bodegaId' as never, id as never, { shouldValidate: true })}
+                error={!!(errors as Record<string, unknown>).bodegaId}
+              />
+              {(errors as Record<string, { message?: string }>).bodegaId && (
+                <p className={errorCls}>{(errors as Record<string, { message?: string }>).bodegaId.message}</p>
+              )}
+              <p className={hintCls}>El equipo nuevo se asigna a una bodega física. Podrás moverlo luego desde el detalle.</p>
+            </div>
+          )}
 
           <div className="sm:col-span-2">
             <label className={labelCls}>Nombre del equipo *</label>
