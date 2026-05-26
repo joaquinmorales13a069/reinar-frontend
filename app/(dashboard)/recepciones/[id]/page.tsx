@@ -11,6 +11,18 @@ import { describirItem } from '@/components/actas-recepciones/ItemRow';
 import { useRecepcion, useDescargarRecepcionPdf } from '@/hooks/use-recepciones';
 import { useActasRealtime } from '@/hooks/use-actas-realtime';
 import { formatDate } from '@/lib/utils';
+import type { Recepcion } from '@/types/api';
+
+// Devuelve el nombre del cliente a mostrar — defensivo porque backends viejos
+// no incluyen factura.cliente en obtenerRecepcion (PR #43 server lo agrega).
+// Para clientes PARTICULAR la razonSocial es null, por eso el fallback a
+// nombre+apellido.
+function nombreClienteRecepcion(r: Recepcion): string {
+  const c = (r.factura as { cliente?: { razonSocial?: string | null; nombre?: string | null; apellido?: string | null } }).cliente;
+  if (!c) return '—';
+  if (c.razonSocial) return c.razonSocial;
+  return [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
+}
 
 export default function RecepcionDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -47,7 +59,7 @@ export default function RecepcionDetallePage({ params }: { params: Promise<{ id:
             <div className="flex justify-between gap-2"><dt className="text-tx-3">Hora</dt><dd className="font-mono text-xs">{recepcion.horaRecepcion ?? '—'}</dd></div>
             <div className="flex justify-between gap-2"><dt className="text-tx-3">N° físico</dt><dd className="font-mono text-xs">{recepcion.numeroActaFisico ?? '—'}</dd></div>
             <div className="flex justify-between gap-2"><dt className="text-tx-3">Recibido por</dt><dd>{recepcion.usuarioRecepcion.nombre} {recepcion.usuarioRecepcion.apellido}</dd></div>
-            <div className="flex justify-between gap-2"><dt className="text-tx-3">Cliente</dt><dd className="truncate max-w-xs text-right">{recepcion.factura.cliente.razonSocial}</dd></div>
+            <div className="flex justify-between gap-2"><dt className="text-tx-3">Cliente</dt><dd className="truncate max-w-xs text-right">{nombreClienteRecepcion(recepcion)}</dd></div>
           </dl>
         </div>
         {recepcion.observaciones && (
