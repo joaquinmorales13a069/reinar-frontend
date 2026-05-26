@@ -387,11 +387,22 @@ function NuevaActaPage() {
             <Spinner />
           </div>
         ) : rows.length === 0 ? (
-          <EmptyState
-            icon="package"
-            title="Sin ítems disponibles"
-            message="Todos los ítems de esta factura ya están en campo."
-          />
+          <div>
+            <EmptyState
+              icon="package"
+              title="Sin ítems disponibles"
+              message="Todos los ítems físicos de esta factura ya fueron asignados a otra acta (en campo o ya devueltos). No hay nada nuevo que despachar."
+            />
+            <div className="text-center mt-3">
+              <button
+                type="button"
+                onClick={handleCambiarFactura}
+                className="text-xs text-accent hover:underline"
+              >
+                Elegir otra factura
+              </button>
+            </div>
+          </div>
         ) : (
           <div className="divide-y divide-bd">
             {rows.map((r, idx) => (
