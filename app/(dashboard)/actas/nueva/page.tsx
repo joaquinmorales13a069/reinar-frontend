@@ -10,6 +10,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SelectorFactura } from '@/components/actas-recepciones/SelectorFactura';
 import { CondicionSelect } from '@/components/actas-recepciones/CondicionSelect';
+import { DireccionCompleta } from '@/components/actas-recepciones/DireccionCompleta';
 import { ItemRow } from '@/components/actas-recepciones/ItemRow';
 import { useBodegas } from '@/hooks/use-bodegas';
 import { useFactura } from '@/hooks/use-facturas';
@@ -241,7 +242,7 @@ function NuevaActaPage() {
       {/* ── Logística ───────────────────────────────────────────────── */}
       <div className="rounded-lg border border-bd bg-surface p-4 mb-4">
         <h3 className="text-sm font-semibold text-tx mb-3">Logística</h3>
-        <div className="grid sm:grid-cols-2 gap-3">
+        <div className="grid sm:grid-cols-2 gap-3 mb-3">
           <div>
             <label className={labelCls}>
               Bodega de origen <span className="text-danger">*</span>
@@ -266,14 +267,25 @@ function NuevaActaPage() {
               </div>
             )}
           </div>
-          <div>
-            <label className={labelCls}>Dirección de entrega</label>
-            <input
-              {...form.register('direccionEntrega')}
-              className={inputBase}
-              placeholder="Calle, colonia, número, referencia"
-            />
-          </div>
+        </div>
+
+        {/* Dirección de entrega en su propia fila por los 4 sub-campos. */}
+        <div className="mb-3">
+          <label className={labelCls}>Dirección de entrega</label>
+          <Controller
+            control={form.control}
+            name="direccionEntrega"
+            render={({ field }) => (
+              <DireccionCompleta
+                value={field.value ?? ''}
+                onChange={field.onChange}
+                error={form.formState.errors.direccionEntrega?.message}
+              />
+            )}
+          />
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-3">
           <div>
             <label className={labelCls}>Período renta — inicio</label>
             <input
