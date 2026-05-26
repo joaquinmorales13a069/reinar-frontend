@@ -9,12 +9,20 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Icon } from '@/components/ui/Icon';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
+import { MoverBodegaPanel } from '@/components/ui/MoverBodegaPanel';
 import { EquipoCategoriaBadge } from '@/components/equipos/EquipoCategoriaBadge';
 import { EquipoImagenUpload } from '@/components/equipos/EquipoImagenUpload';
 import { EquipoMantenimientosResumen } from '@/components/equipos/EquipoMantenimientosResumen';
 import { HistorialRentasCard } from '@/components/inventario/HistorialRentasCard';
 import { EquipoReservaPlaceholder } from '@/components/equipos/EquipoReservaPlaceholder';
-import { useEquipo, useEquipoFichaTecnica, useSubirImagenEquipo, useCambiarEstadoEquipo, useEquipoRentas } from '@/hooks/use-equipos';
+import {
+  useEquipo,
+  useEquipoFichaTecnica,
+  useSubirImagenEquipo,
+  useCambiarEstadoEquipo,
+  useEquipoRentas,
+  useMoverBodegaEquipo,
+} from '@/hooks/use-equipos';
 import { useEquiposRealtime } from '@/hooks/use-equipos-realtime';
 import { useAuthStore } from '@/stores/auth.store';
 import { ESTADO_LABELS, ESTADO_BADGE_KIND, puedeEjecutar } from '@/lib/equipos';
@@ -45,9 +53,11 @@ function EquipoDetalleClient({ id }: { id: string }) {
   const { data: ficha } = useEquipoFichaTecnica(id);
   const subirImagen = useSubirImagenEquipo();
   const cambiarEstado = useCambiarEstadoEquipo();
+  const moverBodega = useMoverBodegaEquipo();
 
   const [tab, setTab] = useState<TabKey>('specs');
   const [confirmEstado, setConfirmEstado] = useState<EstadoEquipoEditable | null>(null);
+  const [moverAbierto, setMoverAbierto] = useState(false);
 
   const puedeEditar = puedeEjecutar('editar', rol);
   const puedeSubirImagen = puedeEjecutar('subirImagen', rol);
@@ -274,6 +284,40 @@ function EquipoDetalleClient({ id }: { id: string }) {
               ))}
             </div>
           </div>
+
+          <div className="rounded-lg border border-bd bg-surface p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-tx">Ubicación física</h3>
+              {puedeEditar && equipo.estado !== 'RENTADO' && !moverAbierto && (
+                <button type="button" className={btnSec} onClick={() => setMoverAbierto(true)}>
+                  <Icon name="refresh" size={12} /> Mover
+                </button>
+              )}
+            </div>
+            <div className="text-sm">
+              <div className="text-xs text-tx-3">Bodega actual</div>
+              <div className="font-medium">{equipo.bodega?.nombre ?? '—'}</div>
+            </div>
+            {equipo.estado === 'RENTADO' && (
+              <p className="text-xs text-tx-3 mt-2">
+                No se puede mover mientras el equipo está rentado.
+              </p>
+            )}
+          </div>
+
+          {moverAbierto && (
+            <MoverBodegaPanel
+              currentBodegaId={equipo.bodegaId}
+              isPending={moverBodega.isPending}
+              onCancel={() => setMoverAbierto(false)}
+              onConfirm={(data) =>
+                moverBodega.mutate(
+                  { id: equipo.id, data },
+                  { onSuccess: () => setMoverAbierto(false) },
+                )
+              }
+            />
+          )}
 
           <HistorialRentasEquipo equipoId={equipo.id} />
           <EquipoMantenimientosResumen equipoId={equipo.id} />

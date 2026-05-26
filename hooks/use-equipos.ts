@@ -14,6 +14,7 @@ import type {
   FichaTecnica,
   EquipoMantenimientoResumen,
   HistorialRentaItem,
+  MoverBodegaDto,
 } from '@/types/api';
 
 function extractErrorMessage(err: unknown, fallback: string): string {
@@ -134,6 +135,26 @@ export function useCambiarEstadoEquipo() {
     },
     onError: (err) => {
       toast.error(extractErrorMessage(err, 'No se pudo cambiar el estado.'));
+    },
+  });
+}
+
+export function useMoverBodegaEquipo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: MoverBodegaDto }) =>
+      api.patch<ApiResponse<Equipo>>(`/equipos/${id}/bodega`, data).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['equipos'] });
+      qc.invalidateQueries({ queryKey: ['equipos', id] });
+      qc.invalidateQueries({ queryKey: ['reporte-inventario'] });
+      toast.success('Equipo movido a la nueva bodega.');
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo mover el equipo.'));
     },
   });
 }

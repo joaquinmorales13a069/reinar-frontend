@@ -11,6 +11,7 @@ import type {
   ActualizarConsumibleDto,
   FiltrosConsumibles,
   AjusteStockDto,
+  TransferirStockDto,
 } from '@/types/api';
 
 // Helper duplicado intencionalmente en cada archivo de hooks: evita una
@@ -97,6 +98,28 @@ export function useAjustarStock() {
     },
     onError: (err) => {
       toast.error(extractErrorMessage(err, 'No se pudo ajustar el stock.'));
+    },
+  });
+}
+
+export function useTransferirStock() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: TransferirStockDto }) =>
+      api
+        .patch<ApiResponse<Consumible>>(`/consumibles/${id}/transferir-stock`, data)
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['consumibles'] });
+      qc.invalidateQueries({ queryKey: ['consumibles', id] });
+      qc.invalidateQueries({ queryKey: ['reporte-inventario'] });
+      toast.success('Stock transferido entre bodegas.');
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo transferir el stock.'));
     },
   });
 }
