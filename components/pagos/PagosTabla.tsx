@@ -10,6 +10,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { FacturaEstadoBadge } from '@/components/facturas/FacturaEstadoBadge';
 import { PagoDetallePanel } from './PagoDetallePanel';
+import { EditarPagoForm } from './EditarPagoForm';
 import { useEliminarPago } from '@/hooks/use-pagos';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { PagoListItem } from '@/types/api';
@@ -29,13 +30,15 @@ type Props = {
   pageSize: number;
   total: number;
   onPage: (p: number) => void;
+  canEdit: boolean;
   canDelete: boolean;
   hasFilters: boolean;
 };
 
-export function PagosTabla({ pagos, loading, page, pageSize, total, onPage, canDelete, hasFilters }: Props) {
+export function PagosTabla({ pagos, loading, page, pageSize, total, onPage, canEdit, canDelete, hasFilters }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const eliminar = useEliminarPago();
 
   if (loading) {
@@ -93,6 +96,24 @@ export function PagosTabla({ pagos, loading, page, pageSize, total, onPage, canD
                   <td className="px-4 py-2.5 font-mono text-xs text-tx-2">{formatDate(p.fecha)}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums font-medium text-ok">{formatCurrency(p.monto)}</td>
                   <td className="px-4 py-2.5 text-right">
+                    {canEdit && (
+                      <button
+                        type="button"
+                        disabled={facturaAnulada}
+                        title={facturaAnulada ? 'Factura anulada — pago inmutable' : 'Editar referencia y notas'}
+                        className="text-tx-2 hover:bg-bg rounded p-1 mr-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Editar y borrar son mutuamente excluyentes — cerramos
+                          // cualquier acción abierta en otra fila al cambiar.
+                          setConfirmDelete(null);
+                          setExpanded(null);
+                          setEditingId(p.id);
+                        }}
+                      >
+                        <Icon name="edit" size={13} />
+                      </button>
+                    )}
                     {canDelete && (
                       <button
                         type="button"
@@ -113,6 +134,20 @@ export function PagosTabla({ pagos, loading, page, pageSize, total, onPage, canD
                   <tr>
                     <td colSpan={8} className="p-0">
                       <PagoDetallePanel pago={p} />
+                    </td>
+                  </tr>
+                )}
+                {editingId === p.id && (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-3 border-t border-bd">
+                      <EditarPagoForm
+                        facturaId={p.factura.id}
+                        pagoId={p.id}
+                        referenciaActual={p.referencia}
+                        notasActuales={p.notas}
+                        onCancel={() => setEditingId(null)}
+                        onSuccess={() => setEditingId(null)}
+                      />
                     </td>
                   </tr>
                 )}

@@ -19,6 +19,9 @@ export default function PagosPage() {
   // VISUALIZADOR no ve el botón de registrar — la ruta está protegida pero
   // ocultamos la UI para evitar acciones inútiles.
   const isAdmin = user?.rol === 'ADMIN';
+  // Editar referencia/notas — mismo nivel que crear, el backend lo permite a
+  // operadores+ porque no afecta el saldo ni el historial contable.
+  const puedeEditar = user?.rol !== 'VISUALIZADOR';
   const puedeCrear = user?.rol !== 'VISUALIZADOR';
 
   const { data, isLoading } = useListadoPagos(filtros);
@@ -60,6 +63,7 @@ export default function PagosPage() {
         pageSize={filtros.limit ?? 20}
         total={total}
         onPage={(p) => setFiltros((f) => ({ ...f, page: p }))}
+        canEdit={puedeEditar}
         canDelete={isAdmin}
         hasFilters={hasFilters}
       />
