@@ -63,8 +63,9 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
   });
 
   // Confirmación inline antes de avanzar al paso 4 — el tipo de documento
-  // fiscal define cómo se emite el DTE al SAT y no se puede cambiar después
-  // de aprobar la cotización, así que pedimos confirmación explícita.
+  // fiscal define cómo se emite el DTE al Ministerio de Hacienda y no se
+  // puede cambiar después de aprobar la cotización, así que pedimos
+  // confirmación explícita.
   const [confirmandoTipo, setConfirmandoTipo] = useState(false);
   const tipoDocSeleccionado = watch('tipoDocumentoFiscal');
 
@@ -299,7 +300,7 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
 
       {confirmandoTipo && (
         <ConfirmRow
-          message={`Vas a continuar con tipo de documento fiscal: ${TIPO_DOC_LABELS[tipoDocSeleccionado] ?? tipoDocSeleccionado}. Esto define cómo se emite el DTE al SAT. ¿Es correcto?`}
+          message={`Vas a continuar con tipo de documento fiscal: ${TIPO_DOC_LABELS[tipoDocSeleccionado] ?? tipoDocSeleccionado}. Esto define cómo se emite el DTE al Ministerio de Hacienda. ¿Es correcto?`}
           confirmLabel={isSubmitting ? 'Guardando…' : 'Sí, continuar'}
           variant="primary"
           onCancel={() => setConfirmandoTipo(false)}
