@@ -9,9 +9,12 @@ import { ContactosDeCliente } from '@/components/clientes/ContactosDeCliente';
 import { ProyectosClienteCard } from '@/components/proyectos/ProyectosClienteCard';
 import { useCliente } from '@/hooks/use-clientes';
 import { useCotizaciones } from '@/hooks/use-cotizaciones';
+import { useFacturas } from '@/hooks/use-facturas';
+import { FacturaEstadoBadge } from '@/components/facturas/FacturaEstadoBadge';
 import { useAuthStore } from '@/stores/auth.store';
 import { CotizacionStatusBadge } from '@/components/cotizaciones/CotizacionStatusBadge';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import Decimal from 'decimal.js';
 import { resolverDepartamento, resolverMunicipio, resolverDistrito } from '@/lib/sv-geo';
 
 const btnSec = 'inline-flex items-center gap-2 px-4 py-2 rounded-md border border-bd text-tx-2 bg-surface text-sm font-medium hover:bg-bg-sunken transition-colors';
@@ -42,6 +45,20 @@ export function ClienteDetalle({ id }: { id: string }) {
   // Cargamos las cotizaciones del cliente para poblar el "Historial". El
   // backend ya soporta el filtro clienteId; tomamos las 20 mas recientes.
   const cotizacionesQ = useCotizaciones({ clienteId: id, limit: 20 });
+
+  // Facturas del cliente — alimenta el card "Facturas vinculadas" y el KPI
+  // "Total facturado". Cargamos hasta 50 facturas; si hay más, el total
+  // calculado abajo refleja solo las visibles (suficiente para el dashboard
+  // del cliente, el listado completo vive en /facturas).
+  const facturasQ = useFacturas({ clienteId: id, limit: 50 });
+  const facturas = facturasQ.data?.data ?? [];
+
+  // Total facturado: suma de totales de facturas no ANULADA. Se calcula
+  // client-side con decimal.js porque el backend devuelve los montos como
+  // strings Decimal serializados (NO usar parseFloat).
+  const totalFacturado = facturas
+    .filter((f) => f.estado !== 'ANULADA')
+    .reduce((acc, f) => acc.add(f.total), new Decimal(0));
 
   if (isLoading) return <div className="flex justify-center p-12"><Spinner /></div>;
   if (isError || !cliente) return <div className="p-8 text-center text-sm text-tx-2">No se pudo cargar el cliente.</div>;
@@ -127,7 +144,7 @@ export function ClienteDetalle({ id }: { id: string }) {
               <div>
                 <div className="text-2xs font-semibold text-tx-3 uppercase tracking-wider">Total facturado</div>
                 <div className="font-mono text-2xl font-medium text-tx mt-1">
-                  {cliente.facturado ? formatCurrency(cliente.facturado) : '$0.00'}
+                  {formatCurrency(totalFacturado.toString())}
                 </div>
               </div>
               <div>
@@ -180,10 +197,46 @@ export function ClienteDetalle({ id }: { id: string }) {
             )}
           </div>
           <div className="rounded-lg border border-bd bg-surface overflow-hidden">
-            <div className="flex items-center px-4 py-3 border-b border-bd">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-bd">
               <h3 className="text-sm font-semibold text-tx">Facturas vinculadas</h3>
+              {facturasQ.data && (
+                <span className="text-xs text-tx-3">
+                  {facturasQ.data.meta.total} {facturasQ.data.meta.total === 1 ? 'factura' : 'facturas'}
+                </span>
+              )}
             </div>
-            <div className="px-4 py-4 text-sm text-tx-muted">Sin facturas vinculadas.</div>
+            {facturasQ.isLoading ? (
+              <div className="px-4 py-6 flex justify-center"><Spinner /></div>
+            ) : facturas.length === 0 ? (
+              <div className="px-4 py-4 text-sm text-tx-muted">Sin facturas vinculadas.</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
+                  <tr>
+                    <th className="text-left px-4 py-2 font-medium">Número</th>
+                    <th className="text-left px-4 py-2 font-medium">Estado</th>
+                    <th className="text-right px-4 py-2 font-medium">Total</th>
+                    <th className="text-right px-4 py-2 font-medium">Saldo</th>
+                    <th className="text-left px-4 py-2 font-medium">Emisión</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {facturas.map((f) => (
+                    <tr
+                      key={f.id}
+                      className="border-t border-bd hover:bg-bg-sunken cursor-pointer transition-colors"
+                      onClick={() => router.push(`/facturas/${f.id}`)}
+                    >
+                      <td className="px-4 py-2 font-mono font-medium text-tx">{f.numeroFactura}</td>
+                      <td className="px-4 py-2"><FacturaEstadoBadge estado={f.estado} /></td>
+                      <td className="px-4 py-2 text-right font-mono">{formatCurrency(f.total)}</td>
+                      <td className="px-4 py-2 text-right font-mono">{formatCurrency(f.saldoPendiente)}</td>
+                      <td className="px-4 py-2 font-mono text-tx-2 text-xs">{formatDate(f.fechaEmision)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
