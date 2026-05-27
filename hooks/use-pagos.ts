@@ -137,10 +137,10 @@ export function useActualizarPago() {
           return r.data.data;
         }),
     onSuccess: (_pago, { facturaId }) => {
-      // Mismas invalidaciones que crear/eliminar — referencia/notas se muestran
-      // en el listado global, en el detalle de la factura y en la tabla de pagos
-      // por factura. La factura misma no cambia su saldo pero su lista de pagos
-      // sí, así que la invalidamos por consistencia.
+      // Solo 3 invalidaciones (no 5 como crear/eliminar): referencia/notas no
+      // afectan el saldo ni la elegibilidad de la factura, así que ['facturas']
+      // y ['facturas-pendientes'] no necesitan refresh. Sí invalidamos la
+      // factura misma porque su lista de pagos embebida cambia.
       qc.invalidateQueries({ queryKey: ['pagos', facturaId] });
       qc.invalidateQueries({ queryKey: ['pagos-listado'] });
       qc.invalidateQueries({ queryKey: ['factura', facturaId] });

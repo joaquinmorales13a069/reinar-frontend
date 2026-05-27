@@ -81,7 +81,7 @@ export function PagosCard({ factura, isOperador, isAdminOGerente }: Props) {
                 <td className="px-4 py-2 text-xs text-tx-3 font-mono">{p.referencia ?? '—'}</td>
                 <td className="px-4 py-2 text-right tabular-nums font-medium">{formatCurrency(p.monto)}</td>
                 <td className="px-4 py-2 text-right whitespace-nowrap">
-                  {puedeRegistrar && facturaActiva && (
+                  {puedeRegistrar && (
                     <button
                       type="button"
                       className="text-tx-2 hover:bg-bg rounded p-1 mr-1"

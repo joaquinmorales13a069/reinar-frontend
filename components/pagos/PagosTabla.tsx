@@ -77,7 +77,13 @@ export function PagosTabla({ pagos, loading, page, pageSize, total, onPage, canE
               <Fragment key={p.id}>
                 <tr
                   className={`border-t border-bd hover:bg-bg-sunken cursor-pointer transition-colors ${isExpanded ? 'bg-bg-sunken' : ''}`}
-                  onClick={() => setExpanded(isExpanded ? null : p.id)}
+                  onClick={() => {
+                    // Expandir/colapsar cierra cualquier acción en curso para
+                    // evitar que la fila muestre detalle + edit + confirm al mismo tiempo.
+                    setEditingId(null);
+                    setConfirmDelete(null);
+                    setExpanded(isExpanded ? null : p.id);
+                  }}
                 >
                   <td className="px-4 py-2.5 font-mono text-xs text-tx-2">{p.id.slice(0, 12)}…</td>
                   <td className="px-4 py-2.5">
@@ -122,6 +128,8 @@ export function PagosTabla({ pagos, loading, page, pageSize, total, onPage, canE
                         className="text-danger hover:bg-danger-soft rounded p-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                         onClick={(e) => {
                           e.stopPropagation();
+                          setEditingId(null);
+                          setExpanded(null);
                           setConfirmDelete(p.id);
                         }}
                       >
