@@ -93,6 +93,14 @@ export function RegistrarPagoForm({ facturaId, saldoPendiente, onClose, onSucces
             type="text"
             inputMode="decimal"
             {...register('monto')}
+            // Bloqueamos a nivel de input cualquier carácter que no sea dígito o
+            // punto. inputMode="decimal" ya muestra teclado numérico en móvil;
+            // esto cubre el caso de teclado físico y de pegado. La validación
+            // de formato (1 punto, máx 2 decimales) sigue corriendo en Zod.
+            onBeforeInput={(e) => {
+              const data = (e.nativeEvent as InputEvent).data;
+              if (data && !/^[\d.]+$/.test(data)) e.preventDefault();
+            }}
             className="w-full px-2 py-1.5 rounded border border-bd bg-bg font-mono"
           />
           {errors.monto && <p className="text-xs text-danger mt-1">{errors.monto.message}</p>}
