@@ -57,7 +57,7 @@ export function PagosTabla({ pagos, loading, page, pageSize, total, onPage, canE
       <table className="w-full text-sm">
         <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
           <tr>
-            <th className="text-left font-medium px-4 py-2.5 w-36">ID</th>
+            <th className="text-left font-medium px-4 py-2.5 w-12">#</th>
             <th className="text-left font-medium px-4 py-2.5 w-40">Factura</th>
             <th className="text-left font-medium px-4 py-2.5">Cliente</th>
             <th className="text-left font-medium px-4 py-2.5 w-36">Método</th>
@@ -68,7 +68,7 @@ export function PagosTabla({ pagos, loading, page, pageSize, total, onPage, canE
           </tr>
         </thead>
         <tbody>
-          {pagos.map((p) => {
+          {pagos.map((p, index) => {
             const isExpanded = expanded === p.id;
             // El backend rechaza eliminar pagos de facturas ANULADAS con 422.
             // Lo prevenimos en UI deshabilitando el botón.
@@ -85,7 +85,7 @@ export function PagosTabla({ pagos, loading, page, pageSize, total, onPage, canE
                     setExpanded(isExpanded ? null : p.id);
                   }}
                 >
-                  <td className="px-4 py-2.5 font-mono text-xs text-tx-2">{p.id.slice(0, 12)}…</td>
+                  <td className="px-4 py-2.5 font-mono text-xs text-tx-2 tabular-nums">{(page - 1) * pageSize + index + 1}</td>
                   <td className="px-4 py-2.5">
                     <Link
                       href={`/facturas/${p.factura.id}`}

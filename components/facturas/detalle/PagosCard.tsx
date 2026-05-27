@@ -64,7 +64,7 @@ export function PagosCard({ factura, isOperador, isAdminOGerente }: Props) {
         <table className="w-full text-sm">
           <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
             <tr>
-              <th className="text-left font-medium px-4 py-2">ID</th>
+              <th className="text-left font-medium px-4 py-2 w-12">#</th>
               <th className="text-left font-medium px-4 py-2 w-28">Fecha</th>
               <th className="text-left font-medium px-4 py-2 w-32">Método</th>
               <th className="text-left font-medium px-4 py-2">Referencia</th>
@@ -73,9 +73,9 @@ export function PagosCard({ factura, isOperador, isAdminOGerente }: Props) {
             </tr>
           </thead>
           <tbody>
-            {pagos.map((p) => (
+            {pagos.map((p, index) => (
               <tr key={p.id} className="border-t border-bd">
-                <td className="px-4 py-2 font-mono text-xs text-tx-2">{p.id.slice(0, 12)}…</td>
+                <td className="px-4 py-2 font-mono text-xs text-tx-2 tabular-nums">{index + 1}</td>
                 <td className="px-4 py-2 font-mono text-xs">{formatDate(p.fecha)}</td>
                 <td className="px-4 py-2"><Badge status={p.metodoPago} /></td>
                 <td className="px-4 py-2 text-xs text-tx-3 font-mono">{p.referencia ?? '—'}</td>

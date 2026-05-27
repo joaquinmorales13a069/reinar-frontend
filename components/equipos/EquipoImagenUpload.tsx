@@ -32,7 +32,10 @@ export function EquipoImagenUpload({
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const heightCls = variant === 'detalle' ? 'h-56' : 'h-32';
+  // En modo "detalle" usamos aspect-square (cuadrado al ancho de la columna)
+  // para que la imagen del equipo tenga proporciones uniformes; en "form" se
+  // mantiene la previsualización compacta de 128×160px.
+  const heightCls = variant === 'detalle' ? 'aspect-square' : 'h-32';
   const widthCls = variant === 'form' ? 'w-40' : 'w-full';
 
   function handleFile(file: File | undefined) {

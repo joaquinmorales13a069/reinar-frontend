@@ -1173,6 +1173,40 @@ export type RecepcionItem = {
   };
 };
 
+// ── Inventario de bodega (response de GET /bodegas/:id/inventario) ──────
+// Agrega los 4 tipos de inventario asignados a una bodega para el card del
+// detalle. consumibles/piezas vienen solo con stock > 0 según el backend.
+export type InventarioBodega = {
+  equipos: Array<{
+    id: string;
+    codigo: string;
+    nombre: string;
+    categoria: string;
+    estado: string;
+    marca: string | null;
+    modelo: string | null;
+  }>;
+  unidadesHerramienta: Array<{
+    id: string;
+    codigoInterno: string;
+    estado: string;
+    tipo: { id: string; nombre: string; categoria: string };
+  }>;
+  consumibles: Array<{
+    id: string;
+    codigo: string;
+    nombre: string;
+    categoria: string;
+    unidad: string;
+    stock: number;
+  }>;
+  piezasAndamio: Array<{
+    id: string;
+    nombre: string;
+    stock: number;
+  }>;
+};
+
 export type RecepcionListItem = {
   id: string;
   numeroActa: string;

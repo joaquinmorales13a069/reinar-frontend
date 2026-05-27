@@ -29,7 +29,7 @@ import { ESTADO_LABELS, ESTADO_BADGE_KIND, puedeEjecutar } from '@/lib/equipos';
 import { formatCurrency } from '@/lib/utils';
 import type { EstadoEquipoEditable } from '@/types/api';
 
-type TabKey = 'specs' | 'ficha' | 'historial';
+type TabKey = 'specs' | 'ficha';
 
 const btnSec = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-bd text-tx-2 bg-surface text-xs font-medium hover:bg-bg-sunken transition-colors';
 const btnPri = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-accent text-navy text-xs font-semibold hover:bg-accent-dim transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
@@ -191,9 +191,7 @@ function EquipoDetalleClient({ id }: { id: string }) {
               <button type="button" className={tabCls(tab === 'ficha')} onClick={() => setTab('ficha')}>
                 Ficha técnica
               </button>
-              <button type="button" className={tabCls(tab === 'historial')} onClick={() => setTab('historial')}>
-                Historial
-              </button>
+
             </div>
             <div className="p-4">
               {tab === 'specs' && (
@@ -258,12 +256,7 @@ function EquipoDetalleClient({ id }: { id: string }) {
                 )
               )}
 
-              {tab === 'historial' && (
-                <div className="text-center text-sm text-tx-3 py-6">
-                  <Icon name="clock" size={20} className="mx-auto mb-2" />
-                  <p>Disponible próximamente con el módulo de cotizaciones.</p>
-                </div>
-              )}
+
             </div>
           </div>
         </div>

@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import Decimal from 'decimal.js';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Icon } from '@/components/ui/Icon';
+import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { FormSection } from '@/components/ui/FormSection';
 import { useContactos } from '@/hooks/use-contactos';
 import { useActualizarCotizacion } from '@/hooks/use-cotizaciones';
@@ -42,7 +44,13 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
   const { register, handleSubmit, control, watch, formState: { errors, isSubmitting } } = useForm<Step3Form>({
     resolver: zodResolver(step3Schema),
     defaultValues: {
-      tipoDocumentoFiscal: cotizacion.tipoDocumentoFiscal ?? 'CF',
+      // Auto-selección por tipo de cliente: EMPRESA usa CCF (Crédito Fiscal,
+      // estándar para B2B), PARTICULAR usa CF (Consumidor Final). Solo aplica
+      // si la cotización aún no tiene tipo persistido — al editar respetamos
+      // lo que ya está guardado.
+      tipoDocumentoFiscal:
+        cotizacion.tipoDocumentoFiscal ??
+        (cotizacion.cliente.tipo === 'EMPRESA' ? 'CCF' : 'CF'),
       condicionesPago: cotizacion.condicionesPago ?? null,
       contactoFacturacionId: cotizacion.contactoFacturacionId ?? null,
       porcentajeIva: cotizacion.porcentajeIva,
@@ -53,6 +61,18 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
       notasInternas: cotizacion.notasInternas,
     },
   });
+
+  // Confirmación inline antes de avanzar al paso 4 — el tipo de documento
+  // fiscal define cómo se emite el DTE al SAT y no se puede cambiar después
+  // de aprobar la cotización, así que pedimos confirmación explícita.
+  const [confirmandoTipo, setConfirmandoTipo] = useState(false);
+  const tipoDocSeleccionado = watch('tipoDocumentoFiscal');
+
+  const TIPO_DOC_LABELS: Record<string, string> = {
+    CF: 'Consumidor Final (CF)',
+    CCF: 'Crédito Fiscal (CCF)',
+    SUJETO_EXCLUIDO: 'Sujeto Excluido',
+  };
 
   const modo = watch('depositoModo');
   const depPorcentaje = watch('depositoPorcentaje');
@@ -277,6 +297,15 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
         </div>
       </FormSection>
 
+      {confirmandoTipo && (
+        <ConfirmRow
+          message={`Vas a continuar con tipo de documento fiscal: ${TIPO_DOC_LABELS[tipoDocSeleccionado] ?? tipoDocSeleccionado}. Esto define cómo se emite el DTE al SAT. ¿Es correcto?`}
+          confirmLabel={isSubmitting ? 'Guardando…' : 'Sí, continuar'}
+          variant="primary"
+          onCancel={() => setConfirmandoTipo(false)}
+          onConfirm={handleSubmit(onSubmit)}
+        />
+      )}
       <div className="flex justify-between gap-2">
         <button
           type="button"
@@ -286,8 +315,16 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
           <Icon name="arrowLeft" size={14} /> Anterior
         </button>
         <button
-          type="submit"
-          disabled={isSubmitting}
+          type="button"
+          disabled={isSubmitting || confirmandoTipo}
+          onClick={async () => {
+            // Validar el form antes de pedir confirmación: si hay errores
+            // (ej. depositoPorcentaje fuera de rango), no abrimos la confirmación.
+            const ok = await new Promise<boolean>((resolve) => {
+              handleSubmit(() => resolve(true), () => resolve(false))();
+            });
+            if (ok) setConfirmandoTipo(true);
+          }}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim transition-colors disabled:opacity-50"
         >
           Siguiente <Icon name="arrowRight" size={14} />
