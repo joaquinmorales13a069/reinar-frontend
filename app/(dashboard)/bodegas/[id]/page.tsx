@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { EquiposAsignadosCard } from '@/components/bodegas/EquiposAsignadosCard';
+import { InventarioAsignadoCard } from '@/components/bodegas/InventarioAsignadoCard';
 import { useBodega } from '@/hooks/use-bodegas';
 import { useAuthStore } from '@/stores/auth.store';
 import { puedeEjecutarBodega } from '@/lib/bodegas';
@@ -139,7 +139,7 @@ export default function BodegaDetallePage({
             )}
           </div>
 
-          <EquiposAsignadosCard bodegaId={bodega.id} />
+          <InventarioAsignadoCard bodegaId={bodega.id} />
         </div>
       </div>
     </div>
