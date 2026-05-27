@@ -8,7 +8,7 @@ import type {
   ApiResponse,
   PaginatedResponse,
   Pago,
-  CrearPagoDto,
+  CrearPagoDto, ActualizarPagoDto,
   PagoListItem,
   FiltrosPagos,
   FacturaListItem,
@@ -122,6 +122,32 @@ export function useEliminarPago() {
     },
     onError: (err) => {
       toast.error(extractErrorMessage(err, 'No se pudo eliminar el pago.'));
+    },
+  });
+}
+
+export function useActualizarPago() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ facturaId, pagoId, data }: { facturaId: string; pagoId: string; data: ActualizarPagoDto }) =>
+      api
+        .patch<ApiResponse<Pago>>(`/facturas/${facturaId}/pagos/${pagoId}`, data)
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    onSuccess: (_pago, { facturaId }) => {
+      // Mismas invalidaciones que crear/eliminar — referencia/notas se muestran
+      // en el listado global, en el detalle de la factura y en la tabla de pagos
+      // por factura. La factura misma no cambia su saldo pero su lista de pagos
+      // sí, así que la invalidamos por consistencia.
+      qc.invalidateQueries({ queryKey: ['pagos', facturaId] });
+      qc.invalidateQueries({ queryKey: ['pagos-listado'] });
+      qc.invalidateQueries({ queryKey: ['factura', facturaId] });
+      toast.success('Pago actualizado.');
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo actualizar el pago.'));
     },
   });
 }
