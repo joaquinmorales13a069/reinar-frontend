@@ -27,13 +27,19 @@ function hoyEnSv(): string {
   return `${y}-${m}-${d}`;
 }
 
+// onClose: cerrar form inline (usado por PagosCard del detalle de factura).
+// onSuccess: navegar/refrescar después del éxito (usado por /pagos/nuevo).
+// Si onSuccess está definido lo llamamos; si no, llamamos onClose. Permite
+// reutilizar el mismo componente en ambos modos sin duplicar lógica de
+// validación, formato de fecha SV y manejo de sobrepago.
 type Props = {
   facturaId: string;
   saldoPendiente: string;
-  onClose: () => void;
+  onClose?: () => void;
+  onSuccess?: () => void;
 };
 
-export function RegistrarPagoForm({ facturaId, saldoPendiente, onClose }: Props) {
+export function RegistrarPagoForm({ facturaId, saldoPendiente, onClose, onSuccess }: Props) {
   const crear = useCrearPago();
   const { register, handleSubmit, watch, formState: { errors }, setError } = useForm<Form>({
     resolver: zodResolver(registrarPagoSchema),
@@ -61,7 +67,8 @@ export function RegistrarPagoForm({ facturaId, saldoPendiente, onClose }: Props)
         facturaId,
         data: { ...values, fecha: fechaIso },
       });
-      onClose();
+      if (onSuccess) onSuccess();
+      else if (onClose) onClose();
     } catch (err) {
       const anyErr = err as { response?: { data?: { error?: { message?: string } } } };
       const msg = anyErr?.response?.data?.error?.message;
@@ -73,9 +80,11 @@ export function RegistrarPagoForm({ facturaId, saldoPendiente, onClose }: Props)
     <form onSubmit={handleSubmit(onSubmit)} className="bg-bg-sunken border border-bd rounded-md p-4 space-y-3 mb-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-medium text-tx">Registrar pago</h4>
-        <button type="button" onClick={onClose} className="text-tx-3 hover:text-tx" title="Cerrar">
-          <Icon name="x" size={14} />
-        </button>
+        {onClose && (
+          <button type="button" onClick={onClose} className="text-tx-3 hover:text-tx" title="Cerrar">
+            <Icon name="x" size={14} />
+          </button>
+        )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
         <div>
@@ -132,7 +141,7 @@ export function RegistrarPagoForm({ facturaId, saldoPendiente, onClose }: Props)
         message="¿Registrar este pago? El saldo de la factura se recalculará."
         confirmLabel={crear.isPending ? 'Guardando…' : 'Registrar pago'}
         variant="primary"
-        onCancel={onClose}
+        onCancel={onClose ?? onSuccess ?? (() => {})}
         onConfirm={handleSubmit(onSubmit)}
       />
     </form>

@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
-import { RegistrarPagoForm } from './RegistrarPagoForm';
+import { RegistrarPagoForm } from '@/components/pagos/RegistrarPagoForm';
 import { useListarPagos, useEliminarPago } from '@/hooks/use-pagos';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Factura } from '@/types/api';
