@@ -2,8 +2,6 @@
 
 import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Icon } from '@/components/ui/Icon';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -135,27 +133,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
           />
           <ItemsFacturadosCard factura={factura} />
           <PagosCard factura={factura} isOperador={isOperador} isAdminOGerente={isAdminOGerente} />
-          <ActasVinculadasCard factura={factura} />
-          {/* Actas y recepciones de esta factura — link contextual al módulo */}
-          <div className="rounded-lg border border-bd bg-surface p-4 mt-4">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-tx">Actas y recepciones</h3>
-              {puedeEscribir && (
-                <Link
-                  href={`/actas/nueva?facturaId=${factura.id}`}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent text-navy text-xs font-semibold hover:bg-accent-dim transition-colors"
-                >
-                  <Icon name="plus" size={12} /> Nueva acta
-                </Link>
-              )}
-            </div>
-            <div className="text-xs text-tx-3">
-              Ver{' '}
-              <Link href={`/actas?busqueda=${factura.numeroFactura}`} className="text-accent hover:underline">actas de esta factura</Link>
-              {' · '}
-              <Link href={`/recepciones?busqueda=${factura.numeroFactura}`} className="text-accent hover:underline">recepciones</Link>
-            </div>
-          </div>
+          <ActasVinculadasCard factura={factura} puedeEscribir={!!puedeEscribir} />
         </div>
         <div className="space-y-4">
           <ProgresoCobroCard factura={factura} />
