@@ -27,7 +27,9 @@ export default function NuevoPagoPage() {
   useEffect(() => {
     if (facturaIdPre && !factura && pendientes.length > 0) {
       const f = pendientes.find((x) => x.id === facturaIdPre);
-      if (f) setFactura(f);
+      // sync de query param a estado local: corre una vez cuando los datos
+      // llegan; el usuario puede limpiar la selección después con "Cambiar factura"
+      if (f) setFactura(f); // eslint-disable-line react-hooks/set-state-in-effect
     }
   }, [facturaIdPre, pendientes, factura]);
 
