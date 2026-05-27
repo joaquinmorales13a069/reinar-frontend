@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { RegistrarPagoForm } from '@/components/pagos/RegistrarPagoForm';
+import { EditarPagoForm } from '@/components/pagos/EditarPagoForm';
 import { useListarPagos, useEliminarPago } from '@/hooks/use-pagos';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { Factura } from '@/types/api';
@@ -20,6 +21,7 @@ type Props = {
 export function PagosCard({ factura, isOperador, isAdminOGerente }: Props) {
   const [registrarOpen, setRegistrarOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [editingPagoId, setEditingPagoId] = useState<string | null>(null);
   const { data: pagos = [], isLoading } = useListarPagos(factura.id);
   const eliminar = useEliminarPago();
 
@@ -78,7 +80,20 @@ export function PagosCard({ factura, isOperador, isAdminOGerente }: Props) {
                 <td className="px-4 py-2"><Badge status={p.metodoPago} /></td>
                 <td className="px-4 py-2 text-xs text-tx-3 font-mono">{p.referencia ?? '—'}</td>
                 <td className="px-4 py-2 text-right tabular-nums font-medium">{formatCurrency(p.monto)}</td>
-                <td className="px-4 py-2 text-right">
+                <td className="px-4 py-2 text-right whitespace-nowrap">
+                  {puedeRegistrar && facturaActiva && (
+                    <button
+                      type="button"
+                      className="text-tx-2 hover:bg-bg rounded p-1 mr-1"
+                      title="Editar referencia y notas"
+                      onClick={() => {
+                        setConfirmDelete(null);
+                        setEditingPagoId(p.id);
+                      }}
+                    >
+                      <Icon name="edit" size={13} />
+                    </button>
+                  )}
                   {isAdminOGerente && facturaActiva && (
                     <button
                       type="button"
@@ -95,6 +110,23 @@ export function PagosCard({ factura, isOperador, isAdminOGerente }: Props) {
           </tbody>
         </table>
       )}
+
+      {editingPagoId && (() => {
+        const p = pagos.find((x) => x.id === editingPagoId);
+        if (!p) return null;
+        return (
+          <div className="p-4 border-t border-bd">
+            <EditarPagoForm
+              facturaId={factura.id}
+              pagoId={p.id}
+              referenciaActual={p.referencia}
+              notasActuales={p.notas}
+              onCancel={() => setEditingPagoId(null)}
+              onSuccess={() => setEditingPagoId(null)}
+            />
+          </div>
+        );
+      })()}
 
       {confirmDelete && (
         <div className="p-4 border-t border-bd">
