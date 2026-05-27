@@ -1009,6 +1009,51 @@ export type CrearPagoDto = {
   notas?: string;
 };
 
+// Solo referencia y notas son editables. Monto, fecha y metodoPago no se
+// exponen porque cambiarlos rompería la trazabilidad contable. Al menos uno
+// de los dos debe venir definido (el backend rechaza con 400 si ambos son
+// undefined).
+export type ActualizarPagoDto = {
+  referencia?: string;
+  notas?: string;
+};
+
+// ── Listado global de pagos (RAMA 13) ──────────────────────────────────
+// Shape devuelta por GET /api/v1/pagos. El backend embebe factura+cliente
+// (5 campos del cliente) para evitar requests adicionales y soportar
+// la búsqueda libre por número de factura o nombre de cliente.
+export type PagoListItem = {
+  id: string;
+  monto: string;
+  fecha: string;
+  metodoPago: MetodoPago;
+  referencia: string | null;
+  notas: string | null;
+  createdAt: string;
+  factura: {
+    id: string;
+    numeroFactura: string;
+    estado: EstadoFactura;
+    cliente: {
+      id: string;
+      tipo: 'EMPRESA' | 'PARTICULAR';
+      razonSocial: string | null;
+      nombre: string | null;
+      apellido: string | null;
+    };
+  };
+};
+
+export type FiltrosPagos = {
+  page?: number;
+  limit?: number;
+  busqueda?: string;
+  metodoPago?: MetodoPago;
+  clienteId?: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
+};
+
 // ── Actas y Recepciones (RAMA 12) ─────────────────────────────────────────────
 
 export type ActaItemTipo = 'EQUIPO' | 'HERRAMIENTA' | 'CONSUMIBLE' | 'PIEZA';
