@@ -1009,6 +1009,15 @@ export type CrearPagoDto = {
   notas?: string;
 };
 
+// Solo referencia y notas son editables. Monto, fecha y metodoPago no se
+// exponen porque cambiarlos rompería la trazabilidad contable. Al menos uno
+// de los dos debe venir definido (el backend rechaza con 400 si ambos son
+// undefined).
+export type ActualizarPagoDto = {
+  referencia?: string;
+  notas?: string;
+};
+
 // ── Listado global de pagos (RAMA 13) ──────────────────────────────────
 // Shape devuelta por GET /api/v1/pagos. El backend embebe factura+cliente
 // (5 campos del cliente) para evitar requests adicionales y soportar
