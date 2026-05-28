@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
 import { Pagination } from '@/components/ui/Pagination';
 import { EstadoDteBadge } from '@/components/facturas/EstadoDteBadge';
+import { CuandoUsarCard } from '@/components/ui/CuandoUsarCard';
 import { useNotasCredito } from '@/hooks/use-notas-credito';
 import { useAuthStore } from '@/stores/auth.store';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -69,6 +70,41 @@ export default function NotasCreditoPage() {
           )
         }
       />
+
+      <CuandoUsarCard
+        title="¿Cuándo emitir una nota de crédito?"
+        resumen="Solo contra facturas con DTE APROBADO y en estado PAGADA o PARCIAL. Si la factura está PENDIENTE, anulala directamente — no uses NC."
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-tx-3 mb-2">
+              NC Parcial — ajuste sin anular
+            </h4>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Devolución temprana del equipo (días no usados).</li>
+              <li>Entrega incompleta (faltaron piezas, andamios, herramientas).</li>
+              <li>Descuento post-factura negociado con el cliente.</li>
+              <li>Equipo defectuoso devuelto (días no operativos).</li>
+              <li>Servicios no prestados (ej. se cobró montaje + desmontaje y solo se hizo uno).</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-tx-3 mb-2">
+              NC Total — equivale a anular
+            </h4>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Factura emitida con error grave ya cobrada (cliente equivocado, items totalmente erróneos).</li>
+              <li>Cancelación de contrato post-cobro (incumplimiento, devolución completa).</li>
+            </ul>
+            <p className="text-xs text-tx-3 mt-2">
+              Tras una NC TOTAL la factura pasa a ANULADA y no se le puede tocar más. Emití una factura nueva si corresponde.
+            </p>
+          </div>
+        </div>
+        <p className="text-xs text-tx-3 mt-3 pt-3 border-t border-info-soft">
+          La NC tiene su propio DTE legal y se envía al Ministerio de Hacienda. La suma de NCs activas no puede superar el total de la factura.
+        </p>
+      </CuandoUsarCard>
 
       <FilterBar
         search={search}

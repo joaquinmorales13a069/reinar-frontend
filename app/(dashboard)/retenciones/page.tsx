@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
 import { Pagination } from '@/components/ui/Pagination';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
+import { CuandoUsarCard } from '@/components/ui/CuandoUsarCard';
 import {
   useRetenciones,
   useEliminarRetencion,
@@ -87,6 +88,41 @@ export default function RetencionesPage() {
           )
         }
       />
+
+      <CuandoUsarCard
+        title="¿Cuándo registrar una retención?"
+        resumen="Cuando el cliente paga reteniendo IVA y te entrega un Comprobante de Retención (CR). La retención reduce el saldo pendiente y queda como crédito fiscal para tu declaración mensual."
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-tx-3 mb-2">
+              Cuándo sí aplica
+            </h4>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Cliente designado como <b>agente de retención</b> por el MH (grandes contribuyentes, multinacionales, constructoras grandes, cementeras).</li>
+              <li>Entidades públicas: alcaldías, ministerios, autónomas — casi siempre retienen.</li>
+              <li><b>Retención IVA 1%</b>: el caso más común en renta de equipos y servicios.</li>
+              <li><b>Retención IVA 13%</b>: operaciones específicas con bienes entre contribuyentes designados (raro en este negocio).</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-tx-3 mb-2">
+              Cuándo NO aplica
+            </h4>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Cliente persona natural sin NIT (factura FC — consumidor final).</li>
+              <li>Pequeño contribuyente no designado como agente.</li>
+              <li>Cliente pagó el 100% del monto sin restar nada — fue un pago normal, no una retención.</li>
+            </ul>
+            <p className="text-xs text-tx-3 mt-2">
+              El número del CR lo emite y entrega el cliente. Tiene que ser único para ese cliente.
+            </p>
+          </div>
+        </div>
+        <p className="text-xs text-tx-3 mt-3 pt-3 border-t border-info-soft">
+          Flujo típico: cliente paga $1,120 + entrega CR por $10 (1% sobre subtotal $1,000) contra una factura CCF de $1,130. Registrás un <b>pago</b> de $1,120 y una <b>retención</b> de $10. La factura queda PAGADA con saldo $0.
+        </p>
+      </CuandoUsarCard>
 
       <FilterBar
         search={search}
