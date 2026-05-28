@@ -32,6 +32,10 @@ export default function SalidaMantenimientoPage() {
   const { data: m, isLoading, isError } = useMantenimiento(id);
   const salida = useRegistrarSalida(id);
 
+  // Solo ADMIN, GERENTE y LOGISTICA pueden eliminar adjuntos (OPERADOR excluido por el backend).
+  const puedeEliminarAdjunto =
+    user?.rol === 'ADMIN' || user?.rol === 'GERENTE' || user?.rol === 'LOGISTICA';
+
   const { control, register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { repuestos: [] },
@@ -154,6 +158,7 @@ export default function SalidaMantenimientoPage() {
           mantenimientoId={m.id}
           adjuntos={m.adjuntos}
           readOnly={false}
+          canDeleteAdjunto={puedeEliminarAdjunto}
         />
 
         <div className="flex justify-end gap-2">

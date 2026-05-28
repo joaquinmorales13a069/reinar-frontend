@@ -40,7 +40,6 @@ function MantenimientosPageInner() {
   const herramientaUnidadIdParam = sp.get('herramientaUnidadId') ?? undefined;
 
   const [page, setPage]     = useState(1);
-  const [search, setSearch] = useState('');
   const [estado, setEstado] = useState<EstadoMantenimiento | undefined>();
   const [tipo, setTipo]     = useState<TipoMantenimiento | undefined>();
 
@@ -71,10 +70,13 @@ function MantenimientosPageInner() {
       />
 
       <div className="rounded-lg border border-bd bg-surface overflow-hidden">
+        {/* El backend solo soporta filtros nativos (estado, tipo); sin búsqueda libre.
+            Pasamos search="" y onSearch vacío para cumplir la interfaz de FilterBar
+            sin exponer un input que el backend ignoraría. */}
         <FilterBar
-          search={search}
-          onSearch={(v) => { setSearch(v); setPage(1); }}
-          placeholder="Buscar por técnico, tipo…"
+          search=""
+          onSearch={() => {}}
+          placeholder=""
           chips={[
             ...ESTADOS.map((e) => ({
               label:    e,
@@ -87,7 +89,7 @@ function MantenimientosPageInner() {
               onToggle: () => { setTipo(tipo === t ? undefined : t); setPage(1); },
             })),
           ]}
-          onClear={() => { setEstado(undefined); setTipo(undefined); setSearch(''); setPage(1); }}
+          onClear={() => { setEstado(undefined); setTipo(undefined); setPage(1); }}
         />
 
         {(equipoIdParam || herramientaUnidadIdParam) && (

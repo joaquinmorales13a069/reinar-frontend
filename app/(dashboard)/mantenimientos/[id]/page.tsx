@@ -151,6 +151,7 @@ export default function DetalleMantenimientoPage() {
             mantenimientoId={m.id}
             adjuntos={m.adjuntos}
             readOnly={!puedeEscribir || !esActivo}
+            canDeleteAdjunto={puedeEliminar && esActivo}
           />
         </div>
       </div>

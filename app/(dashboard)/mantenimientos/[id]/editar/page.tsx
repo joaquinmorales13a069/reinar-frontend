@@ -97,8 +97,12 @@ export default function EditarMantenimientoPage() {
         horometro:     values.horometro,
         costoEstimado: values.costoEstimado,
         repuestos:     values.repuestos.map((r) => r.value),
+        // El input datetime-local produce "YYYY-MM-DDTHH:mm" sin timezone.
+        // Convertimos a ISO completo que es lo que valida z.string().datetime() en el backend.
         // null explicito para limpiar la fecha; undefined la deja como estaba.
-        proximoMantenimiento: values.proximoMantenimiento ? values.proximoMantenimiento : null,
+        proximoMantenimiento: values.proximoMantenimiento
+          ? new Date(values.proximoMantenimiento).toISOString()
+          : null,
       });
       router.push(`/mantenimientos/${id}`);
     } catch {

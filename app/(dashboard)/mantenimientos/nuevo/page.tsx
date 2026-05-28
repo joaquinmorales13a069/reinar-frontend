@@ -107,7 +107,11 @@ function NuevoMantenimientoPageInner() {
         horometro:           values.horometro,
         costoEstimado:       values.costoEstimado,
         repuestos:           values.repuestos.map((r) => r.value),
-        proximoMantenimiento: values.proximoMantenimiento || undefined,
+        // El input datetime-local produce "YYYY-MM-DDTHH:mm" sin timezone.
+        // Convertimos a ISO completo que es lo que valida z.string().datetime() en el backend.
+        proximoMantenimiento: values.proximoMantenimiento
+          ? new Date(values.proximoMantenimiento).toISOString()
+          : undefined,
         equipoId:            entidad.kind === 'equipo' ? entidad.equipoId : undefined,
         herramientaUnidadId: entidad.kind === 'unidad' ? entidad.herramientaUnidadId : undefined,
       });

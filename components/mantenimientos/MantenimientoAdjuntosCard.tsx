@@ -21,15 +21,23 @@ export function MantenimientoAdjuntosCard({
   mantenimientoId,
   adjuntos,
   readOnly,
+  canDeleteAdjunto,
 }: {
   mantenimientoId: string;
   adjuntos:        MantenimientoAdjunto[];
   readOnly?:       boolean;
+  // El backend exige ADMIN/GERENTE/LOGISTICA para borrar adjuntos. OPERADOR puede
+  // subir pero no eliminar. Si se omite, hereda del readOnly del card.
+  canDeleteAdjunto?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const subir   = useSubirAdjuntos(mantenimientoId);
   const borrar  = useEliminarAdjunto(mantenimientoId);
+
+  // showDelete separa el gate de eliminar (ADMIN/GERENTE/LOGISTICA) del de subir
+  // (incluye OPERADOR). Si no se pasa canDeleteAdjunto, hereda el readOnly general.
+  const showDelete = canDeleteAdjunto ?? !readOnly;
 
   function abrir(adj: MantenimientoAdjunto) {
     if (adj.archivoUrl) window.open(adj.archivoUrl, '_blank', 'noopener');
@@ -85,7 +93,7 @@ export function MantenimientoAdjuntosCard({
                     <span className="truncate text-sm">{adj.nombreArchivo}</span>
                     <span className="text-xs text-tx-3 shrink-0">{formatBytes(adj.tamaño)}</span>
                   </button>
-                  {!readOnly && (
+                  {showDelete && (
                     <button
                       type="button"
                       onClick={() => setConfirmId(adj.id)}
@@ -96,7 +104,7 @@ export function MantenimientoAdjuntosCard({
                     </button>
                   )}
                 </div>
-                {confirmId === adj.id && (
+                {showDelete && confirmId === adj.id && (
                   <ConfirmRow
                     message="¿Eliminar este adjunto?"
                     onCancel={() => setConfirmId(null)}
