@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { FilterBar } from '@/components/ui/FilterBar';
 import { Pagination } from '@/components/ui/Pagination';
@@ -44,8 +44,6 @@ function MantenimientosPageInner() {
   const [estado, setEstado] = useState<EstadoMantenimiento | undefined>();
   const [tipo, setTipo]     = useState<TipoMantenimiento | undefined>();
 
-  useEffect(() => { setPage(1); }, [estado, tipo, search, equipoIdParam, herramientaUnidadIdParam]);
-
   const { data, isLoading } = useMantenimientos({
     page,
     limit: 20,
@@ -75,21 +73,21 @@ function MantenimientosPageInner() {
       <div className="rounded-lg border border-bd bg-surface overflow-hidden">
         <FilterBar
           search={search}
-          onSearch={setSearch}
+          onSearch={(v) => { setSearch(v); setPage(1); }}
           placeholder="Buscar por técnico, tipo…"
           chips={[
             ...ESTADOS.map((e) => ({
               label:    e,
               active:   estado === e,
-              onToggle: () => setEstado(estado === e ? undefined : e),
+              onToggle: () => { setEstado(estado === e ? undefined : e); setPage(1); },
             })),
             ...TIPOS.map((t) => ({
               label:    t,
               active:   tipo === t,
-              onToggle: () => setTipo(tipo === t ? undefined : t),
+              onToggle: () => { setTipo(tipo === t ? undefined : t); setPage(1); },
             })),
           ]}
-          onClear={() => { setEstado(undefined); setTipo(undefined); setSearch(''); }}
+          onClear={() => { setEstado(undefined); setTipo(undefined); setSearch(''); setPage(1); }}
         />
 
         {(equipoIdParam || herramientaUnidadIdParam) && (

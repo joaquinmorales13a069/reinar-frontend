@@ -54,7 +54,22 @@ function NuevoMantenimientoPageInner() {
   const lockedDesdeQuery = Boolean(equipoIdParam || herramientaIdParam);
 
   const { user } = useAuthStore();
-  const [entidad, setEntidad] = useState<EntidadSeleccionada>(null);
+  // La entidad inicial se deriva de los URL params en el primer render.
+  // Los params son estables al cargar la página, por lo que lazy initial
+  // state es suficiente; no necesitamos un efecto de sincronización.
+  const [entidad, setEntidad] = useState<EntidadSeleccionada>(() => {
+    if (equipoIdParam) {
+      return { kind: 'equipo', equipoId: equipoIdParam, label: `Equipo (${equipoIdParam})` };
+    }
+    if (herramientaIdParam) {
+      return {
+        kind:                'unidad',
+        herramientaUnidadId: herramientaIdParam,
+        label:               `Unidad (${herramientaIdParam})`,
+      };
+    }
+    return null;
+  });
   const [entidadError, setEntidadError] = useState<string | undefined>();
   const crear = useCrearMantenimiento();
 
@@ -65,18 +80,6 @@ function NuevoMantenimientoPageInner() {
       router.replace('/mantenimientos');
     }
   }, [user, router]);
-
-  useEffect(() => {
-    if (equipoIdParam) {
-      setEntidad({ kind: 'equipo', equipoId: equipoIdParam, label: `Equipo (${equipoIdParam})` });
-    } else if (herramientaIdParam) {
-      setEntidad({
-        kind:               'unidad',
-        herramientaUnidadId: herramientaIdParam,
-        label:              `Unidad (${herramientaIdParam})`,
-      });
-    }
-  }, [equipoIdParam, herramientaIdParam]);
 
   const { control, register, handleSubmit, formState: { errors }, setError } =
     useForm<FormValues>({
