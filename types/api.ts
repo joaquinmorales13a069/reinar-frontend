@@ -198,7 +198,7 @@ export type Mantenimiento = {
   fechaSalida:          string | null;
   equipoId:             string | null;
   herramientaUnidadId:  string | null;
-  equipo: { id: string; codigoInterno: string; nombre: string } | null;
+  equipo: { id: string; codigo: string; nombre: string } | null;
   herramientaUnidad: {
     id:              string;
     codigoInterno:   string;
