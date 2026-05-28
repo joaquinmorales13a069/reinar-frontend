@@ -15,20 +15,31 @@ import { useCliente, useCrearCliente, useEditarCliente, useCambiarEstadoCliente 
 import { DEPARTAMENTOS_SV, DISTRITOS_SV, getMunicipiosByDept, getDistritosByMuniDept } from '@/lib/sv-geo';
 import { SECTORES_CAT019, ACTIVIDADES_ECONOMICAS_SV } from '@/lib/cat019';
 import { PhoneInputField } from '@/components/ui/PhoneInputField';
-import { formatNIT, formatNCR, formatDUI, formatNitFlexible } from '@/lib/format-documentos';
+import {
+  formatDocumento,
+  validarDocumento,
+  TIPOS_DOCUMENTO_PARTICULAR,
+  TIPOS_DOCUMENTO_EMPRESA,
+  LABEL_TIPO_DOCUMENTO,
+  PLACEHOLDER_POR_TIPO,
+  MAXLENGTH_POR_TIPO,
+  MENSAJE_FORMATO_DOCUMENTO,
+  formatNCR,
+  type TipoDocumentoCliente,
+} from '@/lib/format-documentos';
 
 const schema = z.object({
   tipo: z.enum(['EMPRESA', 'PARTICULAR']),
   razonSocial: z.string().optional(),
   nombreComercial: z.string().optional(),
-  nit: z.string().optional(),
-  ncr: z.string().optional(),
   sector: z.string().optional(),
   actividadEconomica: z.string().optional(),
   nombre: z.string().optional(),
   apellido: z.string().optional(),
-  dui: z.string().optional(),
   ocupacion: z.string().optional(),
+  tipoDocumento: z.enum(['DUI', 'NIT', 'PASAPORTE', 'CARNET_RESIDENTE', 'OTRO']).optional().or(z.literal('')),
+  numeroDocumento: z.string().optional(),
+  ncr: z.string().optional(),
   departamento: z.string().min(1, 'El departamento es obligatorio.'),
   municipio: z.string().min(1),
   distrito: z.string().optional(),
@@ -41,23 +52,25 @@ const schema = z.object({
   if (d.tipo === 'EMPRESA') {
     if (!d.razonSocial?.trim())
       ctx.addIssue({ code: 'custom', path: ['razonSocial'], message: 'La razón social es obligatoria.' });
-    if (d.nit && !/^\d{4}-\d{6}-\d{3}-\d$/.test(d.nit))
-      ctx.addIssue({ code: 'custom', path: ['nit'], message: 'Formato: NNNN-NNNNNN-NNN-N' });
-    if (d.ncr && !/^(\d{4}-\d|\d{6}-\d)$/.test(d.ncr))
-      ctx.addIssue({ code: 'custom', path: ['ncr'], message: 'Formato: NNNN-N o NNNNNN-N' });
+    if (d.tipoDocumento && d.tipoDocumento !== 'DUI' && d.tipoDocumento !== 'NIT')
+      ctx.addIssue({ code: 'custom', path: ['tipoDocumento'], message: 'EMPRESA solo acepta DUI o NIT.' });
   } else {
     if (!d.nombre?.trim())
       ctx.addIssue({ code: 'custom', path: ['nombre'], message: 'El nombre es obligatorio.' });
-    if (d.dui && !/^\d{8}-\d$/.test(d.dui))
-      ctx.addIssue({ code: 'custom', path: ['dui'], message: 'Formato: NNNNNNNN-N' });
-    // PARTICULAR acepta NIT en formato DUI (9d) o NIT viejo (14d). El primero
-    // corresponde al cambio de MH del 15-ene-2026 (NIT = DUI); el segundo es
-    // para extranjeros, menores y datos heredados.
-    if (d.nit && !/^(\d{8}-\d|\d{4}-\d{6}-\d{3}-\d)$/.test(d.nit))
-      ctx.addIssue({ code: 'custom', path: ['nit'], message: 'Formato: NNNNNNNN-N (DUI) o NNNN-NNNNNN-NNN-N' });
-    if (d.ncr && !/^(\d{4}-\d|\d{6}-\d)$/.test(d.ncr))
-      ctx.addIssue({ code: 'custom', path: ['ncr'], message: 'Formato: NNNN-N o NNNNNN-N' });
   }
+  const tipoDocRaw = d.tipoDocumento as string | undefined;
+  const tipoDoc = tipoDocRaw && tipoDocRaw !== '' ? d.tipoDocumento : undefined;
+  if (tipoDoc && !d.numeroDocumento?.trim()) {
+    ctx.addIssue({ code: 'custom', path: ['numeroDocumento'], message: 'Ingresá el número del documento.' });
+  }
+  if (!tipoDoc && d.numeroDocumento?.trim()) {
+    ctx.addIssue({ code: 'custom', path: ['tipoDocumento'], message: 'Seleccioná el tipo de documento.' });
+  }
+  if (tipoDoc && d.numeroDocumento?.trim() && !validarDocumento(tipoDoc, d.numeroDocumento)) {
+    ctx.addIssue({ code: 'custom', path: ['numeroDocumento'], message: MENSAJE_FORMATO_DOCUMENTO[tipoDoc] });
+  }
+  if (d.ncr && !/^(\d{4}-\d|\d{6}-\d)$/.test(d.ncr))
+    ctx.addIssue({ code: 'custom', path: ['ncr'], message: 'Formato: NNNN-N o NNNNNN-N' });
   if (d.telefono && !/^\+\d{6,15}$/.test(d.telefono))
     ctx.addIssue({ code: 'custom', path: ['telefono'], message: 'Número inválido (6–12 dígitos locales).' });
   if (d.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email))
@@ -68,8 +81,9 @@ type FormData = z.infer<typeof schema>;
 
 const DEFAULTS: FormData = {
   tipo: 'EMPRESA',
-  razonSocial: '', nombreComercial: '', nit: '', ncr: '', sector: '', actividadEconomica: '',
-  nombre: '', apellido: '', dui: '', ocupacion: '',
+  razonSocial: '', nombreComercial: '', sector: '', actividadEconomica: '',
+  nombre: '', apellido: '', ocupacion: '',
+  tipoDocumento: '', numeroDocumento: '', ncr: '',
   departamento: '', municipio: '', distrito: '',
   complemento: '', telefono: '', email: '', notas: '',
   estado: 'ACTIVO',
@@ -85,10 +99,6 @@ export function ClienteForm({ id }: { id?: string }) {
   const isNew = !id;
   const router = useRouter();
   const [confirmDesact, setConfirmDesact] = useState(false);
-  // Toggle para PARTICULAR: por defecto el NIT es el mismo DUI (regla MH
-  // 15-ene-2026). Si se activa, el usuario puede tipear un NIT distinto
-  // (extranjero, menor, o legacy de 14 digitos).
-  const [nitDistintoDelDui, setNitDistintoDelDui] = useState(false);
 
   const { data: existing, isLoading: loadingExisting } = useCliente(id ?? '');
   const crear = useCrearCliente();
@@ -119,12 +129,9 @@ export function ClienteForm({ id }: { id?: string }) {
   const { onChange: onMuniChange, ...muniRest } = register('municipio');
   const { onChange: onSectorChange, ...sectorRest } = register('sector');
 
-  // Auto-dash de documentos: aplicamos el formateador en onChange antes de
-  // entregar el value a RHF, asi el usuario tipea digitos y el dash aparece
-  // automaticamente. Mantenemos el resto del register intacto (blur, ref).
-  const nitReg = register('nit');
-  const ncrReg = register('ncr');
-  const duiReg = register('dui');
+  // Casteamos a string para poder comparar con '' sin que TS se queje del union type
+  const tipoDocumentoValue = watch('tipoDocumento') as string | undefined;
+  const numeroDocReg = register('numeroDocumento');
 
   // Cuando el distrito se selecciona primero, guardamos el municipio pendiente aquí
   // y lo aplicamos en el efecto de abajo, DESPUÉS de que el nuevo departamento haya
@@ -145,15 +152,6 @@ export function ClienteForm({ id }: { id?: string }) {
         Object.entries(existing).map(([k, v]) => [k, v ?? ''])
       );
       reset({ ...DEFAULTS, ...(clean as Partial<FormData>) });
-      // Inferimos el estado inicial del toggle: si el cliente PARTICULAR tiene
-      // un NIT que difiere del DUI, fue capturado expresamente y debe
-      // permanecer editable. Si NIT vacio o NIT === DUI, asumimos el default
-      // MH (NIT = DUI) y el input NIT queda oculto.
-      if (existing.tipo === 'PARTICULAR' && existing.nit && existing.nit !== existing.dui) {
-        setNitDistintoDelDui(true);
-      } else {
-        setNitDistintoDelDui(false);
-      }
     }
   }, [existing, reset]);
 
@@ -167,12 +165,6 @@ export function ClienteForm({ id }: { id?: string }) {
   }
 
   async function onSubmit(data: FormData) {
-    // Regla MH 15-ene-2026: el NIT de una persona natural SV es su DUI. Si el
-    // usuario no activo el toggle de NIT distinto, mandamos nit = dui al backend
-    // para que el DTE/Facturallama tenga el campo poblado sin pedirlo dos veces.
-    if (data.tipo === 'PARTICULAR' && !nitDistintoDelDui) {
-      data = { ...data, nit: data.dui ?? '' };
-    }
     if (isNew) {
       crear.mutate(data as any, {
         onSuccess: () => { toast.success('Cliente creado correctamente.'); router.push('/clientes'); },
@@ -186,7 +178,8 @@ export function ClienteForm({ id }: { id?: string }) {
     // exactamente igual que en EquipoForm.
     const { estado, ...rest } = data;
     try {
-      await editar.mutateAsync({ id: id!, data: rest });
+      // El tipo Cliente en types/api.ts aún tiene nit/dui — se actualizará en Task 17
+      await editar.mutateAsync({ id: id!, data: rest as any });
       if (estado && estado !== existing?.estado) {
         await cambiarEstado.mutateAsync({ id: id!, estado });
       }
@@ -252,19 +245,39 @@ export function ClienteForm({ id }: { id?: string }) {
                   {errors.razonSocial && <p className="text-xs text-danger mt-0.5">{errors.razonSocial.message}</p>}
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-tx-2">NIT</label>
-                  <input
-                    className={`${errors.nit ? inputErr : inputOk} ${monoBase}`}
-                    inputMode="numeric"
-                    maxLength={17}
-                    {...nitReg}
+                  <label className="text-xs font-medium text-tx-2">Tipo de documento</label>
+                  <select
+                    className={errors.tipoDocumento ? inputErr : inputOk}
+                    {...register('tipoDocumento')}
                     onChange={(e) => {
-                      e.target.value = formatNIT(e.target.value);
-                      void nitReg.onChange(e);
+                      void register('tipoDocumento').onChange(e);
+                      setValue('numeroDocumento', '');
                     }}
-                    placeholder="0614-140346-001-7"
+                  >
+                    <option value="">— Seleccionar —</option>
+                    {TIPOS_DOCUMENTO_EMPRESA.map((t) => (
+                      <option key={t} value={t}>{LABEL_TIPO_DOCUMENTO[t]}</option>
+                    ))}
+                  </select>
+                  {errors.tipoDocumento && <p className="text-xs text-danger mt-0.5">{errors.tipoDocumento.message}</p>}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">Número del documento</label>
+                  <input
+                    className={`${errors.numeroDocumento ? inputErr : inputOk} ${monoBase}`}
+                    inputMode="numeric"
+                    maxLength={tipoDocumentoValue && tipoDocumentoValue !== '' ? MAXLENGTH_POR_TIPO[tipoDocumentoValue as TipoDocumentoCliente] : 17}
+                    placeholder={tipoDocumentoValue && tipoDocumentoValue !== '' ? PLACEHOLDER_POR_TIPO[tipoDocumentoValue as TipoDocumentoCliente] : 'Seleccioná un tipo primero'}
+                    disabled={!tipoDocumentoValue}
+                    {...numeroDocReg}
+                    onChange={(e) => {
+                      if (tipoDocumentoValue && tipoDocumentoValue !== '') {
+                        e.target.value = formatDocumento(tipoDocumentoValue as TipoDocumentoCliente, e.target.value);
+                      }
+                      void numeroDocReg.onChange(e);
+                    }}
                   />
-                  {errors.nit && <p className="text-xs text-danger mt-0.5">{errors.nit.message}</p>}
+                  {errors.numeroDocumento && <p className="text-xs text-danger mt-0.5">{errors.numeroDocumento.message}</p>}
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-tx-2">NCR</label>
@@ -272,10 +285,10 @@ export function ClienteForm({ id }: { id?: string }) {
                     className={`${errors.ncr ? inputErr : inputOk} ${monoBase}`}
                     inputMode="numeric"
                     maxLength={8}
-                    {...ncrReg}
+                    {...register('ncr')}
                     onChange={(e) => {
                       e.target.value = formatNCR(e.target.value);
-                      void ncrReg.onChange(e);
+                      void register('ncr').onChange(e);
                     }}
                     placeholder="9166-9 o 183456-7"
                   />
@@ -340,74 +353,60 @@ export function ClienteForm({ id }: { id?: string }) {
                   <input className={inputOk} {...register('apellido')} placeholder="Hernández Pérez" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-tx-2">DUI</label>
-                  <input
-                    className={`${errors.dui ? inputErr : inputOk} ${monoBase}`}
-                    inputMode="numeric"
-                    maxLength={10}
-                    {...duiReg}
+                  <label className="text-xs font-medium text-tx-2">Tipo de documento</label>
+                  <select
+                    className={errors.tipoDocumento ? inputErr : inputOk}
+                    {...register('tipoDocumento')}
                     onChange={(e) => {
-                      e.target.value = formatDUI(e.target.value);
-                      void duiReg.onChange(e);
+                      void register('tipoDocumento').onChange(e);
+                      setValue('numeroDocumento', '');
                     }}
-                    placeholder="12345678-9"
+                  >
+                    <option value="">— Seleccionar —</option>
+                    {TIPOS_DOCUMENTO_PARTICULAR.map((t) => (
+                      <option key={t} value={t}>{LABEL_TIPO_DOCUMENTO[t]}</option>
+                    ))}
+                  </select>
+                  {errors.tipoDocumento && <p className="text-xs text-danger mt-0.5">{errors.tipoDocumento.message}</p>}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">Número del documento</label>
+                  <input
+                    className={`${errors.numeroDocumento ? inputErr : inputOk} ${monoBase}`}
+                    inputMode={tipoDocumentoValue === 'DUI' || tipoDocumentoValue === 'NIT' ? 'numeric' : 'text'}
+                    maxLength={tipoDocumentoValue && tipoDocumentoValue !== '' ? MAXLENGTH_POR_TIPO[tipoDocumentoValue as TipoDocumentoCliente] : 25}
+                    placeholder={tipoDocumentoValue && tipoDocumentoValue !== '' ? PLACEHOLDER_POR_TIPO[tipoDocumentoValue as TipoDocumentoCliente] : 'Seleccioná un tipo primero'}
+                    disabled={!tipoDocumentoValue}
+                    {...numeroDocReg}
+                    onChange={(e) => {
+                      if (tipoDocumentoValue && tipoDocumentoValue !== '') {
+                        e.target.value = formatDocumento(tipoDocumentoValue as TipoDocumentoCliente, e.target.value);
+                      }
+                      void numeroDocReg.onChange(e);
+                    }}
                   />
-                  {errors.dui && <p className="text-xs text-danger mt-0.5">{errors.dui.message}</p>}
+                  {errors.numeroDocumento && <p className="text-xs text-danger mt-0.5">{errors.numeroDocumento.message}</p>}
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-tx-2">Ocupación</label>
                   <input className={inputOk} {...register('ocupacion')} placeholder="Ej. Arquitecto independiente" />
                 </div>
-                <div className="flex flex-col gap-1 sm:col-span-2">
-                  <label className="inline-flex items-center gap-2 text-xs text-tx-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded border-bd"
-                      checked={nitDistintoDelDui}
-                      onChange={(e) => {
-                        const next = e.target.checked;
-                        setNitDistintoDelDui(next);
-                        // Al desmarcar: limpiamos el NIT manual para que onSubmit
-                        // lo rellene con el DUI sin arrastrar un valor stale.
-                        if (!next) setValue('nit', '');
-                      }}
-                    />
-                    Tiene NIT distinto al DUI
-                  </label>
-                  <p className="text-xs text-tx-3 mt-0.5">
-                    Desde el 15-ene-2026 el Ministerio de Hacienda usa el DUI como NIT para personas naturales salvadoreñas mayores de edad. Marcá esta opción solo si la persona tiene un NIT propio (extranjeros, menores, o NIT viejo legacy).
-                  </p>
-                </div>
-                {nitDistintoDelDui && (
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-medium text-tx-2">NIT</label>
-                    <input
-                      className={`${errors.nit ? inputErr : inputOk} ${monoBase}`}
-                      inputMode="numeric"
-                      maxLength={17}
-                      {...nitReg}
-                      onChange={(e) => {
-                        e.target.value = formatNitFlexible(e.target.value);
-                        void nitReg.onChange(e);
-                      }}
-                      placeholder="12345678-9 o 0614-140346-001-7"
-                    />
-                    {errors.nit && <p className="text-xs text-danger mt-0.5">{errors.nit.message}</p>}
-                  </div>
-                )}
-                <div className={`flex flex-col gap-1${nitDistintoDelDui ? '' : ' sm:col-span-2'}`}>
+                <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-tx-2">NCR (opcional)</label>
                   <input
                     className={`${errors.ncr ? inputErr : inputOk} ${monoBase}`}
                     inputMode="numeric"
                     maxLength={8}
-                    {...ncrReg}
+                    {...register('ncr')}
                     onChange={(e) => {
                       e.target.value = formatNCR(e.target.value);
-                      void ncrReg.onChange(e);
+                      void register('ncr').onChange(e);
                     }}
                     placeholder="9166-9 o 183456-7"
                   />
+                  <p className="text-xs text-tx-3 mt-0.5">
+                    El NCR solo se incluye en CCF o en FC cuando el documento es NIT.
+                  </p>
                   {errors.ncr && <p className="text-xs text-danger mt-0.5">{errors.ncr.message}</p>}
                 </div>
               </>
