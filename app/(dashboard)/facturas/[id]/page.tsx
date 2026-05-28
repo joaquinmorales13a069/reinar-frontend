@@ -1,7 +1,9 @@
 'use client';
 
 import { use, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Icon } from '@/components/ui/Icon';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -99,12 +101,34 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
         backLabel="Facturas"
         onBack={() => router.push('/facturas')}
         actions={
-          <HeaderAcciones
-            factura={factura}
-            isAdminOGerente={isAdminOGerente}
-            ajusteOpen={ajusteOpen}
-            onToggleAjuste={() => setAjusteOpen((o) => !o)}
-          />
+          <>
+            {/* Crear NC requiere factura PAGADA/PARCIAL con DTE APROBADO — backend rechaza lo contrario */}
+            {puedeEscribir &&
+              factura.estadoDTE === 'APROBADO' &&
+              (factura.estado === 'PAGADA' || factura.estado === 'PARCIAL') && (
+                <Link
+                  href={`/notas-credito/nueva?facturaId=${factura.id}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md border border-bd text-tx-2 hover:bg-bg-sunken"
+                >
+                  <Icon name="fileText" size={14} /> Crear nota de crédito
+                </Link>
+              )}
+            {/* Retención solo si la factura no está anulada */}
+            {puedeEscribir && factura.estado !== 'ANULADA' && (
+              <Link
+                href={`/retenciones/nueva?facturaId=${factura.id}`}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md border border-bd text-tx-2 hover:bg-bg-sunken"
+              >
+                <Icon name="fileText" size={14} /> Registrar retención
+              </Link>
+            )}
+            <HeaderAcciones
+              factura={factura}
+              isAdminOGerente={isAdminOGerente}
+              ajusteOpen={ajusteOpen}
+              onToggleAjuste={() => setAjusteOpen((o) => !o)}
+            />
+          </>
         }
       />
 
