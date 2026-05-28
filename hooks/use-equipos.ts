@@ -12,7 +12,7 @@ import type {
   FiltrosEquipos,
   EstadoEquipoEditable,
   FichaTecnica,
-  EquipoMantenimientoResumen,
+  Mantenimiento,
   HistorialRentaItem,
   MoverBodegaDto,
 } from '@/types/api';
@@ -63,7 +63,7 @@ export function useEquipoMantenimientos(id: string) {
     queryKey: ['equipos', id, 'mantenimientos'],
     queryFn: () =>
       api
-        .get<PaginatedResponse<EquipoMantenimientoResumen>>(`/equipos/${id}/mantenimientos`)
+        .get<PaginatedResponse<Mantenimiento>>(`/equipos/${id}/mantenimientos`)
         .then((r) => r.data),
     enabled: !!id,
   });

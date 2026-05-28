@@ -1,7 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useEquipoMantenimientos } from '@/hooks/use-equipos';
 import { Spinner } from '@/components/ui/Spinner';
+import { MantenimientoEstadoBadge } from '@/components/mantenimientos/MantenimientoEstadoBadge';
 import { formatDate } from '@/lib/utils';
 
 export function EquipoMantenimientosResumen({ equipoId }: { equipoId: string }) {
@@ -9,8 +11,14 @@ export function EquipoMantenimientosResumen({ equipoId }: { equipoId: string }) 
 
   return (
     <div className="rounded-lg border border-bd bg-surface overflow-hidden">
-      <div className="px-4 py-3 border-b border-bd">
+      <div className="px-4 py-3 border-b border-bd flex items-center justify-between">
         <h3 className="font-semibold text-tx">Mantenimientos recientes</h3>
+        <Link
+          href={`/mantenimientos?equipoId=${equipoId}`}
+          className="text-xs text-accent hover:underline"
+        >
+          Ver todos
+        </Link>
       </div>
       <div className="p-4">
         {isLoading ? (
@@ -24,16 +32,19 @@ export function EquipoMantenimientosResumen({ equipoId }: { equipoId: string }) 
                   i < arr.length - 1 ? 'pb-3 border-b border-bd' : ''
                 }`}
               >
-                <div className="min-w-0">
-                  <div className="text-sm font-medium truncate">{m.tipo}</div>
-                  {m.descripcion && (
-                    <div className="text-xs text-tx-3 truncate">{m.descripcion}</div>
-                  )}
-                  {m.proveedor && (
-                    <div className="text-xs text-tx-3">{m.proveedor}</div>
-                  )}
+                <Link href={`/mantenimientos/${m.id}`} className="min-w-0 flex-1 group">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-medium truncate group-hover:text-accent">
+                      {m.tipo}
+                    </span>
+                    <MantenimientoEstadoBadge estado={m.estado} />
+                  </div>
+                  <div className="text-xs text-tx-3 truncate">{m.motivo}</div>
+                  <div className="text-xs text-tx-3">Técnico: {m.tecnico}</div>
+                </Link>
+                <div className="text-xs text-tx-3 font-mono shrink-0">
+                  {formatDate(m.fechaEntrada)}
                 </div>
-                <div className="text-xs text-tx-3 font-mono shrink-0">{formatDate(m.fechaIngreso)}</div>
               </li>
             ))}
           </ul>

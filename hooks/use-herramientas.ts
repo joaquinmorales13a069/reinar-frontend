@@ -14,7 +14,7 @@ import type {
   FiltrosUnidades,
   CrearUnidadDto,
   EstadoUnidadEditable,
-  UnidadMantenimientoResumen,
+  Mantenimiento,
   HistorialRentaItem,
   MoverBodegaDto,
 } from '@/types/api';
@@ -208,7 +208,7 @@ export function useMantenimientosUnidad(unidadId: string) {
     queryKey: ['herramientas', 'unidades', unidadId, 'mantenimientos'],
     queryFn: () =>
       api
-        .get<PaginatedResponse<UnidadMantenimientoResumen>>(
+        .get<PaginatedResponse<Mantenimiento>>(
           `/herramientas/unidades/${unidadId}/mantenimientos`,
         )
         .then((r) => r.data),
