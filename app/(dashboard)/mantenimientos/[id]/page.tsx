@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Spinner } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { MantenimientoEstadoBadge } from '@/components/mantenimientos/MantenimientoEstadoBadge';
 import { MantenimientoAdjuntosCard } from '@/components/mantenimientos/MantenimientoAdjuntosCard';
@@ -18,12 +19,21 @@ export default function DetalleMantenimientoPage() {
   const { user } = useAuthStore();
   const id = params.id;
 
-  const { data: m, isLoading } = useMantenimiento(id);
+  const { data: m, isLoading, isError } = useMantenimiento(id);
   const eliminar = useEliminarMantenimiento();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  if (isLoading || !m) {
+  if (isLoading) {
     return <div className="flex justify-center py-12"><Spinner /></div>;
+  }
+  if (isError || !m) {
+    return (
+      <EmptyState
+        icon="wrench"
+        title="No se pudo cargar el mantenimiento"
+        message="Vuelve a intentarlo o regresa al listado."
+      />
+    );
   }
 
   const rol           = user?.rol;
