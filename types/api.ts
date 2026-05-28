@@ -1350,7 +1350,7 @@ export type NotaCredito = {
   estadoDTE: EstadoDTE;
   dteId: string | null;
   dteControlNumber: string | null;
-  dteRespuestaMH: unknown;
+  dteRespuestaMH: DteRespuestaMH;
   createdAt: string;
   updatedAt: string;
 };
