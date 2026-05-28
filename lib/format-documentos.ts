@@ -43,3 +43,73 @@ export function formatNitFlexible(value: string): string {
   if (d.length <= 9) return formatDUI(d);
   return formatNIT(d);
 }
+
+// ─── Tipos y catálogos ─────────────────────────────────────────────────────
+
+export type TipoDocumentoCliente = 'DUI' | 'NIT' | 'PASAPORTE' | 'CARNET_RESIDENTE' | 'OTRO';
+
+export const TIPOS_DOCUMENTO_PARTICULAR = ['DUI', 'NIT', 'PASAPORTE', 'CARNET_RESIDENTE', 'OTRO'] as const satisfies readonly TipoDocumentoCliente[];
+export const TIPOS_DOCUMENTO_EMPRESA   = ['NIT', 'DUI'] as const satisfies readonly TipoDocumentoCliente[];
+
+export const LABEL_TIPO_DOCUMENTO: Record<TipoDocumentoCliente, string> = {
+  DUI: 'DUI',
+  NIT: 'NIT',
+  PASAPORTE: 'Pasaporte',
+  CARNET_RESIDENTE: 'Carnet de residente',
+  OTRO: 'Otro documento',
+};
+
+export const PLACEHOLDER_POR_TIPO: Record<TipoDocumentoCliente, string> = {
+  DUI: '12345678-9',
+  NIT: '0614-140346-001-7',
+  PASAPORTE: 'AB1234567',
+  CARNET_RESIDENTE: 'CR12345678',
+  OTRO: 'Número del documento',
+};
+
+export const MAXLENGTH_POR_TIPO: Record<TipoDocumentoCliente, number> = {
+  DUI: 10,
+  NIT: 17,
+  PASAPORTE: 20,
+  CARNET_RESIDENTE: 20,
+  OTRO: 25,
+};
+
+const REGEX_POR_TIPO: Record<TipoDocumentoCliente, RegExp> = {
+  DUI: /^\d{8}-\d$/,
+  NIT: /^\d{4}-\d{6}-\d{3}-\d$/,
+  PASAPORTE: /^[A-Z0-9]{5,20}$/,
+  CARNET_RESIDENTE: /^[A-Z0-9-]{5,20}$/,
+  OTRO: /^.{2,25}$/,
+};
+
+export const MENSAJE_FORMATO_DOCUMENTO: Record<TipoDocumentoCliente, string> = {
+  DUI: 'Formato: NNNNNNNN-N',
+  NIT: 'Formato: NNNN-NNNNNN-NNN-N',
+  PASAPORTE: '5-20 caracteres alfanuméricos en mayúsculas',
+  CARNET_RESIDENTE: '5-20 caracteres alfanuméricos (puede incluir guiones)',
+  OTRO: '2-25 caracteres',
+};
+
+// Aplica el formato adecuado según el tipo de documento mientras el usuario
+// tipea. Para DUI/NIT mantenemos los formateadores existentes con dashes
+// automáticos; para los demás tipos forzamos mayúsculas y filtramos
+// caracteres inválidos en tiempo real.
+export function formatDocumento(tipo: TipoDocumentoCliente, value: string): string {
+  switch (tipo) {
+    case 'DUI':
+      return formatDUI(value);
+    case 'NIT':
+      return formatNIT(value);
+    case 'PASAPORTE':
+      return value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
+    case 'CARNET_RESIDENTE':
+      return value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 20);
+    case 'OTRO':
+      return value.slice(0, 25);
+  }
+}
+
+export function validarDocumento(tipo: TipoDocumentoCliente, value: string): boolean {
+  return REGEX_POR_TIPO[tipo].test(value);
+}

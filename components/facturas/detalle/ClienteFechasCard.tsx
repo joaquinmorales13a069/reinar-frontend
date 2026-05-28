@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { formatDate } from '@/lib/utils';
+import { LABEL_TIPO_DOCUMENTO } from '@/lib/format-documentos';
 import type { Factura } from '@/types/api';
 
 export function ClienteFechasCard({ factura }: { factura: Factura }) {
@@ -20,8 +21,9 @@ export function ClienteFechasCard({ factura }: { factura: Factura }) {
         <dd className="text-tx">
           <Link href={`/clientes/${c.id}`} className="hover:underline">{nombre}</Link>
         </dd>
-        {c.nit && (<><dt className="text-tx-3">NIT</dt><dd className="font-mono text-xs">{c.nit}</dd></>)}
-        {c.dui && (<><dt className="text-tx-3">DUI</dt><dd className="font-mono text-xs">{c.dui}</dd></>)}
+        {c.tipoDocumento && c.numeroDocumento && (
+          <><dt className="text-tx-3">{LABEL_TIPO_DOCUMENTO[c.tipoDocumento]}</dt><dd className="font-mono text-xs">{c.numeroDocumento}</dd></>
+        )}
         {c.ncr && (<><dt className="text-tx-3">NCR</dt><dd className="font-mono text-xs">{c.ncr}</dd></>)}
         <dt className="text-tx-3">Emisión</dt>
         <dd className="font-mono text-xs">{formatDate(factura.fechaEmision)}</dd>

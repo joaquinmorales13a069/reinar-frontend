@@ -17,7 +17,7 @@ type DocBase = Pick<
 type Props = {
   doc: DocBase;
   kind: 'factura' | 'nota';
-  cliente?: Pick<Cliente, 'id' | 'ncr' | 'dui' | 'nit' | 'actividadEconomica' | 'departamento' | 'municipio' | 'complemento'>;
+  cliente?: Pick<Cliente, 'id' | 'ncr' | 'tipoDocumento' | 'numeroDocumento' | 'actividadEconomica' | 'departamento' | 'municipio' | 'complemento'>;
   isAdmin?: boolean;
   isOperador?: boolean;
   emitirError?: string | null;
@@ -49,7 +49,7 @@ function motivoBloqueo(tipo: TipoDTE, c: Props['cliente']): string | null {
     return null;
   }
   if (tipo === 'SUJETO_EXCLUIDO') {
-    if (!c.dui && !c.nit) return 'Requiere DUI o NIT en el cliente';
+    if (!c.numeroDocumento) return 'Requiere documento de identidad en el cliente';
     if (!c.actividadEconomica) return 'Requiere actividad económica en el cliente';
     if (!c.departamento || !c.municipio || !c.complemento) return 'Requiere dirección completa (departamento, municipio, complemento)';
     return null;

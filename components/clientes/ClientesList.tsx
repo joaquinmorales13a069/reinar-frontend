@@ -145,7 +145,7 @@ export function ClientesList() {
                         ? (c.razonSocial ?? '—')
                         : [c.nombre, c.apellido].filter(Boolean).join(' ') || '—'}
                     </div>
-                    <div className="font-mono text-xs text-tx-3 mt-0.5">{c.nit ?? c.dui ?? '—'}</div>
+                    <div className="font-mono text-xs text-tx-3 mt-0.5">{c.numeroDocumento ?? '—'}</div>
                   </td>
                   <td className={`${tdCls} hidden lg:table-cell text-tx-2 text-xs`}>
                     {c.tipo === 'EMPRESA'

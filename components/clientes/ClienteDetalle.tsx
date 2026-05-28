@@ -16,6 +16,7 @@ import { CotizacionStatusBadge } from '@/components/cotizaciones/CotizacionStatu
 import { formatCurrency, formatDate } from '@/lib/utils';
 import Decimal from 'decimal.js';
 import { resolverDepartamento, resolverMunicipio, resolverDistrito } from '@/lib/sv-geo';
+import { LABEL_TIPO_DOCUMENTO } from '@/lib/format-documentos';
 
 const btnSec = 'inline-flex items-center gap-2 px-4 py-2 rounded-md border border-bd text-tx-2 bg-surface text-sm font-medium hover:bg-bg-sunken transition-colors';
 const btnPri = 'inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent text-navy text-sm font-semibold hover:bg-accent-dim transition-colors';
@@ -106,7 +107,12 @@ export function ClienteDetalle({ id }: { id: string }) {
                 <>
                   <DetailRow label="Razón social" value={cliente.razonSocial} />
                   <DetailRow label="Nombre comercial" value={cliente.nombreComercial ?? <span className="text-tx-muted">—</span>} />
-                  <DetailRow label="NIT" value={<span className="font-mono">{cliente.nit ?? '—'}</span>} />
+                  {cliente.tipoDocumento && cliente.numeroDocumento && (
+                    <DetailRow
+                      label={LABEL_TIPO_DOCUMENTO[cliente.tipoDocumento]}
+                      value={<span className="font-mono">{cliente.numeroDocumento}</span>}
+                    />
+                  )}
                   <DetailRow label="NCR" value={<span className="font-mono">{cliente.ncr ?? '—'}</span>} />
                   <DetailRow label="Sector" value={cliente.sector ?? <span className="text-tx-muted">—</span>} />
                   <DetailRow label="Actividad económica" value={cliente.actividadEconomica ?? <span className="text-tx-muted">—</span>} />
@@ -115,7 +121,12 @@ export function ClienteDetalle({ id }: { id: string }) {
                 <>
                   <DetailRow label="Nombre" value={cliente.nombre} />
                   <DetailRow label="Apellido" value={cliente.apellido ?? <span className="text-tx-muted">—</span>} />
-                  <DetailRow label="DUI" value={<span className="font-mono">{cliente.dui ?? '—'}</span>} />
+                  {cliente.tipoDocumento && cliente.numeroDocumento && (
+                    <DetailRow
+                      label={LABEL_TIPO_DOCUMENTO[cliente.tipoDocumento]}
+                      value={<span className="font-mono">{cliente.numeroDocumento}</span>}
+                    />
+                  )}
                   <DetailRow label="Ocupación" value={cliente.ocupacion ?? <span className="text-tx-muted">—</span>} />
                 </>
               )}

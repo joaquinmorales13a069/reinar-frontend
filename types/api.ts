@@ -40,9 +40,9 @@ export type Cliente = {
   nombreComercial?: string;
   nombre?: string;
   apellido?: string;
-  nit?: string;
+  tipoDocumento?: 'DUI' | 'NIT' | 'PASAPORTE' | 'CARNET_RESIDENTE' | 'OTRO' | null;
+  numeroDocumento?: string | null;
   ncr?: string;
-  dui?: string;
   ocupacion?: string;
   sector?: string;
   actividadEconomica?: string;
@@ -71,8 +71,8 @@ export type Contacto = {
     nombre?: string;
     apellido?: string;
     estado?: 'ACTIVO' | 'INACTIVO' | 'PROSPECTO';
-    nit?: string;
-    dui?: string;
+    tipoDocumento?: 'DUI' | 'NIT' | 'PASAPORTE' | 'CARNET_RESIDENTE' | 'OTRO' | null;
+    numeroDocumento?: string | null;
     departamento?: string;
     telefono?: string;
   };
@@ -719,8 +719,8 @@ export type Cotizacion = {
     razonSocial: string | null;
     nombre: string | null;
     apellido: string | null;
-    nit: string | null;
-    dui: string | null;
+    tipoDocumento: 'DUI' | 'NIT' | 'PASAPORTE' | 'CARNET_RESIDENTE' | 'OTRO' | null;
+    numeroDocumento: string | null;
     email: string | null;
     telefono: string | null;
   };
