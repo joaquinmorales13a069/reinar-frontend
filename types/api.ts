@@ -40,9 +40,9 @@ export type Cliente = {
   nombreComercial?: string;
   nombre?: string;
   apellido?: string;
-  nit?: string;
+  tipoDocumento?: 'DUI' | 'NIT' | 'PASAPORTE' | 'CARNET_RESIDENTE' | 'OTRO' | null;
+  numeroDocumento?: string | null;
   ncr?: string;
-  dui?: string;
   ocupacion?: string;
   sector?: string;
   actividadEconomica?: string;
