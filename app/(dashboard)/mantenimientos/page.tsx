@@ -120,6 +120,7 @@ function MantenimientosPageInner() {
           <table className="w-full text-sm">
             <thead className="text-xs text-tx-3 border-b border-bd">
               <tr>
+                <th className="text-right font-medium px-4 py-2 w-12">#</th>
                 <th className="text-left font-medium px-4 py-2">Tipo</th>
                 <th className="text-left font-medium px-4 py-2">Estado</th>
                 <th className="text-left font-medium px-4 py-2">Entidad</th>
@@ -129,7 +130,7 @@ function MantenimientosPageInner() {
               </tr>
             </thead>
             <tbody>
-              {data.data.map((m) => {
+              {data.data.map((m, idx) => {
                 const entidadLabel = m.equipo
                   ? `${m.equipo.codigo} — ${m.equipo.nombre}`
                   : m.herramientaUnidad
@@ -144,6 +145,9 @@ function MantenimientosPageInner() {
                     onClick={() => router.push(`/mantenimientos/${m.id}`)}
                     className="border-b border-bd last:border-0 cursor-pointer hover:bg-bg-2"
                   >
+                    <td className="px-4 py-2 text-right font-mono text-xs text-tx-3">
+                      {(page - 1) * data.meta.limit + idx + 1}
+                    </td>
                     <td className="px-4 py-2">{m.tipo}</td>
                     <td className="px-4 py-2"><MantenimientoEstadoBadge estado={m.estado} /></td>
                     <td className="px-4 py-2 font-mono text-xs">{entidadLabel}</td>
