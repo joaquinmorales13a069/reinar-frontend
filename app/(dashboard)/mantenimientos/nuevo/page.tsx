@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Spinner } from '@/components/ui/Spinner';
 import {
   MantenimientoFormFields,
 } from '@/components/mantenimientos/MantenimientoFormFields';
@@ -33,6 +34,16 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 export default function NuevoMantenimientoPage() {
+  // useSearchParams requiere Suspense para que Next.js pueda prerenderizar
+  // estáticamente la página sin esperar a los query params del cliente.
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><Spinner /></div>}>
+      <NuevoMantenimientoPageInner />
+    </Suspense>
+  );
+}
+
+function NuevoMantenimientoPageInner() {
   const router = useRouter();
   const sp    = useSearchParams();
   const equipoIdParam      = sp.get('equipoId');

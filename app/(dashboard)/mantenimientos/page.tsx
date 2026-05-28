@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -19,6 +20,16 @@ const TIPOS:   TipoMantenimiento[]   = ['PREVENTIVO', 'CORRECTIVO', 'EMERGENCIA'
 const ESTADOS: EstadoMantenimiento[] = ['ACTIVO', 'COMPLETADO'];
 
 export default function MantenimientosPage() {
+  // useSearchParams requiere Suspense para que Next.js pueda prerenderizar
+  // estáticamente la página sin esperar a los query params del cliente.
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><Spinner /></div>}>
+      <MantenimientosPageInner />
+    </Suspense>
+  );
+}
+
+function MantenimientosPageInner() {
   const router = useRouter();
   const sp     = useSearchParams();
   const { user } = useAuthStore();
