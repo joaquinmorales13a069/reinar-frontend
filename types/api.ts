@@ -168,17 +168,81 @@ export type FiltrosEquipos = {
   incluirInactivos?: boolean;
 };
 
-// Forma del mantenimiento devuelto por GET /equipos/:id/mantenimientos.
-// Tipo mínimo solo con los campos usados en el detalle del equipo —
-// el módulo de mantenimientos (Rama 15) extenderá esto.
-export type EquipoMantenimientoResumen = {
-  id: string;
-  tipo: string;
-  descripcion: string | null;
-  fechaIngreso: string;
-  fechaSalida: string | null;
-  proveedor: string | null;
-  estado: string;
+// Adjunto del mantenimiento. archivoUrl viene presignada por el backend
+// y expira; no reusarla mas alla del render actual.
+export type MantenimientoAdjunto = {
+  id:            string;
+  nombreArchivo: string;
+  mimeType:      string;
+  tamaño:        number;
+  archivoUrl:    string | null;
+  createdAt:     string;
+};
+
+export type TipoMantenimiento   = 'PREVENTIVO' | 'CORRECTIVO' | 'EMERGENCIA';
+export type EstadoMantenimiento = 'ACTIVO' | 'COMPLETADO';
+
+export type Mantenimiento = {
+  id:                   string;
+  tipo:                 TipoMantenimiento;
+  estado:               EstadoMantenimiento;
+  tecnico:              string;
+  motivo:               string;
+  horometro:            string | null;        // Decimal serializado
+  costoEstimado:        string | null;        // Decimal serializado
+  costoReal:            string | null;        // Decimal serializado
+  repuestos:            string[];
+  proximoMantenimiento: string | null;        // ISO datetime
+  observacionesSalida:  string | null;
+  fechaEntrada:         string;               // ISO datetime
+  fechaSalida:          string | null;
+  equipoId:             string | null;
+  herramientaUnidadId:  string | null;
+  equipo: { id: string; codigo: string; nombre: string } | null;
+  herramientaUnidad: {
+    id:              string;
+    codigoInterno:   string;
+    herramientaTipo: { id: string; nombre: string };
+  } | null;
+  adjuntos:  MantenimientoAdjunto[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type FiltrosMantenimientos = {
+  page?:                number;
+  limit?:               number;
+  equipoId?:            string;
+  herramientaUnidadId?: string;
+  estado?:              EstadoMantenimiento;
+  tipo?:                TipoMantenimiento;
+};
+
+export type CrearMantenimientoDto = {
+  equipoId?:            string;
+  herramientaUnidadId?: string;
+  tipo:                 TipoMantenimiento;
+  tecnico:              string;
+  motivo:               string;
+  horometro?:           number;
+  costoEstimado?:       number;
+  repuestos:            string[];
+  proximoMantenimiento?: string;
+};
+
+export type ActualizarMantenimientoDto = {
+  tecnico?:              string;
+  motivo?:               string;
+  horometro?:            number;
+  costoEstimado?:        number;
+  repuestos?:            string[];
+  proximoMantenimiento?: string | null;
+};
+
+export type RegistrarSalidaDto = {
+  costoReal?:           number;
+  observacionesSalida?: string;
+  repuestos?:           string[];
 };
 
 // Fila del historial de rentas — usado tanto en el detalle de equipo
@@ -297,18 +361,6 @@ export type FiltrosHerramientas = {
 export type CrearUnidadDto = { bodegaId: string; notas?: string };
 
 export type FiltrosUnidades = { estado?: EstadoHerramienta };
-
-// Tipo mínimo del mantenimiento devuelto por GET /unidades/:id/mantenimientos.
-// El módulo completo de mantenimientos (Rama 15) lo extenderá.
-export type UnidadMantenimientoResumen = {
-  id: string;
-  tipo: string;
-  descripcion: string | null;
-  fechaIngreso: string;
-  fechaSalida: string | null;
-  proveedor: string | null;
-  estado: string;
-};
 
 export type Consumible = {
   id: string;

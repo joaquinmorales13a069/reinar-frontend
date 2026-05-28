@@ -2,51 +2,56 @@
 
 import Link from 'next/link';
 import { useMantenimientosUnidad } from '@/hooks/use-herramientas';
-import { formatDate } from '@/lib/utils';
 import { Spinner } from '@/components/ui/Spinner';
-import { Badge } from '@/components/ui/Badge';
+import { MantenimientoEstadoBadge } from '@/components/mantenimientos/MantenimientoEstadoBadge';
+import { formatDate } from '@/lib/utils';
 
 export function UnidadMantenimientosCard({ unidadId }: { unidadId: string }) {
   const { data, isLoading } = useMantenimientosUnidad(unidadId);
 
-  const items = (data?.data ?? []).slice(0, 5);
-
   return (
-    <div className="rounded-lg border border-bd bg-surface p-4">
-      <div className="flex items-center justify-between mb-3">
+    <div className="rounded-lg border border-bd bg-surface overflow-hidden">
+      <div className="px-4 py-3 border-b border-bd flex items-center justify-between">
         <h3 className="font-semibold text-tx">Mantenimientos recientes</h3>
-        {items.length > 0 && (
-          <Link
-            href={`/mantenimientos?unidadId=${unidadId}`}
-            className="text-xs text-tx-2 hover:text-tx hover:underline"
-          >
-            Ver todos
-          </Link>
+        <Link
+          href={`/mantenimientos?herramientaUnidadId=${unidadId}`}
+          className="text-xs text-accent hover:underline"
+        >
+          Ver todos
+        </Link>
+      </div>
+      <div className="p-4">
+        {isLoading ? (
+          <div className="flex justify-center py-4"><Spinner /></div>
+        ) : data && data.data.length > 0 ? (
+          <ul className="flex flex-col gap-3">
+            {data.data.slice(0, 5).map((m, i, arr) => (
+              <li
+                key={m.id}
+                className={`flex items-start justify-between gap-3 ${
+                  i < arr.length - 1 ? 'pb-3 border-b border-bd' : ''
+                }`}
+              >
+                <Link href={`/mantenimientos/${m.id}`} className="min-w-0 flex-1 group">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-medium truncate group-hover:text-accent">
+                      {m.tipo}
+                    </span>
+                    <MantenimientoEstadoBadge estado={m.estado} />
+                  </div>
+                  <div className="text-xs text-tx-3 truncate">{m.motivo}</div>
+                  <div className="text-xs text-tx-3">Técnico: {m.tecnico}</div>
+                </Link>
+                <div className="text-xs text-tx-3 font-mono shrink-0">
+                  {formatDate(m.fechaEntrada)}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-tx-3">Sin mantenimientos registrados.</p>
         )}
       </div>
-
-      {isLoading ? (
-        <div className="flex justify-center p-4">
-          <Spinner />
-        </div>
-      ) : items.length === 0 ? (
-        <p className="text-sm text-tx-3">Sin mantenimientos registrados.</p>
-      ) : (
-        <ul className="flex flex-col">
-          {items.map((m) => (
-            <li
-              key={m.id}
-              className="border-t border-bd first:border-t-0 py-2 flex items-center justify-between gap-3"
-            >
-              <div>
-                <div className="text-sm font-medium">{m.tipo}</div>
-                <div className="text-xs text-tx-3 font-mono">{formatDate(m.fechaIngreso)}</div>
-              </div>
-              <Badge status={m.estado} />
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }
