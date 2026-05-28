@@ -15,6 +15,7 @@ import {
   type EntidadSeleccionada,
 } from '@/components/mantenimientos/MantenimientoEntidadSelector';
 import { useCrearMantenimiento } from '@/hooks/use-mantenimientos';
+import { useAuthStore } from '@/stores/auth.store';
 import type { Control, UseFormRegister, FieldErrors } from 'react-hook-form';
 import type { MantenimientoFormValues } from '@/components/mantenimientos/MantenimientoFormFields';
 
@@ -52,9 +53,18 @@ function NuevoMantenimientoPageInner() {
   // reasignaciones accidentales desde el flujo de detalle de equipo/unidad.
   const lockedDesdeQuery = Boolean(equipoIdParam || herramientaIdParam);
 
+  const { user } = useAuthStore();
   const [entidad, setEntidad] = useState<EntidadSeleccionada>(null);
   const [entidadError, setEntidadError] = useState<string | undefined>();
   const crear = useCrearMantenimiento();
+
+  // VISUALIZADOR no puede mutar datos; el backend lo rechazaria igual,
+  // pero redirigimos aqui para no mostrar un formulario inutilizable.
+  useEffect(() => {
+    if (user && user.rol === 'VISUALIZADOR') {
+      router.replace('/mantenimientos');
+    }
+  }, [user, router]);
 
   useEffect(() => {
     if (equipoIdParam) {

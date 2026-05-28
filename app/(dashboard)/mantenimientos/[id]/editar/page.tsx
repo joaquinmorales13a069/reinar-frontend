@@ -11,6 +11,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { MantenimientoFormFields } from '@/components/mantenimientos/MantenimientoFormFields';
 import { useMantenimiento, useActualizarMantenimiento } from '@/hooks/use-mantenimientos';
+import { useAuthStore } from '@/stores/auth.store';
 import type { Control, UseFormRegister, FieldErrors } from 'react-hook-form';
 import type { MantenimientoFormValues } from '@/components/mantenimientos/MantenimientoFormFields';
 
@@ -30,6 +31,7 @@ export default function EditarMantenimientoPage() {
   const router = useRouter();
   const id = params.id;
 
+  const { user } = useAuthStore();
   const { data: m, isLoading, isError } = useMantenimiento(id);
   const actualizar = useActualizarMantenimiento(id);
 
@@ -41,6 +43,14 @@ export default function EditarMantenimientoPage() {
       repuestos: [],
     },
   });
+
+  // VISUALIZADOR no puede mutar datos; el backend lo rechazaria igual,
+  // pero redirigimos aqui para no mostrar un formulario inutilizable.
+  useEffect(() => {
+    if (user && user.rol === 'VISUALIZADOR') {
+      router.replace(`/mantenimientos/${id}`);
+    }
+  }, [user, router, id]);
 
   // Bloqueo de edicion sobre mantenimientos completados: el backend tambien lo
   // rechazaria, pero mostrarlo aqui evita un viaje innecesario al server.
@@ -80,16 +90,21 @@ export default function EditarMantenimientoPage() {
   }
 
   async function onSubmit(values: FormValues) {
-    await actualizar.mutateAsync({
-      tecnico:       values.tecnico,
-      motivo:        values.motivo,
-      horometro:     values.horometro,
-      costoEstimado: values.costoEstimado,
-      repuestos:     values.repuestos.map((r) => r.value),
-      // null explicito para limpiar la fecha; undefined la deja como estaba.
-      proximoMantenimiento: values.proximoMantenimiento ? values.proximoMantenimiento : null,
-    });
-    router.push(`/mantenimientos/${id}`);
+    try {
+      await actualizar.mutateAsync({
+        tecnico:       values.tecnico,
+        motivo:        values.motivo,
+        horometro:     values.horometro,
+        costoEstimado: values.costoEstimado,
+        repuestos:     values.repuestos.map((r) => r.value),
+        // null explicito para limpiar la fecha; undefined la deja como estaba.
+        proximoMantenimiento: values.proximoMantenimiento ? values.proximoMantenimiento : null,
+      });
+      router.push(`/mantenimientos/${id}`);
+    } catch {
+      // El hook ya muestra el toast con el mensaje del backend. No hace falta
+      // mas manejo aqui; solo evitamos el unhandled rejection.
+    }
   }
 
   return (
