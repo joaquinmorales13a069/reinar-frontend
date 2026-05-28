@@ -1313,3 +1313,116 @@ export type CrearRecepcionDto = {
     combustibleRetorno?: string;
   }>;
 };
+
+// ─── Notas de Crédito ────────────────────────────────────────────────
+
+export type TipoNotaCredito = 'TOTAL' | 'PARCIAL';
+
+export type NotaCreditoListItem = {
+  id: string;
+  numero: string;
+  tipo: TipoNotaCredito;
+  motivo: string;
+  total: string;
+  estadoDTE: EstadoDTE;
+  createdAt: string;
+  factura: { id: string; numeroFactura: string };
+};
+
+export type NotaCredito = {
+  id: string;
+  numero: string;
+  facturaId: string;
+  factura: {
+    id: string;
+    numeroFactura: string;
+    total: string;
+    estado: EstadoFactura;
+    tipoDTE: TipoDTE | null;
+    estadoDTE: EstadoDTE;
+    cliente: Cliente;
+  };
+  motivo: string;
+  tipo: TipoNotaCredito;
+  subtotal: string;
+  montoIva: string;
+  total: string;
+  estadoDTE: EstadoDTE;
+  dteId: string | null;
+  dteControlNumber: string | null;
+  dteRespuestaMH: DteRespuestaMH;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type FiltrosNotasCredito = {
+  page?: number;
+  limit?: number;
+  facturaId?: string;
+  estadoDTE?: EstadoDTE;
+};
+
+export type CrearNotaCreditoDto = {
+  facturaId: string;
+  motivo: string;
+  tipo: TipoNotaCredito;
+  // Requeridos solo cuando tipo === 'PARCIAL'. El backend valida la
+  // combinacion; los enviamos como string para preservar precision Decimal.
+  subtotal?: string;
+  montoIva?: string;
+  total?: string;
+};
+
+export type EmitirDTENotaCreditoDto = { tipoDTE: 'NC' };
+
+// ─── Retenciones ─────────────────────────────────────────────────────
+
+export type ComprobanteRetencionListItem = {
+  id: string;
+  numeroCR: string;
+  porcentaje: string;
+  monto: string;
+  fecha: string;
+  createdAt: string;
+  factura: { id: string; numeroFactura: string };
+  cliente: { id: string; nombre: string | null; razonSocial: string | null };
+};
+
+export type ComprobanteRetencion = {
+  id: string;
+  numeroCR: string;
+  facturaId: string;
+  factura: {
+    id: string;
+    numeroFactura: string;
+    total: string;
+    estado: EstadoFactura;
+    fechaEmision: string;
+    cliente: Cliente;
+  };
+  clienteId: string;
+  cliente: Cliente;
+  porcentaje: string;
+  monto: string;
+  fecha: string;
+  notas: string | null;
+  createdAt: string;
+};
+
+export type FiltrosRetenciones = {
+  page?: number;
+  limit?: number;
+  facturaId?: string;
+  clienteId?: string;
+};
+
+export type RegistrarRetencionDto = {
+  facturaId: string;
+  numeroCR: string;
+  porcentaje: 1 | 13;
+  // Decimal como string para no perder precision en la red.
+  monto: string;
+  // ISO datetime que satisface z.string().datetime() del backend.
+  fecha: string;
+  notas?: string;
+};
