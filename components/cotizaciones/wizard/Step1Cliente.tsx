@@ -25,8 +25,8 @@ type ClienteResumen = {
   razonSocial?: string | null;
   nombre?: string | null;
   apellido?: string | null;
-  nit?: string | null;
-  dui?: string | null;
+  tipoDocumento?: 'DUI' | 'NIT' | 'PASAPORTE' | 'CARNET_RESIDENTE' | 'OTRO' | null;
+  numeroDocumento?: string | null;
 };
 
 type Props = {
@@ -106,8 +106,8 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
           razonSocial: cotizacion.cliente.razonSocial,
           nombre: cotizacion.cliente.nombre,
           apellido: cotizacion.cliente.apellido,
-          nit: cotizacion.cliente.nit,
-          dui: cotizacion.cliente.dui,
+          tipoDocumento: cotizacion.cliente.tipoDocumento,
+          numeroDocumento: cotizacion.cliente.numeroDocumento,
         }
       : null,
   );
@@ -222,9 +222,11 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
                             <div className="font-medium text-tx text-sm">
                               {c.razonSocial ?? `${c.nombre ?? ''} ${c.apellido ?? ''}`.trim()}
                             </div>
-                            <div className="text-xs text-tx-3 font-mono mt-0.5">
-                              {c.tipo === 'EMPRESA' ? `NIT ${c.nit ?? '—'}` : `DUI ${c.dui ?? '—'}`}
-                            </div>
+                            {c.tipoDocumento && c.numeroDocumento && (
+                              <div className="text-xs text-tx-3 font-mono mt-0.5">
+                                {c.tipoDocumento} {c.numeroDocumento}
+                              </div>
+                            )}
                           </div>
                           <Badge
                             status={c.tipo === 'EMPRESA' ? 'Empresa' : 'Particular'}
@@ -248,11 +250,11 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
               <div className="font-medium text-tx">
                 {clienteSeleccionado.razonSocial ?? `${clienteSeleccionado.nombre ?? ''} ${clienteSeleccionado.apellido ?? ''}`.trim()}
               </div>
-              <div className="text-xs text-tx-3 font-mono mt-0.5">
-                {clienteSeleccionado.tipo === 'EMPRESA'
-                  ? `NIT ${clienteSeleccionado.nit ?? '—'}`
-                  : `DUI ${clienteSeleccionado.dui ?? '—'}`}
-              </div>
+              {clienteSeleccionado.tipoDocumento && clienteSeleccionado.numeroDocumento && (
+                <div className="text-xs text-tx-3 font-mono mt-0.5">
+                  {clienteSeleccionado.tipoDocumento} {clienteSeleccionado.numeroDocumento}
+                </div>
+              )}
             </div>
             <button
               type="button"

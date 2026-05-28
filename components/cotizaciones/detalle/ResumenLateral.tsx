@@ -28,9 +28,11 @@ export function ResumenLateral({ cotizacion }: { cotizacion: Cotizacion }) {
       <div className={CARD_CLS}>
         <h3 className="text-sm font-medium text-tx mb-3">Cliente</h3>
         <div className="text-tx font-semibold">{nombreCliente}</div>
-        <div className="text-xs text-tx-3 font-mono mt-0.5">
-          {cliente.tipo === 'EMPRESA' ? `NIT ${cliente.nit ?? '—'}` : `DUI ${cliente.dui ?? '—'}`}
-        </div>
+        {cliente.tipoDocumento && cliente.numeroDocumento && (
+          <div className="text-xs text-tx-3 font-mono mt-0.5">
+            {cliente.tipoDocumento} {cliente.numeroDocumento}
+          </div>
+        )}
         <dl className="mt-3 space-y-1.5 text-sm">
           {cotizacion.proyecto && (
             <div className="flex justify-between gap-2">

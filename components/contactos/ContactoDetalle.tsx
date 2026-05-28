@@ -12,6 +12,7 @@ import { Icon } from '@/components/ui/Icon';
 import { useContacto, useToggleActivoContacto } from '@/hooks/use-contactos';
 import { useAuthStore } from '@/stores/auth.store';
 import { resolverDepartamento } from '@/lib/sv-geo';
+import { LABEL_TIPO_DOCUMENTO } from '@/lib/format-documentos';
 import type { Contacto } from '@/types/api';
 
 type ClienteResumen = NonNullable<Contacto['cliente']>;
@@ -31,8 +32,6 @@ function ClienteCard({ cliente }: { clienteId: string; cliente: ClienteResumen }
     ? (cliente.razonSocial ?? '—')
     : [cliente.nombre, cliente.apellido].filter(Boolean).join(' ') || '—';
   const tipoLabel = esEmpresa ? 'EMPRESA' : 'PARTICULAR';
-  const docLabel = esEmpresa ? 'NIT' : 'DUI';
-  const docValue = esEmpresa ? cliente.nit : cliente.dui;
   const ciudad = resolverDepartamento(cliente.departamento);
 
   return (
@@ -54,7 +53,9 @@ function ClienteCard({ cliente }: { clienteId: string; cliente: ClienteResumen }
 
       {/* Filas de datos */}
       <div className="mt-3">
-        {docValue && <InfoRow label={docLabel} value={docValue} />}
+        {cliente.tipoDocumento && cliente.numeroDocumento && (
+          <InfoRow label={LABEL_TIPO_DOCUMENTO[cliente.tipoDocumento]} value={cliente.numeroDocumento} />
+        )}
         {ciudad && ciudad !== '—' && (
           <InfoRow label="Ciudad" value={<span className="font-sans">{ciudad}</span>} />
         )}

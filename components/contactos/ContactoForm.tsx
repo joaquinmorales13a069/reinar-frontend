@@ -93,10 +93,9 @@ export function ContactoForm({ id }: { id?: string }) {
     return cl.razonSocial ?? cl.nombre ?? '—';
   }
 
-  function clienteDoc(cl: { tipo?: string; nit?: string; dui?: string; ncr?: string }): string {
+  function clienteDoc(cl: { tipoDocumento?: string | null; numeroDocumento?: string | null; ncr?: string }): string {
     const parts: string[] = [];
-    if (cl.nit) parts.push(`NIT: ${cl.nit}`);
-    if (cl.tipo === 'PARTICULAR' && cl.dui) parts.push(`DUI: ${cl.dui}`);
+    if (cl.tipoDocumento && cl.numeroDocumento) parts.push(`${cl.tipoDocumento}: ${cl.numeroDocumento}`);
     if (cl.ncr) parts.push(`NRC: ${cl.ncr}`);
     return parts.join(' · ');
   }
@@ -106,8 +105,7 @@ export function ContactoForm({ id }: { id?: string }) {
     const q = clienteSearch.toLowerCase();
     return (
       clienteNombre(cl).toLowerCase().includes(q) ||
-      (cl.nit ?? '').toLowerCase().includes(q) ||
-      (cl.dui ?? '').toLowerCase().includes(q)
+      (cl.numeroDocumento ?? '').toLowerCase().includes(q)
     );
   });
 
