@@ -131,7 +131,7 @@ export function ContactoFormMinModal({ clienteId, defaultTipo = 'SOLICITANTE', o
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-md rounded-lg border border-bd bg-surface shadow-xl">
+      <div className="w-full max-w-2xl rounded-lg border border-bd bg-surface shadow-xl">
         <div className="flex items-center justify-between px-4 py-3 border-b border-bd">
           <div>
             <h3 className="text-sm font-semibold text-tx">Nuevo contacto</h3>
