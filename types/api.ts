@@ -975,11 +975,17 @@ export type FacturaListItem = {
   numeroFactura: string;
   estado: EstadoFactura;
   estadoDTE: EstadoDTE;
+  tipoDTE: TipoDTE | null;
   total: string;
   montoPagado: string;
   saldoPendiente: string;
   fechaEmision: string;
   fechaVencimiento: string;
+  // Campos QUEDAN — la tabla los usa para badge en columna Tipo y para la
+  // columna Entrega condicional (visible solo con filtro QUEDAN activo).
+  esQuedan: boolean;
+  fechaEntregaFactura: string | null;
+  fechaEntregaReal: string | null;
   cliente: {
     id: string;
     tipo: 'EMPRESA' | 'PARTICULAR';

@@ -11,6 +11,8 @@ export default function FacturasPage() {
   const [search, setSearch] = useState('');
   const [estado, setEstado] = useState<EstadoFactura | null>(null);
   const [estadoDTE, setEstadoDTE] = useState<EstadoDTE | null>(null);
+  const [esQuedan, setEsQuedan] = useState(false);
+  const [entregaPendiente, setEntregaPendiente] = useState(false);
   const [page, setPage] = useState(1);
 
   const { data, isLoading } = useFacturas({
@@ -18,6 +20,8 @@ export default function FacturasPage() {
     limit: 20,
     estado: estado ?? undefined,
     estadoDTE: estadoDTE ?? undefined,
+    esQuedan: esQuedan ? true : undefined,
+    entregaPendiente: entregaPendiente ? true : undefined,
   });
 
   // El backend de facturas (segun lo revisado) no expone parametro `busqueda`.
@@ -48,7 +52,18 @@ export default function FacturasPage() {
         onEstado={(e) => { setEstado(e); setPage(1); }}
         estadoDTE={estadoDTE}
         onEstadoDTE={(e) => { setEstadoDTE(e); setPage(1); }}
-        onClear={() => { setSearch(''); setEstado(null); setEstadoDTE(null); setPage(1); }}
+        esQuedan={esQuedan}
+        onEsQuedan={(v) => { setEsQuedan(v); setPage(1); }}
+        entregaPendiente={entregaPendiente}
+        onEntregaPendiente={(v) => { setEntregaPendiente(v); setPage(1); }}
+        onClear={() => {
+          setSearch('');
+          setEstado(null);
+          setEstadoDTE(null);
+          setEsQuedan(false);
+          setEntregaPendiente(false);
+          setPage(1);
+        }}
       />
       <FacturasTabla
         data={filtered}
@@ -57,6 +72,7 @@ export default function FacturasPage() {
         pageSize={20}
         total={total}
         onPage={setPage}
+        mostrarColumnaEntrega={esQuedan}
       />
     </div>
   );
