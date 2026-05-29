@@ -48,6 +48,7 @@ const schema = z.object({
   email: z.string().optional(),
   notas: z.string().optional(),
   estado: z.enum(['ACTIVO', 'INACTIVO', 'PROSPECTO']),
+  manejaQuedan: z.boolean(),
 }).superRefine((d, ctx) => {
   if (d.tipo === 'EMPRESA') {
     if (!d.razonSocial?.trim())
@@ -87,6 +88,7 @@ const DEFAULTS: FormData = {
   departamento: '', municipio: '', distrito: '',
   complemento: '', telefono: '', email: '', notas: '',
   estado: 'ACTIVO',
+  manejaQuedan: false,
 };
 
 // Clases reutilizables para inputs/selects/textareas
@@ -412,6 +414,23 @@ export function ClienteForm({ id }: { id?: string }) {
               </>
             )}
           </div>
+        </FormSection>
+
+        <FormSection title="Facturación">
+          <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <input
+              type="checkbox"
+              {...register('manejaQuedan')}
+              className="h-4 w-4 rounded border-bd accent-accent cursor-pointer"
+            />
+            <span className="text-tx">Maneja factura QUEDAN</span>
+            <span
+              className="text-xs text-tx-3"
+              title="Pre-marca el toggle QUEDAN al generar facturas para este cliente"
+            >
+              (?)
+            </span>
+          </label>
         </FormSection>
 
         <FormSection title="Dirección">
