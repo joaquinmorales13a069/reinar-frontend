@@ -13,19 +13,19 @@ import type { TabChildProps } from './index';
 export function TabConsumible({ cotizacionId, onAdded }: TabChildProps) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Consumible | null>(null);
-  const [cantidad, setCantidad] = useState(1);
+  const [cantidadUnidades, setCantidadUnidades] = useState(1);
 
   const consQ = useConsumibles({ search: search || undefined, activo: true });
   const agregar = useAgregarItemCotizacion();
 
   const sinStock = selected ? selected.stockActual === 0 : false;
-  const excedeStock = selected ? cantidad > selected.stockActual : false;
+  const excedeStock = selected ? cantidadUnidades > selected.stockActual : false;
 
   async function confirmar() {
     if (!selected || excedeStock || sinStock) return;
     await agregar.mutateAsync({
       id: cotizacionId,
-      data: { tipo: 'CONSUMIBLE', consumibleId: selected.id, cantidad },
+      data: { tipo: 'CONSUMIBLE', consumibleId: selected.id, cantidadUnidades },
     });
     onAdded();
   }
@@ -57,7 +57,7 @@ export function TabConsumible({ cotizacionId, onAdded }: TabChildProps) {
                 }`}
                 onClick={() => {
                   setSelected(c);
-                  setCantidad(1);
+                  setCantidadUnidades(1);
                 }}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -92,8 +92,8 @@ export function TabConsumible({ cotizacionId, onAdded }: TabChildProps) {
               min={1}
               max={selected.stockActual}
               className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
-              value={cantidad}
-              onChange={(e) => setCantidad(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              value={cantidadUnidades}
+              onChange={(e) => setCantidadUnidades(Math.max(1, parseInt(e.target.value, 10) || 1))}
             />
             {excedeStock && (
               <p className="text-xs text-warn mt-1">
@@ -104,7 +104,7 @@ export function TabConsumible({ cotizacionId, onAdded }: TabChildProps) {
           <div>
             <label className="block text-xs font-medium text-tx-2 mb-1">Subtotal</label>
             <div className="px-3 py-2 text-sm rounded-md border border-bd bg-bg-sunken text-tx font-mono font-semibold">
-              {formatCurrency((Number(selected.precioUnitario) * cantidad).toFixed(2))}
+              {formatCurrency((Number(selected.precioUnitario) * cantidadUnidades).toFixed(2))}
             </div>
           </div>
         </div>

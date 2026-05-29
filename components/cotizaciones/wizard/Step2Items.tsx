@@ -93,7 +93,8 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
                 <th className="text-left px-3 py-2 font-medium w-32">Tipo</th>
                 <th className="text-left px-3 py-2 font-medium">Descripción</th>
                 <th className="text-left px-3 py-2 font-medium w-32">Período</th>
-                <th className="text-right px-3 py-2 font-medium w-24">Cant.</th>
+                <th className="text-right px-3 py-2 font-medium w-20">Cant.</th>
+                <th className="text-right px-3 py-2 font-medium w-20">Días</th>
                 <th className="text-right px-3 py-2 font-medium w-32">Tarifa</th>
                 <th className="text-right px-3 py-2 font-medium w-32">Subtotal</th>
                 <th className="w-10" />
@@ -200,25 +201,44 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
                   </td>
                   <td className="px-3 py-2 text-right">
                     {it.tipo === 'EQUIPO' ? (
-                      // EQUIPO siempre es cantidad 1 (unidad fisica unica). El
+                      // EQUIPO siempre es cantidadUnidades 1 (unidad fisica unica). El
                       // backend rechaza cualquier otro valor; el input se muestra
                       // como texto fijo para que sea evidente.
                       <span
                         className="font-mono text-tx-3 cursor-not-allowed"
                         title="Cada equipo es una unidad. Agregue otro equipo como linea separada."
                       >
-                        {it.cantidad}
+                        {it.cantidadUnidades}
                       </span>
                     ) : (
                       <input
-                        key={`cant-${it.id}-${it.cantidad}`}
+                        key={`cant-${it.id}-${it.cantidadUnidades}`}
                         type="number"
                         min={1}
                         className="w-16 text-right font-mono bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
-                        defaultValue={it.cantidad}
+                        defaultValue={it.cantidadUnidades}
                         onBlur={(e) => {
                           const n = parseInt(e.target.value, 10) || 1;
-                          if (n !== it.cantidad) patch(it, { cantidad: n });
+                          if (n !== it.cantidadUnidades) patch(it, { cantidadUnidades: n });
+                        }}
+                      />
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    {/* SERVICIO/CONSUMIBLE no se rentan por dias — el backend rechaza
+                        cualquier valor distinto de 1, asi que mostramos solo el guion. */}
+                    {it.tipo === 'SERVICIO' || it.tipo === 'CONSUMIBLE' ? (
+                      <span className="text-xs text-tx-3">—</span>
+                    ) : (
+                      <input
+                        key={`dias-${it.id}-${it.cantidadDias}`}
+                        type="number"
+                        min={1}
+                        className="w-16 text-right font-mono bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
+                        defaultValue={it.cantidadDias}
+                        onBlur={(e) => {
+                          const n = parseInt(e.target.value, 10) || 1;
+                          if (n !== it.cantidadDias) patch(it, { cantidadDias: n });
                         }}
                       />
                     )}
@@ -266,19 +286,19 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
             </tbody>
             <tfoot className="bg-bg-sunken">
               <tr className="border-t border-bd">
-                <td colSpan={5} className="text-right px-3 py-2 text-tx-2">Subtotal</td>
+                <td colSpan={6} className="text-right px-3 py-2 text-tx-2">Subtotal</td>
                 <td className="text-right px-3 py-2 font-mono">{formatCurrency(cotizacion.subtotal)}</td>
                 <td />
               </tr>
               <tr>
-                <td colSpan={5} className="text-right px-3 py-2 text-tx-2">
+                <td colSpan={6} className="text-right px-3 py-2 text-tx-2">
                   IVA ({cotizacion.porcentajeIva}%)
                 </td>
                 <td className="text-right px-3 py-2 font-mono">{formatCurrency(cotizacion.montoIva)}</td>
                 <td />
               </tr>
               <tr>
-                <td colSpan={5} className="text-right px-3 py-2 font-semibold">Total</td>
+                <td colSpan={6} className="text-right px-3 py-2 font-semibold">Total</td>
                 <td className="text-right px-3 py-2 font-mono font-bold text-base">{formatCurrency(cotizacion.total)}</td>
                 <td />
               </tr>

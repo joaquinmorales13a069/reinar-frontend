@@ -12,7 +12,7 @@ import type { TabChildProps } from './index';
 export function TabServicio({ cotizacionId, onAdded }: TabChildProps) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Servicio | null>(null);
-  const [cantidad, setCantidad] = useState(1);
+  const [cantidadUnidades, setCantidadUnidades] = useState(1);
 
   const serviciosQ = useServicios({ search: search || undefined, activo: true });
   const agregar = useAgregarItemCotizacion();
@@ -21,7 +21,7 @@ export function TabServicio({ cotizacionId, onAdded }: TabChildProps) {
     if (!selected) return;
     await agregar.mutateAsync({
       id: cotizacionId,
-      data: { tipo: 'SERVICIO', servicioId: selected.id, cantidad },
+      data: { tipo: 'SERVICIO', servicioId: selected.id, cantidadUnidades },
     });
     onAdded();
   }
@@ -71,14 +71,14 @@ export function TabServicio({ cotizacionId, onAdded }: TabChildProps) {
               type="number"
               min={1}
               className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
-              value={cantidad}
-              onChange={(e) => setCantidad(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              value={cantidadUnidades}
+              onChange={(e) => setCantidadUnidades(Math.max(1, parseInt(e.target.value, 10) || 1))}
             />
           </div>
           <div>
             <label className="block text-xs font-medium text-tx-2 mb-1">Subtotal</label>
             <div className="px-3 py-2 text-sm rounded-md border border-bd bg-bg-sunken text-tx font-mono font-semibold">
-              {formatCurrency((Number(selected.tarifaBase) * cantidad).toFixed(2))}
+              {formatCurrency((Number(selected.tarifaBase) * cantidadUnidades).toFixed(2))}
             </div>
           </div>
         </div>

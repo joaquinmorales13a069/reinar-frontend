@@ -12,39 +12,23 @@ export const step1Schema = z.object({
 export type Step1Form = z.infer<typeof step1Schema>;
 
 // ── Paso 3: términos y depósito ────────────────────────────────────────
-// Replica el refinamiento del backend: depositoPorcentaje y depositoMonto
-// son mutuamente excluyentes. El form usa un radio para alternar y limpia
-// el campo no activo antes de enviar.
+// El tipo de documento fiscal y el contacto de facturación ya no viven en
+// este paso: ahora se eligen al momento de generar la factura. Aquí solo
+// quedan los datos comerciales del borrador (IVA, depósito en monto, notas).
 export const step3Schema = z
   .object({
-    tipoDocumentoFiscal: z.enum(['CF', 'CCF', 'SUJETO_EXCLUIDO'], {
-      message: 'Selecciona el tipo de documento fiscal',
-    }),
     condicionesPago: z.enum(['CONTADO', 'CREDITO', 'OTRO']).optional().nullable(),
-    contactoFacturacionId: z.string().optional().nullable(),
     porcentajeIva: z
       .number({ message: 'IVA debe ser numérico' })
       .min(0)
       .max(100)
       .default(13),
-    depositoModo: z.enum(['NINGUNO', 'PORCENTAJE', 'MONTO']).default('NINGUNO'),
-    depositoPorcentaje: z.number().min(0.01).max(100).optional().nullable(),
+    depositoModo: z.enum(['NINGUNO', 'MONTO']).default('NINGUNO'),
     depositoMonto: z.number().positive().optional().nullable(),
     notas: z.string().optional().nullable(),
     notasInternas: z.string().optional().nullable(),
   })
   .superRefine((data, ctx) => {
-    // contactoFacturacionId es metadata opcional para todos los tipos. El DTE
-    // se emite con los datos de la empresa (cliente.razonSocial/nit/ncr), no
-    // del contacto. Las validaciones fiscales reales (NCR para CCF, etc.) se
-    // hacen al momento de emitir el DTE en facturas.service.ts.
-    if (data.depositoModo === 'PORCENTAJE' && !data.depositoPorcentaje) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['depositoPorcentaje'],
-        message: 'Ingresa el porcentaje',
-      });
-    }
     if (data.depositoModo === 'MONTO' && !data.depositoMonto) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

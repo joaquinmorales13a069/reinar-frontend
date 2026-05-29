@@ -33,7 +33,7 @@ export function ItemsFacturadosCard({ factura }: { factura: Factura }) {
           <tr>
             <th className="text-left font-medium px-4 py-2">Descripción</th>
             <th className="text-left font-medium px-4 py-2 w-28">Período</th>
-            <th className="text-right font-medium px-4 py-2 w-20">Cant.</th>
+            <th className="text-right font-medium px-4 py-2 w-28">Cant.</th>
             <th className="text-right font-medium px-4 py-2 w-28">Tarifa</th>
             <th className="text-right font-medium px-4 py-2 w-28">Subtotal</th>
           </tr>
@@ -45,7 +45,12 @@ export function ItemsFacturadosCard({ factura }: { factura: Factura }) {
               <td className="px-4 py-2 text-xs text-tx-3">
                 {PERIODO_LABEL[it.periodo] ?? it.periodo}
               </td>
-              <td className="px-4 py-2 text-right tabular-nums">{it.cantidad}</td>
+              <td className="px-4 py-2 text-right tabular-nums">
+                {it.cantidadUnidades}
+                {it.cantidadDias > 1 && (
+                  <span className="text-tx-3"> × {it.cantidadDias} días</span>
+                )}
+              </td>
               <td className="px-4 py-2 text-right tabular-nums">
                 {formatCurrency(it.tarifaAplicada)}
               </td>

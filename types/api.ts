@@ -823,7 +823,8 @@ export type AgregarItemDto =
       equipoId: string;
       // Siempre 1: cada Equipo es una unidad fisica unica. El backend ahora
       // rechaza cualquier otro valor; el frontend ni siquiera expone el input.
-      cantidad?: 1;
+      cantidadUnidades?: 1;
+      cantidadDias?: number;
       periodo?: PeriodoItem;
       periodoCustomLabel?: string;
       tarifaCustom?: string;
@@ -835,7 +836,8 @@ export type AgregarItemDto =
   | {
       tipo: 'HERRAMIENTA';
       herramientaTipoId: string;
-      cantidad: number;
+      cantidadUnidades: number;
+      cantidadDias?: number;
       periodo?: PeriodoItem;
       periodoCustomLabel?: string;
       tarifaCustom?: string;
@@ -847,7 +849,9 @@ export type AgregarItemDto =
   | {
       tipo: 'SERVICIO';
       servicioId: string;
-      cantidad?: number;
+      cantidadUnidades?: number;
+      // SERVICIO no se renta por dias: el backend rechaza cualquier valor distinto de 1.
+      cantidadDias?: 1;
       tarifaCustom?: string;
       descripcion?: string;
       fechaServicio?: string;
@@ -857,7 +861,9 @@ export type AgregarItemDto =
   | {
       tipo: 'CONSUMIBLE';
       consumibleId: string;
-      cantidad: number;
+      cantidadUnidades: number;
+      // CONSUMIBLE no se renta por dias: el backend rechaza cualquier valor distinto de 1.
+      cantidadDias?: 1;
       tarifaCustom?: string;
       descripcion?: string;
       orden?: number;
@@ -865,7 +871,8 @@ export type AgregarItemDto =
   | {
       tipo: 'PIEZA_ANDAMIO';
       piezaTipoId: string;
-      cantidad: number;
+      cantidadUnidades: number;
+      cantidadDias?: number;
       periodo?: PeriodoItem;
       periodoCustomLabel?: string;
       tarifaCustom?: string;
@@ -876,7 +883,8 @@ export type AgregarItemDto =
   | {
       tipo: 'CUSTOM';
       descripcion: string;
-      cantidad: number;
+      cantidadUnidades: number;
+      cantidadDias?: number;
       tarifaCustom: string; // requerido
       periodo?: PeriodoItem;
       periodoCustomLabel?: string;
@@ -884,7 +892,8 @@ export type AgregarItemDto =
     };
 
 export type EditarItemDto = {
-  cantidad?: number;
+  cantidadUnidades?: number;
+  cantidadDias?: number;
   periodo?: PeriodoItem;
   periodoCustomLabel?: string;
   tarifaCustom?: string | null;

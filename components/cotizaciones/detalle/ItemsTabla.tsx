@@ -23,7 +23,7 @@ export function ItemsTabla({ cotizacion }: { cotizacion: Cotizacion }) {
           <tr>
             <th className="text-left px-3 py-2 font-medium">Descripción</th>
             <th className="text-left px-3 py-2 font-medium w-28">Período</th>
-            <th className="text-right px-3 py-2 font-medium w-16">Cant.</th>
+            <th className="text-right px-3 py-2 font-medium w-28">Cant.</th>
             <th className="text-right px-3 py-2 font-medium w-28">Tarifa</th>
             <th className="text-right px-3 py-2 font-medium w-32">Subtotal</th>
           </tr>
@@ -49,7 +49,12 @@ export function ItemsTabla({ cotizacion }: { cotizacion: Cotizacion }) {
                   />
                 )}
               </td>
-              <td className="px-3 py-2 text-right tabular-nums">{it.cantidad}</td>
+              <td className="px-3 py-2 text-right tabular-nums">
+                {it.cantidadUnidades}
+                {it.cantidadDias > 1 && (
+                  <span className="text-tx-3"> × {it.cantidadDias} días</span>
+                )}
+              </td>
               <td className="px-3 py-2 text-right font-mono">
                 {formatCurrency(it.tarifaAplicada)}
                 {it.esTarifaCustom && (

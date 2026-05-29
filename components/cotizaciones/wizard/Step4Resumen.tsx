@@ -51,7 +51,7 @@ export function Step4Resumen({ cotizacion, onBack }: Props) {
           <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
             <tr>
               <th className="text-left px-3 py-2 font-medium">Descripción</th>
-              <th className="text-right px-3 py-2 font-medium w-20">Cant.</th>
+              <th className="text-right px-3 py-2 font-medium w-28">Cant.</th>
               <th className="text-right px-3 py-2 font-medium w-28">Tarifa</th>
               <th className="text-right px-3 py-2 font-medium w-28">Subtotal</th>
             </tr>
@@ -60,7 +60,12 @@ export function Step4Resumen({ cotizacion, onBack }: Props) {
             {cotizacion.items.map((it) => (
               <tr key={it.id} className="border-t border-bd">
                 <td className="px-3 py-1.5">{it.descripcion}</td>
-                <td className="px-3 py-1.5 text-right font-mono">{it.cantidad}</td>
+                <td className="px-3 py-1.5 text-right font-mono">
+                  {it.cantidadUnidades}
+                  {it.cantidadDias > 1 && (
+                    <span className="text-tx-3"> × {it.cantidadDias} días</span>
+                  )}
+                </td>
                 <td className="px-3 py-1.5 text-right font-mono">{formatCurrency(it.tarifaAplicada)}</td>
                 <td className="px-3 py-1.5 text-right font-mono font-medium">{formatCurrency(it.subtotal)}</td>
               </tr>
