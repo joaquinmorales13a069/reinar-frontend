@@ -8,8 +8,8 @@ import { Icon } from '@/components/ui/Icon';
 import { FormSection } from '@/components/ui/FormSection';
 import { Spinner } from '@/components/ui/Spinner';
 import { useClientes } from '@/hooks/use-clientes';
-import { useContactos } from '@/hooks/use-contactos';
 import { useProyectosCliente } from '@/hooks/use-proyectos';
+import { ContactoSolicitanteSelect } from '@/components/cotizaciones/ContactoSolicitanteSelect';
 import { useCrearCotizacion, useActualizarCotizacion } from '@/hooks/use-cotizaciones';
 import { step1Schema, type Step1Form } from '@/lib/schemas/cotizacion';
 import { fechaSVHoyMasDias, fechaSVToIso, isoToFechaSV } from '@/lib/utils';
@@ -77,8 +77,8 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
     tipo: filtroTipo === 'TODOS' ? null : filtroTipo,
     limit: 20,
   });
-  const contactosQ = useContactos({ clienteId: clienteId || undefined });
   const proyectosQ = useProyectosCliente(clienteId);
+  const contactoSolicitanteId = watch('contactoSolicitanteId');
 
   // Cierra el panel al hacer click fuera.
   useEffect(() => {
@@ -274,18 +274,11 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-tx mb-1.5">Contacto solicitante</label>
-            <select
-              className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx disabled:opacity-50"
-              disabled={!clienteId || contactosQ.isLoading}
-              {...register('contactoSolicitanteId')}
-            >
-              <option value="">— Sin contacto vinculado —</option>
-              {contactosQ.data?.data.map((co) => (
-                <option key={co.id} value={co.id}>
-                  {co.nombre} {co.apellido ?? ''} {co.cargo ? `· ${co.cargo}` : ''}
-                </option>
-              ))}
-            </select>
+            <ContactoSolicitanteSelect
+              clienteId={clienteId || null}
+              value={contactoSolicitanteId ?? null}
+              onChange={(id) => setValue('contactoSolicitanteId', id, { shouldValidate: true })}
+            />
           </div>
 
           <div>
