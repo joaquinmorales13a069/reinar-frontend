@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
+import { GenerarFacturaModal } from '@/components/cotizaciones/GenerarFacturaModal';
 import {
   descargarCotizacionPdf,
   useCambiarEstadoCotizacion,
@@ -17,6 +18,7 @@ type Confirm = null | 'eliminar' | 'enviar' | 'aprobar' | 'rechazar';
 export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
   const router = useRouter();
   const [confirm, setConfirm] = useState<Confirm>(null);
+  const [showGenerar, setShowGenerar] = useState(false);
   const cambiar = useCambiarEstadoCotizacion();
   const eliminar = useEliminarCotizacion();
 
@@ -70,6 +72,18 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
       <Link href={`/facturas/${cotizacion.factura.id}`} className={`${btnBase} border border-bd text-tx-2 hover:bg-bg-sunken`}>
         <Icon name="receipt" size={14} /> Ver factura {cotizacion.factura.numeroFactura}
       </Link>
+    );
+  } else if (cotizacion.estado === 'APROBADA' && !cotizacion.factura) {
+    // Cotizacion aprobada sin factura: el usuario decide cuando generarla
+    // (puede haber rentas pendientes de despachar antes de facturar).
+    botones = (
+      <button
+        type="button"
+        className={`${btnBase} bg-accent text-navy hover:bg-accent-dim`}
+        onClick={() => setShowGenerar(true)}
+      >
+        <Icon name="receipt" size={14} /> Generar factura
+      </button>
     );
   } else if (cotizacion.estado === 'CANCELADA' && cotizacion.factura) {
     // Mantenemos el link a la factura (ahora ANULADA) para trazabilidad: el
@@ -131,6 +145,22 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
             />
           )}
         </div>
+      )}
+
+      {showGenerar && (
+        <GenerarFacturaModal
+          cotizacionId={cotizacion.id}
+          cliente={{
+            id: cotizacion.cliente.id,
+            manejaQuedan: cotizacion.cliente.manejaQuedan,
+          }}
+          // No tenemos info de actas en el detalle de cotizacion (la relacion
+          // vive a traves de la factura, que aun no existe). Pasamos true para
+          // ocultar el banner — el flujo de despacho/devolucion se ve en el
+          // modulo de actas.
+          actasTodasDevueltas={true}
+          onClose={() => setShowGenerar(false)}
+        />
       )}
     </>
   );

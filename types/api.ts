@@ -781,6 +781,9 @@ export type Cotizacion = {
     numeroDocumento: string | null;
     email: string | null;
     telefono: string | null;
+    // El backend incluye el cliente completo en el GET de cotizacion; manejaQuedan
+    // lo necesita el modal "Generar factura" para inicializar el toggle QUEDAN.
+    manejaQuedan: boolean;
   };
   proyecto: { id: string; nombre: string } | null;
   contactoSolicitante: { id: string; nombre: string; apellido: string | null; email: string | null } | null;
