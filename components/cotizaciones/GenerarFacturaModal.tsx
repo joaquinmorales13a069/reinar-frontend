@@ -58,8 +58,9 @@ export function GenerarFacturaModal({
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  // El contacto de facturacion es opcional: el cliente ya tiene sus datos
+  // fiscales. Solo exigimos vencimiento y, si es QUEDAN, la fecha de entrega.
   const puedeSubmit =
-    !!contactoFacturacionId &&
     !!fechaVencimiento &&
     (!esQuedan || !!fechaEntregaFactura);
 
@@ -69,7 +70,7 @@ export function GenerarFacturaModal({
     generar.mutate(
       {
         tipoDTE,
-        contactoFacturacionId: contactoFacturacionId!,
+        contactoFacturacionId: contactoFacturacionId ?? undefined,
         fechaVencimiento,
         esQuedan,
         fechaEntregaFactura: esQuedan ? fechaEntregaFactura : undefined,
@@ -133,7 +134,7 @@ export function GenerarFacturaModal({
 
           <div className="flex flex-col gap-1">
             <label className="text-xs font-medium text-tx-2">
-              Facturar a <span className="text-danger">*</span>
+              Facturar a <span className="text-tx-3 text-2xs">(opcional)</span>
             </label>
             <ContactoSolicitanteSelect
               clienteId={cliente.id}

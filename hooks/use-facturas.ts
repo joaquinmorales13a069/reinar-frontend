@@ -169,7 +169,7 @@ export function useAnularDTESoloDTE() {
 // crean contra una factura existente, no contra una cotizacion).
 export type GenerarFacturaInput = {
   tipoDTE: 'FC' | 'CCF' | 'SUJETO_EXCLUIDO';
-  contactoFacturacionId: string;
+  contactoFacturacionId?: string;
   fechaVencimiento: string;
   esQuedan: boolean;
   // Requerida cuando esQuedan = true; el backend valida la combinacion.
