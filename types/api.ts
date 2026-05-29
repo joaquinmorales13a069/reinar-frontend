@@ -60,6 +60,9 @@ export type Cliente = {
   // Lo mantenemos opcional como fallback historico.
   proyectos?: number;
   _count?: { proyectos?: number };
+  // Indica si el cliente opera bajo el regimen de QUEDAN — afecta la generacion
+  // de facturas (fecha de entrega de factura requerida) y los reportes.
+  manejaQuedan: boolean;
 };
 
 export type Contacto = {
@@ -701,7 +704,10 @@ export type CotizacionItem = {
   cotizacionId: string;
   tipo: TipoItemCotizacion;
   descripcion: string;
-  cantidad: number;
+  // Separamos unidades fisicas (cuantos equipos/herramientas) de dias de renta.
+  // Sustituye al antiguo `cantidad` plano para soportar tarifas por dia mas precisas.
+  cantidadUnidades: number;
+  cantidadDias: number;
   periodo: PeriodoItem;
   periodoCustomLabel: string | null;
   // Decimales serializados como string — usar decimal.js para operar.
@@ -1015,6 +1021,12 @@ export type Factura = {
   dteControlNumber: string | null;
   dteRespuestaMH: DteRespuestaMH;
   notas: string | null;
+  // Flujo QUEDAN: la factura se entrega fisicamente al cliente en una fecha
+  // posterior. fechaEntregaFactura es la fecha pactada; fechaEntregaReal se
+  // sella cuando se marca como entregada.
+  esQuedan: boolean;
+  fechaEntregaFactura: string | null;
+  fechaEntregaReal: string | null;
   createdAt: string;
   updatedAt: string;
   cliente: Cliente;
@@ -1037,6 +1049,9 @@ export type FiltrosFacturas = {
   estadoDTE?: EstadoDTE;
   fechaDesde?: string;
   fechaHasta?: string;
+  // Filtros del flujo QUEDAN — el backend los acepta como query params.
+  esQuedan?: boolean;
+  entregaPendiente?: boolean;
 };
 
 export type ActualizarFacturaDto = {
@@ -1478,3 +1493,26 @@ export type RegistrarRetencionDto = {
   fecha: string;
   notas?: string;
 };
+
+// ─── Deposito de Garantia ─────────────────────────────────────────────
+
+export type EstadoDeposito =
+  | 'PENDIENTE'
+  | 'RECIBIDO'
+  | 'DEVUELTO'
+  | 'RETENIDO_PARCIAL'
+  | 'RETENIDO_TOTAL';
+
+export interface DepositoGarantia {
+  id: string;
+  cotizacionId: string;
+  monto: string;
+  estado: EstadoDeposito;
+  fechaRecibido: string | null;
+  fechaDevuelto: string | null;
+  montoRetenido: string | null;
+  razonRetencion: string | null;
+  notas: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
