@@ -229,6 +229,29 @@ export function useMarcarFacturaEntregada(facturaId: string) {
   });
 }
 
+// ─── Enviar DTE por correo ──────────────────────────────────────────
+
+export function useEnviarDTEPorEmail(facturaId: string) {
+  return useMutation({
+    mutationFn: (input: { email: string; mensaje?: string }) =>
+      api
+        .post<ApiResponse<{ destinatario: string }>>(
+          `/facturas/${facturaId}/dte/enviar-email`,
+          input,
+        )
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    onSuccess: ({ destinatario }) => {
+      toast.success(`DTE enviado a ${destinatario}.`);
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo enviar el DTE.'));
+    },
+  });
+}
+
 // ─── PDFs ───────────────────────────────────────────────────────────
 
 // El loading toast se descarta cuando llega la respuesta o el error.

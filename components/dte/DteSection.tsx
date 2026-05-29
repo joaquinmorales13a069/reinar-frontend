@@ -30,6 +30,11 @@ type Props = {
   onReemitir?: () => void;
   onAnular?: () => void;
   onDescargarPdf?: () => void;
+  // Si se provee, se renderiza un input de correo + boton "Enviar por correo"
+  // bajo la fila de botones cuando el DTE esta APROBADO. La funcion recibe el
+  // correo destino; el sub-componente padre maneja la llamada y feedback.
+  onEnviarEmail?: (email: string) => Promise<void> | void;
+  isEnviandoEmail?: boolean;
 };
 
 const TIPO_INFO: Record<TipoDTE, { label: string; desc: string }> = {
@@ -256,6 +261,7 @@ export function DteSection(props: Props) {
               </button>
             )}
           </div>
+          {props.onEnviarEmail && <EnviarPorCorreoForm onEnviar={props.onEnviarEmail} isEnviando={!!props.isEnviandoEmail} />}
         </>
       )}
 
@@ -305,5 +311,50 @@ Descripción: ${descripcion ?? '—'}${observaciones.length > 0 ? '\n\nObservaci
         </div>
       )}
     </div>
+  );
+}
+
+// Sub-componente para el envio del DTE por correo. Estado local para el email
+// y validacion mientras tipea — el padre solo recibe el correo y maneja la
+// llamada.
+function EnviarPorCorreoForm({
+  onEnviar,
+  isEnviando,
+}: {
+  onEnviar: (email: string) => Promise<void> | void;
+  isEnviando: boolean;
+}) {
+  const [email, setEmail] = useState('');
+  const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!emailValido || isEnviando) return;
+    await onEnviar(email);
+    setEmail('');
+  }
+
+  return (
+    <form onSubmit={submit} className="mt-4 pt-4 border-t border-bd flex flex-wrap items-center gap-2">
+      <div className="text-2xs uppercase tracking-wider text-tx-3 font-medium w-full mb-1">
+        Enviar DTE por correo
+      </div>
+      <input
+        type="email"
+        required
+        placeholder="cliente@empresa.sv"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="flex-1 min-w-[200px] px-3 py-1.5 text-sm rounded-md border border-bd bg-surface text-tx placeholder:text-tx-3 focus:outline-none focus:border-accent"
+      />
+      <button
+        type="submit"
+        disabled={!emailValido || isEnviando}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim disabled:opacity-50"
+      >
+        <Icon name="send" size={14} />
+        {isEnviando ? 'Enviando…' : 'Enviar'}
+      </button>
+    </form>
   );
 }

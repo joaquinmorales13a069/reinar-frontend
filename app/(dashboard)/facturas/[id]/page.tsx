@@ -21,6 +21,7 @@ import {
   useFactura,
   useEmitirDTE,
   useSincronizarDTE,
+  useEnviarDTEPorEmail,
   descargarFacturaPdfOficialDTE,
 } from '@/hooks/use-facturas';
 import { useAuthStore } from '@/stores/auth.store';
@@ -33,6 +34,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
   const { data: factura, isLoading, error } = useFactura(id);
   const emitirDTE = useEmitirDTE();
   const sincronizarDTE = useSincronizarDTE();
+  const enviarDTE = useEnviarDTEPorEmail(id);
   // El error inline del DteSection viene de emitir DTE (400 = cliente sin
   // NCR/direccion). Lo mantenemos en estado local porque el hook ya manda
   // toast como respaldo.
@@ -158,6 +160,8 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             onSincronizar={() => { void sincronizarDTE.mutateAsync(id); }}
             onAnular={() => router.push(`/facturas/${id}/anular-dte`)}
             onDescargarPdf={() => { void descargarPdfOficial(); }}
+            onEnviarEmail={async (email) => { await enviarDTE.mutateAsync({ email }); }}
+            isEnviandoEmail={enviarDTE.isPending}
           />
           <ItemsFacturadosCard factura={factura} />
           <PagosCard factura={factura} isOperador={isOperador} isAdminOGerente={isAdminOGerente} />
