@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -52,6 +53,10 @@ interface Props {
 export function ContactoFormMinModal({ clienteId, defaultTipo = 'SOLICITANTE', onClose, onCreated }: Props) {
   const qc = useQueryClient();
   const crear = useCrearContacto();
+  // Portal a document.body para que el <form> del modal no quede anidado dentro
+  // del <form> del wizard (HTML invalido + warning de hidratacion en Next).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const {
     register,
@@ -115,7 +120,9 @@ export function ContactoFormMinModal({ clienteId, defaultTipo = 'SOLICITANTE', o
 
   const isPending = crear.isPending;
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onMouseDown={(e) => {
@@ -217,6 +224,7 @@ export function ContactoFormMinModal({ clienteId, defaultTipo = 'SOLICITANTE', o
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
