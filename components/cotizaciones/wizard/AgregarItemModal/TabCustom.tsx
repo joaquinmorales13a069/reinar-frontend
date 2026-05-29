@@ -24,7 +24,7 @@ export function TabCustom({ cotizacionId, onAdded }: TabChildProps) {
       data: {
         tipo: 'CUSTOM',
         descripcion: values.descripcion,
-        cantidad: 1,
+        cantidadUnidades: 1,
         // El backend espera string Decimal; convertimos con 2 decimales.
         tarifaCustom: values.monto.toFixed(2),
       },

@@ -23,7 +23,8 @@ type Modo = 'pieza' | 'cuerpo';
 export function TabAndamio({ cotizacionId, onAdded }: TabChildProps) {
   const [modo, setModo] = useState<Modo>('pieza');
   const [periodo, setPeriodo] = useState<Exclude<PeriodoItem, 'CUSTOM' | 'QUINCENA'>>('DIA');
-  const [cantidad, setCantidad] = useState(1);
+  const [cantidadUnidades, setCantidadUnidades] = useState(1);
+  const [cantidadDias, setCantidadDias] = useState(1);
   const [piezaSel, setPiezaSel] = useState<PiezaTipo | null>(null);
   const [cuerpoSel, setCuerpoSel] = useState<CuerpoTipo | null>(null);
 
@@ -41,7 +42,13 @@ export function TabAndamio({ cotizacionId, onAdded }: TabChildProps) {
     if (!piezaSel) return;
     await agregar.mutateAsync({
       id: cotizacionId,
-      data: { tipo: 'PIEZA_ANDAMIO', piezaTipoId: piezaSel.id, cantidad, periodo },
+      data: {
+        tipo: 'PIEZA_ANDAMIO',
+        piezaTipoId: piezaSel.id,
+        cantidadUnidades,
+        cantidadDias,
+        periodo,
+      },
     });
     onAdded();
   }
@@ -60,7 +67,8 @@ export function TabAndamio({ cotizacionId, onAdded }: TabChildProps) {
           data: {
             tipo: 'PIEZA_ANDAMIO',
             piezaTipoId: comp.piezaTipo.id,
-            cantidad: comp.cantidad * cantidad,
+            cantidadUnidades: comp.cantidad * cantidadUnidades,
+            cantidadDias,
             periodo,
             descripcion: `[Cuerpo: ${cuerpoSel.nombre}] ${comp.piezaTipo.nombre}`,
           },
@@ -128,9 +136,9 @@ export function TabAndamio({ cotizacionId, onAdded }: TabChildProps) {
           )}
 
           {piezaSel && (
-            <div className="grid grid-cols-3 gap-3 pt-3 border-t border-bd">
+            <div className="grid grid-cols-4 gap-3 pt-3 border-t border-bd">
               <div>
-                <label className="block text-xs font-medium text-tx-2 mb-1">Período</label>
+                <label className="block text-xs font-medium text-tx-2 mb-1">Tarifa</label>
                 <select
                   className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx"
                   value={periodo}
@@ -147,14 +155,32 @@ export function TabAndamio({ cotizacionId, onAdded }: TabChildProps) {
                   type="number"
                   min={1}
                   className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
-                  value={cantidad}
-                  onChange={(e) => setCantidad(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                  value={cantidadUnidades}
+                  onChange={(e) => setCantidadUnidades(Math.max(1, parseInt(e.target.value, 10) || 1))}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-tx-2 mb-1">Tarifa</label>
-                <div className="px-3 py-2 text-sm rounded-md border border-bd bg-bg-sunken text-tx font-mono">
-                  {formatCurrency(tarifaPieza(piezaSel, periodo))}
+                <label className="block text-xs font-medium text-tx-2 mb-1">Días</label>
+                <input
+                  type="number"
+                  min={1}
+                  className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
+                  value={cantidadDias}
+                  onChange={(e) => setCantidadDias(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-tx-2 mb-1">Subtotal</label>
+                <div className="px-3 py-2 text-sm rounded-md border border-bd bg-bg-sunken text-tx font-mono font-semibold">
+                  {(() => {
+                    // DIA multiplica por dias; SEMANA/MES son bloques planos
+                    // que solo escalan con la cantidad de piezas.
+                    const tarifa = Number(tarifaPieza(piezaSel, periodo));
+                    const monto = periodo === 'DIA'
+                      ? tarifa * cantidadUnidades * cantidadDias
+                      : tarifa * cantidadUnidades;
+                    return formatCurrency(monto.toFixed(2));
+                  })()}
                 </div>
               </div>
             </div>
@@ -202,9 +228,9 @@ export function TabAndamio({ cotizacionId, onAdded }: TabChildProps) {
 
           {cuerpoSel && (
             <div className="space-y-3 pt-3 border-t border-bd">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-tx-2 mb-1">Período</label>
+                  <label className="block text-xs font-medium text-tx-2 mb-1">Tarifa</label>
                   <select
                     className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx"
                     value={periodo}
@@ -221,8 +247,18 @@ export function TabAndamio({ cotizacionId, onAdded }: TabChildProps) {
                     type="number"
                     min={1}
                     className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
-                    value={cantidad}
-                    onChange={(e) => setCantidad(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    value={cantidadUnidades}
+                    onChange={(e) => setCantidadUnidades(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-tx-2 mb-1">Días</label>
+                  <input
+                    type="number"
+                    min={1}
+                    className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
+                    value={cantidadDias}
+                    onChange={(e) => setCantidadDias(Math.max(1, parseInt(e.target.value, 10) || 1))}
                   />
                 </div>
               </div>
@@ -238,7 +274,7 @@ export function TabAndamio({ cotizacionId, onAdded }: TabChildProps) {
                         <td className="px-3 py-1.5">{c.piezaTipo.nombre}</td>
                         <td className="px-3 py-1.5 text-right font-mono">×{c.cantidad}</td>
                         <td className="px-3 py-1.5 text-right font-mono font-medium">
-                          {c.cantidad * cantidad} u.
+                          {c.cantidad * cantidadUnidades} u.
                         </td>
                       </tr>
                     ))}

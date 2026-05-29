@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
@@ -9,6 +9,15 @@ import { formatCurrency } from '@/lib/utils';
 import { AgregarItemModal } from './AgregarItemModal';
 import type { Cotizacion, CotizacionItem, EditarItemDto, PeriodoItem, TipoItemCotizacion } from '@/types/api';
 
+// Mismo criterio que el backend: tarifa DIA/CUSTOM multiplica por dias;
+// SEMANA/QUINCENA/MES son bloques planos. Necesario para el preview local
+// mientras el operador tipea — el subtotal "real" lo confirma el backend
+// al hacer blur.
+function previewSubtotal(tarifa: number, unidades: number, dias: number, periodo: PeriodoItem): number {
+  const base = tarifa * unidades;
+  return periodo === 'DIA' || periodo === 'CUSTOM' ? base * dias : base;
+}
+
 const PERIODO_LABEL: Record<PeriodoItem, string> = {
   DIA: 'Día',
   SEMANA: 'Semana',
@@ -16,12 +25,6 @@ const PERIODO_LABEL: Record<PeriodoItem, string> = {
   MES: 'Mes',
   CUSTOM: 'Custom',
 };
-
-// Periodos seleccionables en el dropdown. QUINCENA se omite porque en la base
-// de datos solo hay tarifaDia/tarifaSemana/tarifaMes — el backend calcularia
-// quincena como semana*2, que rara vez es la tarifa real que el cliente quiere.
-// QUINCENA se conserva en PERIODO_LABEL para items historicos que ya la tengan.
-const PERIODOS_SELECCIONABLES: PeriodoItem[] = ['DIA', 'SEMANA', 'MES', 'CUSTOM'];
 
 // Color por tipo para que la tabla sea escaneable de un vistazo. Cada tipo
 // tiene un kind distinto del Badge para que el vendedor distinga sin leer
@@ -44,16 +47,146 @@ const TIPO_LABEL: Record<TipoItemCotizacion, string> = {
   CUSTOM: 'Custom',
 };
 
+// Sub-componente por fila para mantener estado local de los inputs editables.
+// El subtotal mostrado se calcula localmente con previewSubtotal mientras el
+// usuario tipea, y se reemplaza con el valor del backend cuando el cache se
+// actualiza tras el blur/PATCH. Sin esto el subtotal solo cambiaba al perder
+// foco — UX confusa para el operador.
+function ItemRow({
+  it,
+  patch,
+  onDelete,
+}: {
+  it: CotizacionItem;
+  patch: (item: CotizacionItem, data: EditarItemDto) => void;
+  onDelete: (itemId: string) => void;
+}) {
+  const [unidades, setUnidades] = useState(String(it.cantidadUnidades));
+  const [dias, setDias]         = useState(String(it.cantidadDias));
+  const [tarifa, setTarifa]     = useState(String(it.tarifaAplicada));
+
+  // Cuando el backend confirma un cambio, los valores en `it` cambian; resync
+  // los inputs locales si difieren (evita que el operador vea su valor stale
+  // tras una mutacion exitosa).
+  useEffect(() => { setUnidades(String(it.cantidadUnidades)); }, [it.cantidadUnidades]);
+  useEffect(() => { setDias(String(it.cantidadDias)); },         [it.cantidadDias]);
+  useEffect(() => { setTarifa(String(it.tarifaAplicada)); },     [it.tarifaAplicada]);
+
+  const unidadesN = parseInt(unidades, 10);
+  const diasN     = parseInt(dias, 10);
+  const tarifaN   = parseFloat(tarifa);
+  const subtotalPreview =
+    Number.isFinite(unidadesN) && Number.isFinite(diasN) && Number.isFinite(tarifaN)
+      ? previewSubtotal(tarifaN, Math.max(1, unidadesN), Math.max(1, diasN), it.periodo)
+      : Number(it.subtotal);
+
+  return (
+    <tr className="border-t border-bd">
+      <td className="px-3 py-2">
+        <Badge status={TIPO_LABEL[it.tipo]} kind={TIPO_KIND[it.tipo]} />
+      </td>
+      <td className="px-3 py-2">
+        <input
+          key={`desc-${it.id}-${it.descripcion}`}
+          className="w-full bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none text-sm"
+          defaultValue={it.descripcion}
+          onBlur={(e) => {
+            if (e.target.value !== it.descripcion) patch(it, { descripcion: e.target.value });
+          }}
+        />
+      </td>
+      <td className="px-3 py-2">
+        {it.tipo === 'CONSUMIBLE' ? (
+          <span className="text-xs text-tx-3">—</span>
+        ) : (
+          <span className="text-sm text-tx">
+            {PERIODO_LABEL[it.periodo] ?? it.periodo}
+            {it.periodo === 'CUSTOM' && it.periodoCustomLabel && (
+              <span className="text-tx-3"> · {it.periodoCustomLabel}</span>
+            )}
+          </span>
+        )}
+      </td>
+      <td className="px-3 py-2 text-right">
+        {it.tipo === 'EQUIPO' ? (
+          <span
+            className="font-mono text-tx-3 cursor-not-allowed"
+            title="Cada equipo es una unidad. Agregue otro equipo como linea separada."
+          >
+            {it.cantidadUnidades}
+          </span>
+        ) : (
+          <input
+            type="number"
+            min={1}
+            className="w-16 text-right font-mono bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
+            value={unidades}
+            onChange={(e) => setUnidades(e.target.value)}
+            onBlur={() => {
+              const n = parseInt(unidades, 10) || 1;
+              if (n !== it.cantidadUnidades) patch(it, { cantidadUnidades: n });
+              else setUnidades(String(it.cantidadUnidades));
+            }}
+          />
+        )}
+      </td>
+      <td className="px-3 py-2 text-right">
+        {it.tipo === 'SERVICIO' || it.tipo === 'CONSUMIBLE' ? (
+          <span className="text-xs text-tx-3">—</span>
+        ) : (
+          <input
+            type="number"
+            min={1}
+            className="w-16 text-right font-mono bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
+            value={dias}
+            onChange={(e) => setDias(e.target.value)}
+            onBlur={() => {
+              const n = parseInt(dias, 10) || 1;
+              if (n !== it.cantidadDias) patch(it, { cantidadDias: n });
+              else setDias(String(it.cantidadDias));
+            }}
+          />
+        )}
+      </td>
+      <td className="px-3 py-2 text-right font-mono">
+        <input
+          type="text"
+          inputMode="decimal"
+          className="w-24 text-right font-mono bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
+          value={tarifa}
+          onChange={(e) => setTarifa(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key.length === 1 && !/[0-9.]/.test(e.key)) e.preventDefault();
+          }}
+          onBlur={() => {
+            const v = tarifa.trim();
+            if (v === String(it.tarifaAplicada)) return;
+            if (!/^\d+(\.\d{1,2})?$/.test(v)) {
+              setTarifa(String(it.tarifaAplicada));
+              return;
+            }
+            patch(it, { tarifaCustom: v });
+          }}
+        />
+      </td>
+      <td className="px-3 py-2 text-right font-mono font-medium">{formatCurrency(subtotalPreview)}</td>
+      <td className="px-3 py-2">
+        <button
+          type="button"
+          className="inline-flex items-center justify-center w-7 h-7 rounded text-tx-3 hover:text-danger hover:bg-danger-soft transition-colors"
+          onClick={() => onDelete(it.id)}
+        >
+          <Icon name="trash" size={13} />
+        </button>
+      </td>
+    </tr>
+  );
+}
+
 type Props = { cotizacion: Cotizacion; onBack: () => void; onNext: () => void };
 
 export function Step2Items({ cotizacion, onBack, onNext }: Props) {
   const [modal, setModal] = useState(false);
-  // itemId -> label tentativo cuando el usuario acaba de cambiar el dropdown
-  // a CUSTOM pero todavia no escribio el label. Mientras esta en el map, NO
-  // hacemos PATCH (el backend rechaza con "Datos invalidos" si periodo=CUSTOM
-  // viene sin periodoCustomLabel). El item se commitea recien al primer blur
-  // del input de label con valor no vacio.
-  const [customPendiente, setCustomPendiente] = useState<Record<string, true>>({});
   const editar = useEditarItemCotizacion();
   const eliminar = useEliminarItemCotizacion();
 
@@ -92,8 +225,9 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
               <tr>
                 <th className="text-left px-3 py-2 font-medium w-32">Tipo</th>
                 <th className="text-left px-3 py-2 font-medium">Descripción</th>
-                <th className="text-left px-3 py-2 font-medium w-32">Período</th>
-                <th className="text-right px-3 py-2 font-medium w-24">Cant.</th>
+                <th className="text-left px-3 py-2 font-medium w-32">Tarifa</th>
+                <th className="text-right px-3 py-2 font-medium w-20">Cant.</th>
+                <th className="text-right px-3 py-2 font-medium w-20">Días</th>
                 <th className="text-right px-3 py-2 font-medium w-32">Tarifa</th>
                 <th className="text-right px-3 py-2 font-medium w-32">Subtotal</th>
                 <th className="w-10" />
@@ -101,184 +235,29 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
             </thead>
             <tbody>
               {items.map((it) => (
-                <tr key={it.id} className="border-t border-bd">
-                  <td className="px-3 py-2">
-                    <Badge status={TIPO_LABEL[it.tipo]} kind={TIPO_KIND[it.tipo]} />
-                  </td>
-                  <td className="px-3 py-2">
-                    {/* key incluye el valor del cache para que cuando el backend
-                        actualice el item (ej. recalculo de tarifa al cambiar
-                        periodo), el input uncontrolled se remonte con el nuevo
-                        defaultValue. Sin esto el input quedaba stale mostrando
-                        el valor que el usuario tipeo o el inicial. */}
-                    <input
-                      key={`desc-${it.id}-${it.descripcion}`}
-                      className="w-full bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none text-sm"
-                      defaultValue={it.descripcion}
-                      onBlur={(e) => {
-                        if (e.target.value !== it.descripcion) {
-                          patch(it, { descripcion: e.target.value });
-                        }
-                      }}
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    {/* Consumibles se venden por unidad, no por período de renta;
-                        el campo periodo en BD se conserva con su default DIA pero
-                        no se ofrece como editable porque el concepto no aplica. */}
-                    {it.tipo === 'CONSUMIBLE' ? (
-                      <span className="text-xs text-tx-3">—</span>
-                    ) : (
-                    <div className="flex flex-col gap-1">
-                      <select
-                        key={`per-${it.id}-${it.periodo}`}
-                        className="text-sm bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
-                        defaultValue={it.periodo}
-                        onChange={(e) => {
-                          const nuevo = e.target.value as PeriodoItem;
-                          if (nuevo === 'CUSTOM') {
-                            // El backend exige periodoCustomLabel + tarifaCustom
-                            // cuando periodo=CUSTOM. No hacemos PATCH todavia;
-                            // marcamos como pendiente para que aparezca el input
-                            // de label y se commiteen los 3 campos juntos al blur.
-                            setCustomPendiente((m) => ({ ...m, [it.id]: true }));
-                          } else {
-                            setCustomPendiente((m) => {
-                              const { [it.id]: _omit, ...rest } = m;
-                              return rest;
-                            });
-                            patch(it, { periodo: nuevo });
-                          }
-                        }}
-                      >
-                        {PERIODOS_SELECCIONABLES.map((p) => (
-                          <option key={p} value={p}>
-                            {PERIODO_LABEL[p]}
-                          </option>
-                        ))}
-                        {/* Si el item ya tiene QUINCENA persistida (historico), la incluimos
-                            como opcion para no perderla al editar otro campo. */}
-                        {it.periodo === 'QUINCENA' && (
-                          <option value="QUINCENA">{PERIODO_LABEL.QUINCENA}</option>
-                        )}
-                      </select>
-
-                      {(it.periodo === 'CUSTOM' || customPendiente[it.id]) && (
-                        <input
-                          key={`per-label-${it.id}-${it.periodoCustomLabel ?? ''}`}
-                          type="text"
-                          placeholder="Etiqueta (ej. 2 semanas)"
-                          autoFocus={!!customPendiente[it.id]}
-                          defaultValue={it.periodoCustomLabel ?? ''}
-                          className="w-32 text-xs bg-transparent border-b border-bd hover:border-accent focus:border-accent focus:outline-none"
-                          onBlur={(e) => {
-                            const label = e.target.value.trim();
-                            // Sin label no podemos commitear: dejamos el estado
-                            // pendiente para que el usuario lo complete o cambie
-                            // el periodo a otro valor.
-                            if (!label) return;
-                            // Idempotente: si ya estaba en CUSTOM con el mismo label,
-                            // no hace falta volver a llamar al backend.
-                            if (it.periodo === 'CUSTOM' && label === it.periodoCustomLabel) return;
-                            setCustomPendiente((m) => {
-                              const { [it.id]: _omit, ...rest } = m;
-                              return rest;
-                            });
-                            patch(it, {
-                              periodo: 'CUSTOM',
-                              periodoCustomLabel: label,
-                              // Backend exige tarifaCustom no nula cuando periodo=CUSTOM.
-                              // Usamos la tarifa visible actual como punto de partida; el
-                              // usuario puede ajustarla despues en el input de tarifa.
-                              tarifaCustom: it.tarifaAplicada,
-                            });
-                          }}
-                        />
-                      )}
-                    </div>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {it.tipo === 'EQUIPO' ? (
-                      // EQUIPO siempre es cantidad 1 (unidad fisica unica). El
-                      // backend rechaza cualquier otro valor; el input se muestra
-                      // como texto fijo para que sea evidente.
-                      <span
-                        className="font-mono text-tx-3 cursor-not-allowed"
-                        title="Cada equipo es una unidad. Agregue otro equipo como linea separada."
-                      >
-                        {it.cantidad}
-                      </span>
-                    ) : (
-                      <input
-                        key={`cant-${it.id}-${it.cantidad}`}
-                        type="number"
-                        min={1}
-                        className="w-16 text-right font-mono bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
-                        defaultValue={it.cantidad}
-                        onBlur={(e) => {
-                          const n = parseInt(e.target.value, 10) || 1;
-                          if (n !== it.cantidad) patch(it, { cantidad: n });
-                        }}
-                      />
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-right font-mono">
-                    {/* Edit inline de la tarifa: si tipea algo distinto se guarda como tarifaCustom.
-                        Usamos type="text" + inputMode="decimal" porque type="number" en algunos
-                        navegadores acepta letras y deja .value vacío; validamos onBlur con regex
-                        y revertimos si el valor no es un decimal válido. */}
-                    <input
-                      key={`tar-${it.id}-${it.tarifaAplicada}`}
-                      type="text"
-                      inputMode="decimal"
-                      className="w-24 text-right font-mono bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
-                      defaultValue={it.tarifaAplicada}
-                      onKeyDown={(e) => {
-                        // Permitimos teclas de control (Backspace, flechas, Tab, etc.); rechazamos
-                        // cualquier caracter que no sea digito o el punto decimal.
-                        if (e.key.length === 1 && !/[0-9.]/.test(e.key)) e.preventDefault();
-                      }}
-                      onBlur={(e) => {
-                        const v = e.target.value.trim();
-                        if (v === it.tarifaAplicada) return;
-                        if (!/^\d+(\.\d{1,2})?$/.test(v)) {
-                          // Valor invalido: revertimos visualmente y no enviamos PATCH.
-                          e.target.value = it.tarifaAplicada;
-                          return;
-                        }
-                        patch(it, { tarifaCustom: v });
-                      }}
-                    />
-                  </td>
-                  <td className="px-3 py-2 text-right font-mono font-medium">{formatCurrency(it.subtotal)}</td>
-                  <td className="px-3 py-2">
-                    <button
-                      type="button"
-                      className="inline-flex items-center justify-center w-7 h-7 rounded text-tx-3 hover:text-danger hover:bg-danger-soft transition-colors"
-                      onClick={() => eliminar.mutate({ cotizacionId: cotizacion.id, itemId: it.id })}
-                    >
-                      <Icon name="trash" size={13} />
-                    </button>
-                  </td>
-                </tr>
+                <ItemRow
+                  key={it.id}
+                  it={it}
+                  patch={patch}
+                  onDelete={(id) => eliminar.mutate({ cotizacionId: cotizacion.id, itemId: id })}
+                />
               ))}
             </tbody>
             <tfoot className="bg-bg-sunken">
               <tr className="border-t border-bd">
-                <td colSpan={5} className="text-right px-3 py-2 text-tx-2">Subtotal</td>
+                <td colSpan={6} className="text-right px-3 py-2 text-tx-2">Subtotal</td>
                 <td className="text-right px-3 py-2 font-mono">{formatCurrency(cotizacion.subtotal)}</td>
                 <td />
               </tr>
               <tr>
-                <td colSpan={5} className="text-right px-3 py-2 text-tx-2">
+                <td colSpan={6} className="text-right px-3 py-2 text-tx-2">
                   IVA ({cotizacion.porcentajeIva}%)
                 </td>
                 <td className="text-right px-3 py-2 font-mono">{formatCurrency(cotizacion.montoIva)}</td>
                 <td />
               </tr>
               <tr>
-                <td colSpan={5} className="text-right px-3 py-2 font-semibold">Total</td>
+                <td colSpan={6} className="text-right px-3 py-2 font-semibold">Total</td>
                 <td className="text-right px-3 py-2 font-mono font-bold text-base">{formatCurrency(cotizacion.total)}</td>
                 <td />
               </tr>

@@ -163,6 +163,95 @@ export function useAnularDTESoloDTE() {
   });
 }
 
+// ─── Mutations: generacion desde cotizacion / entrega QUEDAN ────────
+
+// El tipoDTE para cotizacion->factura excluye NC (las notas de credito se
+// crean contra una factura existente, no contra una cotizacion).
+export type GenerarFacturaInput = {
+  tipoDTE: 'FC' | 'CCF' | 'SUJETO_EXCLUIDO';
+  contactoFacturacionId?: string;
+  fechaVencimiento: string;
+  esQuedan: boolean;
+  // Requerida cuando esQuedan = true; el backend valida la combinacion.
+  fechaEntregaFactura?: string;
+};
+
+export function useGenerarFactura(cotizacionId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: GenerarFacturaInput) =>
+      api
+        .post<ApiResponse<Factura> & { warning?: string }>(
+          `/cotizaciones/${cotizacionId}/factura`,
+          input,
+        )
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          // warning vive a la par de success/data — el backend lo usa para
+          // avisar de inconsistencias no bloqueantes (p.ej. credito insuficiente).
+          return { factura: r.data.data, warning: r.data.warning };
+        }),
+    onSuccess: ({ warning }) => {
+      if (warning) toast.info(warning);
+      else toast.success('Factura generada.');
+      qc.invalidateQueries({ queryKey: ['cotizaciones', cotizacionId] });
+      qc.invalidateQueries({ queryKey: ['facturas'] });
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo generar la factura.'));
+    },
+  });
+}
+
+export function useMarcarFacturaEntregada(facturaId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (fechaEntregaReal: string) =>
+      api
+        .post<ApiResponse<Factura>>(
+          `/facturas/${facturaId}/marcar-entregada`,
+          { fechaEntregaReal },
+        )
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    onSuccess: (factura) => {
+      qc.setQueryData(['factura', factura.id], (old: Factura | undefined) =>
+        old ? { ...old, ...factura } : old,
+      );
+      qc.invalidateQueries({ queryKey: ['facturas'] });
+      toast.success('Factura marcada como entregada.');
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo marcar como entregada.'));
+    },
+  });
+}
+
+// ─── Enviar DTE por correo ──────────────────────────────────────────
+
+export function useEnviarDTEPorEmail(facturaId: string) {
+  return useMutation({
+    mutationFn: (input: { email: string; mensaje?: string }) =>
+      api
+        .post<ApiResponse<{ destinatario: string }>>(
+          `/facturas/${facturaId}/dte/enviar-email`,
+          input,
+        )
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    onSuccess: ({ destinatario }) => {
+      toast.success(`DTE enviado a ${destinatario}.`);
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo enviar el DTE.'));
+    },
+  });
+}
+
 // ─── PDFs ───────────────────────────────────────────────────────────
 
 // El loading toast se descarta cuando llega la respuesta o el error.

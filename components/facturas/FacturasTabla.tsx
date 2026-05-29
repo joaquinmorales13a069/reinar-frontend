@@ -3,11 +3,13 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
+import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
 import { Pagination } from '@/components/ui/Pagination';
 import { FacturaEstadoBadge } from './FacturaEstadoBadge';
 import { EstadoDteBadge } from './EstadoDteBadge';
+import { TipoDteBadge } from './TipoDteBadge';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { descargarFacturaPdfBranded } from '@/hooks/use-facturas';
 import type { FacturaListItem } from '@/types/api';
@@ -28,9 +30,34 @@ type Props = {
   pageSize: number;
   total: number;
   onPage: (p: number) => void;
+  // Cuando el filtro "Solo QUEDAN" esta activo mostramos columna Entrega.
+  mostrarColumnaEntrega?: boolean;
 };
 
-export function FacturasTabla({ data, loading, page, pageSize, total, onPage }: Props) {
+// Celda Entrega para QUEDAN. Si ya esta entregada muestra la fecha real; si
+// la fecha programada quedo atras pero no esta entregada, badge "Por entregar"
+// en amarillo para llamar la atencion.
+function celdaEntrega(f: FacturaListItem) {
+  if (f.fechaEntregaReal) {
+    return (
+      <span className="text-tx-2 text-xs">
+        Entregada el <span className="font-mono">{formatDate(f.fechaEntregaReal)}</span>
+      </span>
+    );
+  }
+  if (f.fechaEntregaFactura) {
+    // Comparamos por dia (sin hora) para no marcar "Por entregar" en una
+    // factura cuya fecha programada es hoy.
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const programada = new Date(f.fechaEntregaFactura);
+    const vencida = programada.getTime() < hoy.getTime();
+    if (vencida) return <Badge status="Por entregar" kind="warn" />;
+    return <span className="font-mono text-xs text-tx-2">{formatDate(f.fechaEntregaFactura)}</span>;
+  }
+  return <span className="text-tx-3">—</span>;
+}
+
+export function FacturasTabla({ data, loading, page, pageSize, total, onPage, mostrarColumnaEntrega = false }: Props) {
   const router = useRouter();
 
   if (loading) {
@@ -54,11 +81,15 @@ export function FacturasTabla({ data, loading, page, pageSize, total, onPage }: 
             <th className="text-left font-medium px-4 py-2.5">Número</th>
             <th className="text-left font-medium px-4 py-2.5">Cliente</th>
             <th className="text-left font-medium px-4 py-2.5">Cotización</th>
+            <th className="text-left font-medium px-4 py-2.5">Tipo</th>
             <th className="text-left font-medium px-4 py-2.5">Estado pago</th>
             <th className="text-left font-medium px-4 py-2.5">Estado DTE</th>
             <th className="text-right font-medium px-4 py-2.5">Total</th>
             <th className="text-right font-medium px-4 py-2.5">Saldo</th>
             <th className="text-left font-medium px-4 py-2.5">Emisión</th>
+            {mostrarColumnaEntrega && (
+              <th className="text-left font-medium px-4 py-2.5">Entrega</th>
+            )}
             <th className="text-center font-medium px-4 py-2.5 w-20">Acciones</th>
           </tr>
         </thead>
@@ -83,6 +114,13 @@ export function FacturasTabla({ data, loading, page, pageSize, total, onPage }: 
                     {f.cotizacion.numeroCotizacion}
                   </Link>
                 </td>
+                <td className="px-4 py-2.5">
+                  {f.esQuedan
+                    ? <Badge status="QUEDAN" kind="warn" />
+                    : f.tipoDTE
+                      ? <TipoDteBadge tipo={f.tipoDTE} />
+                      : <span className="text-tx-3">—</span>}
+                </td>
                 <td className="px-4 py-2.5"><FacturaEstadoBadge estado={f.estado} /></td>
                 <td className="px-4 py-2.5"><EstadoDteBadge estado={f.estadoDTE} /></td>
                 <td className="px-4 py-2.5 text-right tabular-nums font-medium">{formatCurrency(f.total)}</td>
@@ -90,6 +128,9 @@ export function FacturasTabla({ data, loading, page, pageSize, total, onPage }: 
                   {formatCurrency(f.saldoPendiente)}
                 </td>
                 <td className="px-4 py-2.5 font-mono text-tx-2 text-xs">{formatDate(f.fechaEmision)}</td>
+                {mostrarColumnaEntrega && (
+                  <td className="px-4 py-2.5">{celdaEntrega(f)}</td>
+                )}
                 <td className="px-4 py-2.5">
                   <button
                     type="button"

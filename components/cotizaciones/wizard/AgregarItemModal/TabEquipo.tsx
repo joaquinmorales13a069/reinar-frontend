@@ -22,6 +22,7 @@ export function TabEquipo({ cotizacionId, onAdded }: TabChildProps) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Equipo | null>(null);
   const [periodo, setPeriodo] = useState<Exclude<PeriodoItem, 'CUSTOM' | 'QUINCENA'>>('DIA');
+  const [cantidadDias, setCantidadDias] = useState(1);
 
   // Solo equipos DISPONIBLES — el backend rechaza con 409 si se intenta uno rentado.
   const equiposQ = useEquipos({ search: search || undefined, estado: 'DISPONIBLE', limit: 20 });
@@ -30,12 +31,12 @@ export function TabEquipo({ cotizacionId, onAdded }: TabChildProps) {
   const isMutating = agregar.isPending;
 
   // Cada Equipo es una unidad fisica unica (un codigo). Para mas de uno se
-  // agregan lineas separadas, por eso aqui no hay input de cantidad.
+  // agregan lineas separadas, por eso aqui no hay input de unidades.
   async function confirmar() {
     if (!selected) return;
     await agregar.mutateAsync({
       id: cotizacionId,
-      data: { tipo: 'EQUIPO', equipoId: selected.id, periodo },
+      data: { tipo: 'EQUIPO', equipoId: selected.id, periodo, cantidadDias },
     });
     onAdded();
   }
@@ -87,9 +88,9 @@ export function TabEquipo({ cotizacionId, onAdded }: TabChildProps) {
           <p className="text-xs text-tx-3">
             Cada equipo se agrega como una unidad. Para mas de uno, agregue otro equipo como linea separada.
           </p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-medium text-tx-2 mb-1">Período</label>
+              <label className="block text-xs font-medium text-tx-2 mb-1">Tarifa</label>
               <select
                 className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx"
                 value={periodo}
@@ -101,13 +102,30 @@ export function TabEquipo({ cotizacionId, onAdded }: TabChildProps) {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-tx-2 mb-1">Tarifa</label>
-              <div className="px-3 py-2 text-sm rounded-md border border-bd bg-bg-sunken text-tx font-mono">
-                {formatCurrency(
-                  periodo === 'DIA' ? selected.tarifaDia :
-                  periodo === 'SEMANA' ? selected.tarifaSemana :
-                  selected.tarifaMes,
-                )}
+              <label className="block text-xs font-medium text-tx-2 mb-1">Días</label>
+              <input
+                type="number"
+                min={1}
+                className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
+                value={cantidadDias}
+                onChange={(e) => setCantidadDias(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-tx-2 mb-1">Subtotal</label>
+              <div className="px-3 py-2 text-sm rounded-md border border-bd bg-bg-sunken text-tx font-mono font-semibold">
+                {(() => {
+                  // Solo la tarifa Día multiplica por dias; SEMANA y MES son
+                  // bloques planos — los dias se conservan como informacion
+                  // pero no multiplican el monto.
+                  const tarifa = Number(
+                    periodo === 'DIA' ? selected.tarifaDia :
+                    periodo === 'SEMANA' ? selected.tarifaSemana :
+                    selected.tarifaMes,
+                  );
+                  const monto = periodo === 'DIA' ? tarifa * cantidadDias : tarifa;
+                  return formatCurrency(monto.toFixed(2));
+                })()}
               </div>
             </div>
           </div>

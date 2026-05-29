@@ -5,7 +5,18 @@ import { Icon } from '@/components/ui/Icon';
 import { FormSection } from '@/components/ui/FormSection';
 import { useCambiarEstadoCotizacion } from '@/hooks/use-cotizaciones';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import type { Cotizacion } from '@/types/api';
+import type { Cotizacion, PeriodoItem } from '@/types/api';
+
+// Sufijo corto que acompana a la tarifa para hacer explicito que tipo de
+// renta es (ej "$50/sem"). Diaria/CUSTOM no necesita sufijo en este resumen
+// porque la columna "Cant." muestra "1 × N dias" cuando aplica.
+const PERIODO_SUFIJO: Record<PeriodoItem, string> = {
+  DIA: '/día',
+  SEMANA: '/sem',
+  QUINCENA: '/quinc',
+  MES: '/mes',
+  CUSTOM: '',
+};
 
 type Props = { cotizacion: Cotizacion; onBack: () => void };
 
@@ -51,20 +62,34 @@ export function Step4Resumen({ cotizacion, onBack }: Props) {
           <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
             <tr>
               <th className="text-left px-3 py-2 font-medium">Descripción</th>
-              <th className="text-right px-3 py-2 font-medium w-20">Cant.</th>
+              <th className="text-right px-3 py-2 font-medium w-28">Cant.</th>
               <th className="text-right px-3 py-2 font-medium w-28">Tarifa</th>
               <th className="text-right px-3 py-2 font-medium w-28">Subtotal</th>
             </tr>
           </thead>
           <tbody>
-            {cotizacion.items.map((it) => (
+            {cotizacion.items.map((it) => {
+              const aplicaDias = it.tipo !== 'SERVICIO' && it.tipo !== 'CONSUMIBLE';
+              const sufijo = PERIODO_SUFIJO[it.periodo] ?? '';
+              return (
               <tr key={it.id} className="border-t border-bd">
                 <td className="px-3 py-1.5">{it.descripcion}</td>
-                <td className="px-3 py-1.5 text-right font-mono">{it.cantidad}</td>
-                <td className="px-3 py-1.5 text-right font-mono">{formatCurrency(it.tarifaAplicada)}</td>
+                <td className="px-3 py-1.5 text-right font-mono">
+                  {it.cantidadUnidades}
+                  {aplicaDias && it.cantidadDias > 1 && (
+                    <span className="text-tx-3"> × {it.cantidadDias} días</span>
+                  )}
+                </td>
+                <td className="px-3 py-1.5 text-right font-mono">
+                  {formatCurrency(it.tarifaAplicada)}
+                  {sufijo && aplicaDias && (
+                    <span className="text-tx-3">{sufijo}</span>
+                  )}
+                </td>
                 <td className="px-3 py-1.5 text-right font-mono font-medium">{formatCurrency(it.subtotal)}</td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
           <tfoot className="bg-bg-sunken">
             <tr className="border-t border-bd">

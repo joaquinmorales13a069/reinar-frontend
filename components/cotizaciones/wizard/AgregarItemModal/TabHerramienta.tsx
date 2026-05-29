@@ -23,7 +23,8 @@ export function TabHerramienta({ cotizacionId, onAdded }: TabChildProps) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<HerramientaTipo | null>(null);
   const [periodo, setPeriodo] = useState<Exclude<PeriodoItem, 'CUSTOM' | 'QUINCENA'>>('DIA');
-  const [cantidad, setCantidad] = useState(1);
+  const [cantidadUnidades, setCantidadUnidades] = useState(1);
+  const [cantidadDias, setCantidadDias] = useState(1);
 
   const herrQ = useHerramientaTipos({ search: search || undefined, activo: true });
   const agregar = useAgregarItemCotizacion();
@@ -31,10 +32,16 @@ export function TabHerramienta({ cotizacionId, onAdded }: TabChildProps) {
   const max = selected?.unidadesDisponibles ?? 0;
 
   async function confirmar() {
-    if (!selected || cantidad > max) return;
+    if (!selected || cantidadUnidades > max) return;
     await agregar.mutateAsync({
       id: cotizacionId,
-      data: { tipo: 'HERRAMIENTA', herramientaTipoId: selected.id, cantidad, periodo },
+      data: {
+        tipo: 'HERRAMIENTA',
+        herramientaTipoId: selected.id,
+        cantidadUnidades,
+        cantidadDias,
+        periodo,
+      },
     });
     onAdded();
   }
@@ -67,7 +74,8 @@ export function TabHerramienta({ cotizacionId, onAdded }: TabChildProps) {
                 }`}
                 onClick={() => {
                   setSelected(h);
-                  setCantidad(1);
+                  setCantidadUnidades(1);
+                  setCantidadDias(1);
                 }}
               >
                 <div className="flex items-center justify-between gap-2">
@@ -89,38 +97,58 @@ export function TabHerramienta({ cotizacionId, onAdded }: TabChildProps) {
       )}
 
       {selected && (
-        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-bd">
-          <div>
-            <label className="block text-xs font-medium text-tx-2 mb-1">Período</label>
-            <select
-              className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx"
-              value={periodo}
-              onChange={(e) => setPeriodo(e.target.value as typeof periodo)}
-            >
-              {PERIODOS.map((p) => (
-                <option key={p.value} value={p.value}>{p.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-tx-2 mb-1">Cantidad (máx {max})</label>
-            <input
-              type="number"
-              min={1}
-              max={max}
-              className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
-              value={cantidad}
-              onChange={(e) => setCantidad(Math.max(1, Math.min(max, parseInt(e.target.value, 10) || 1)))}
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-tx-2 mb-1">Tarifa unitaria</label>
-            <div className="px-3 py-2 text-sm rounded-md border border-bd bg-bg-sunken text-tx font-mono">
-              {formatCurrency(
-                periodo === 'DIA' ? selected.tarifaDia :
-                periodo === 'SEMANA' ? selected.tarifaSemana :
-                selected.tarifaMes,
-              )}
+        <div className="space-y-3 pt-3 border-t border-bd">
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-tx-2 mb-1">Tarifa</label>
+              <select
+                className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx"
+                value={periodo}
+                onChange={(e) => setPeriodo(e.target.value as typeof periodo)}
+              >
+                {PERIODOS.map((p) => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-tx-2 mb-1">Cant. (máx {max})</label>
+              <input
+                type="number"
+                min={1}
+                max={max}
+                className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
+                value={cantidadUnidades}
+                onChange={(e) => setCantidadUnidades(Math.max(1, Math.min(max, parseInt(e.target.value, 10) || 1)))}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-tx-2 mb-1">Días</label>
+              <input
+                type="number"
+                min={1}
+                className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
+                value={cantidadDias}
+                onChange={(e) => setCantidadDias(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-tx-2 mb-1">Subtotal</label>
+              <div className="px-3 py-2 text-sm rounded-md border border-bd bg-bg-sunken text-tx font-mono font-semibold">
+                {(() => {
+                  // Solo DIA multiplica por dias; SEMANA/MES son tarifas planas
+                  // que solo dependen de la cantidad de unidades.
+                  const tarifa = Number(
+                    periodo === 'DIA' ? selected.tarifaDia :
+                    periodo === 'SEMANA' ? selected.tarifaSemana :
+                    selected.tarifaMes,
+                  );
+                  const monto = periodo === 'DIA'
+                    ? tarifa * cantidadUnidades * cantidadDias
+                    : tarifa * cantidadUnidades;
+                  return formatCurrency(monto.toFixed(2));
+                })()}
+              </div>
             </div>
           </div>
         </div>
@@ -130,7 +158,7 @@ export function TabHerramienta({ cotizacionId, onAdded }: TabChildProps) {
         <button
           type="button"
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim transition-colors disabled:opacity-50"
-          disabled={!selected || agregar.isPending || cantidad > max}
+          disabled={!selected || agregar.isPending || cantidadUnidades > max}
           onClick={confirmar}
         >
           <Icon name="plus" size={14} /> Agregar

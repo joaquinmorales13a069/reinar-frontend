@@ -9,6 +9,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FacturaEstadoBadge } from '@/components/facturas/FacturaEstadoBadge';
 import { ClienteFechasCard } from '@/components/facturas/detalle/ClienteFechasCard';
+import { EntregaQuedanCard } from '@/components/facturas/detalle/EntregaQuedanCard';
 import { ItemsFacturadosCard } from '@/components/facturas/detalle/ItemsFacturadosCard';
 import { PagosCard } from '@/components/facturas/detalle/PagosCard';
 import { ProgresoCobroCard } from '@/components/facturas/detalle/ProgresoCobroCard';
@@ -20,6 +21,7 @@ import {
   useFactura,
   useEmitirDTE,
   useSincronizarDTE,
+  useEnviarDTEPorEmail,
   descargarFacturaPdfOficialDTE,
 } from '@/hooks/use-facturas';
 import { useAuthStore } from '@/stores/auth.store';
@@ -32,6 +34,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
   const { data: factura, isLoading, error } = useFactura(id);
   const emitirDTE = useEmitirDTE();
   const sincronizarDTE = useSincronizarDTE();
+  const enviarDTE = useEnviarDTEPorEmail(id);
   // El error inline del DteSection viene de emitir DTE (400 = cliente sin
   // NCR/direccion). Lo mantenemos en estado local porque el hook ya manda
   // toast como respaldo.
@@ -138,6 +141,9 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             <AjustarEstadoCard factura={factura} onClose={() => setAjusteOpen(false)} />
           )}
           <ClienteFechasCard factura={factura} />
+          {factura.esQuedan && (
+            <EntregaQuedanCard factura={factura} puedeEscribir={!!puedeEscribir} />
+          )}
           <DteSection
             doc={factura}
             kind="factura"
@@ -154,6 +160,8 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             onSincronizar={() => { void sincronizarDTE.mutateAsync(id); }}
             onAnular={() => router.push(`/facturas/${id}/anular-dte`)}
             onDescargarPdf={() => { void descargarPdfOficial(); }}
+            onEnviarEmail={async (email) => { await enviarDTE.mutateAsync({ email }); }}
+            isEnviandoEmail={enviarDTE.isPending}
           />
           <ItemsFacturadosCard factura={factura} />
           <PagosCard factura={factura} isOperador={isOperador} isAdminOGerente={isAdminOGerente} />

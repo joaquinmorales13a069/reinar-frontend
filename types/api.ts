@@ -60,6 +60,9 @@ export type Cliente = {
   // Lo mantenemos opcional como fallback historico.
   proyectos?: number;
   _count?: { proyectos?: number };
+  // Indica si el cliente opera bajo el regimen de QUEDAN — afecta la generacion
+  // de facturas (fecha de entrega de factura requerida) y los reportes.
+  manejaQuedan: boolean;
 };
 
 export type Contacto = {
@@ -701,7 +704,10 @@ export type CotizacionItem = {
   cotizacionId: string;
   tipo: TipoItemCotizacion;
   descripcion: string;
-  cantidad: number;
+  // Separamos unidades fisicas (cuantos equipos/herramientas) de dias de renta.
+  // Sustituye al antiguo `cantidad` plano para soportar tarifas por dia mas precisas.
+  cantidadUnidades: number;
+  cantidadDias: number;
   periodo: PeriodoItem;
   periodoCustomLabel: string | null;
   // Decimales serializados como string — usar decimal.js para operar.
@@ -775,6 +781,9 @@ export type Cotizacion = {
     numeroDocumento: string | null;
     email: string | null;
     telefono: string | null;
+    // El backend incluye el cliente completo en el GET de cotizacion; manejaQuedan
+    // lo necesita el modal "Generar factura" para inicializar el toggle QUEDAN.
+    manejaQuedan: boolean;
   };
   proyecto: { id: string; nombre: string } | null;
   contactoSolicitante: { id: string; nombre: string; apellido: string | null; email: string | null } | null;
@@ -817,7 +826,8 @@ export type AgregarItemDto =
       equipoId: string;
       // Siempre 1: cada Equipo es una unidad fisica unica. El backend ahora
       // rechaza cualquier otro valor; el frontend ni siquiera expone el input.
-      cantidad?: 1;
+      cantidadUnidades?: 1;
+      cantidadDias?: number;
       periodo?: PeriodoItem;
       periodoCustomLabel?: string;
       tarifaCustom?: string;
@@ -829,7 +839,8 @@ export type AgregarItemDto =
   | {
       tipo: 'HERRAMIENTA';
       herramientaTipoId: string;
-      cantidad: number;
+      cantidadUnidades: number;
+      cantidadDias?: number;
       periodo?: PeriodoItem;
       periodoCustomLabel?: string;
       tarifaCustom?: string;
@@ -841,7 +852,9 @@ export type AgregarItemDto =
   | {
       tipo: 'SERVICIO';
       servicioId: string;
-      cantidad?: number;
+      cantidadUnidades?: number;
+      // SERVICIO no se renta por dias: el backend rechaza cualquier valor distinto de 1.
+      cantidadDias?: 1;
       tarifaCustom?: string;
       descripcion?: string;
       fechaServicio?: string;
@@ -851,7 +864,9 @@ export type AgregarItemDto =
   | {
       tipo: 'CONSUMIBLE';
       consumibleId: string;
-      cantidad: number;
+      cantidadUnidades: number;
+      // CONSUMIBLE no se renta por dias: el backend rechaza cualquier valor distinto de 1.
+      cantidadDias?: 1;
       tarifaCustom?: string;
       descripcion?: string;
       orden?: number;
@@ -859,7 +874,8 @@ export type AgregarItemDto =
   | {
       tipo: 'PIEZA_ANDAMIO';
       piezaTipoId: string;
-      cantidad: number;
+      cantidadUnidades: number;
+      cantidadDias?: number;
       periodo?: PeriodoItem;
       periodoCustomLabel?: string;
       tarifaCustom?: string;
@@ -870,7 +886,8 @@ export type AgregarItemDto =
   | {
       tipo: 'CUSTOM';
       descripcion: string;
-      cantidad: number;
+      cantidadUnidades: number;
+      cantidadDias?: number;
       tarifaCustom: string; // requerido
       periodo?: PeriodoItem;
       periodoCustomLabel?: string;
@@ -878,7 +895,8 @@ export type AgregarItemDto =
     };
 
 export type EditarItemDto = {
-  cantidad?: number;
+  cantidadUnidades?: number;
+  cantidadDias?: number;
   periodo?: PeriodoItem;
   periodoCustomLabel?: string;
   tarifaCustom?: string | null;
@@ -957,11 +975,17 @@ export type FacturaListItem = {
   numeroFactura: string;
   estado: EstadoFactura;
   estadoDTE: EstadoDTE;
+  tipoDTE: TipoDTE | null;
   total: string;
   montoPagado: string;
   saldoPendiente: string;
   fechaEmision: string;
   fechaVencimiento: string;
+  // Campos QUEDAN — la tabla los usa para badge en columna Tipo y para la
+  // columna Entrega condicional (visible solo con filtro QUEDAN activo).
+  esQuedan: boolean;
+  fechaEntregaFactura: string | null;
+  fechaEntregaReal: string | null;
   cliente: {
     id: string;
     tipo: 'EMPRESA' | 'PARTICULAR';
@@ -1015,6 +1039,12 @@ export type Factura = {
   dteControlNumber: string | null;
   dteRespuestaMH: DteRespuestaMH;
   notas: string | null;
+  // Flujo QUEDAN: la factura se entrega fisicamente al cliente en una fecha
+  // posterior. fechaEntregaFactura es la fecha pactada; fechaEntregaReal se
+  // sella cuando se marca como entregada.
+  esQuedan: boolean;
+  fechaEntregaFactura: string | null;
+  fechaEntregaReal: string | null;
   createdAt: string;
   updatedAt: string;
   cliente: Cliente;
@@ -1037,6 +1067,9 @@ export type FiltrosFacturas = {
   estadoDTE?: EstadoDTE;
   fechaDesde?: string;
   fechaHasta?: string;
+  // Filtros del flujo QUEDAN — el backend los acepta como query params.
+  esQuedan?: boolean;
+  entregaPendiente?: boolean;
 };
 
 export type ActualizarFacturaDto = {
@@ -1478,3 +1511,26 @@ export type RegistrarRetencionDto = {
   fecha: string;
   notas?: string;
 };
+
+// ─── Deposito de Garantia ─────────────────────────────────────────────
+
+export type EstadoDeposito =
+  | 'PENDIENTE'
+  | 'RECIBIDO'
+  | 'DEVUELTO'
+  | 'RETENIDO_PARCIAL'
+  | 'RETENIDO_TOTAL';
+
+export interface DepositoGarantia {
+  id: string;
+  cotizacionId: string;
+  monto: string;
+  estado: EstadoDeposito;
+  fechaRecibido: string | null;
+  fechaDevuelto: string | null;
+  montoRetenido: string | null;
+  razonRetencion: string | null;
+  notas: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
