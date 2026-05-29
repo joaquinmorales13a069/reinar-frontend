@@ -11,6 +11,14 @@ const PERIODO_LABEL: Record<string, string> = {
   MES: 'Mes',
   CUSTOM: 'Custom',
 };
+// Sufijo de tarifa para hacer explicito al cliente si es por dia/semana/mes.
+const PERIODO_SUFIJO: Record<string, string> = {
+  DIA: '/día',
+  SEMANA: '/sem',
+  QUINCENA: '/quinc',
+  MES: '/mes',
+  CUSTOM: '',
+};
 
 export function ItemsFacturadosCard({ factura }: { factura: Factura }) {
   const items = factura.cotizacion.items ?? [];
@@ -32,14 +40,17 @@ export function ItemsFacturadosCard({ factura }: { factura: Factura }) {
         <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
           <tr>
             <th className="text-left font-medium px-4 py-2">Descripción</th>
-            <th className="text-left font-medium px-4 py-2 w-28">Período</th>
+            <th className="text-left font-medium px-4 py-2 w-28">Tarifa</th>
             <th className="text-right font-medium px-4 py-2 w-28">Cant.</th>
             <th className="text-right font-medium px-4 py-2 w-28">Tarifa</th>
             <th className="text-right font-medium px-4 py-2 w-28">Subtotal</th>
           </tr>
         </thead>
         <tbody>
-          {items.map((it) => (
+          {items.map((it) => {
+            const aplicaDias = it.tipo !== 'SERVICIO' && it.tipo !== 'CONSUMIBLE';
+            const sufijo = PERIODO_SUFIJO[it.periodo] ?? '';
+            return (
             <tr key={it.id} className="border-t border-bd">
               <td className="px-4 py-2 text-sm">{it.descripcion}</td>
               <td className="px-4 py-2 text-xs text-tx-3">
@@ -47,18 +58,22 @@ export function ItemsFacturadosCard({ factura }: { factura: Factura }) {
               </td>
               <td className="px-4 py-2 text-right tabular-nums">
                 {it.cantidadUnidades}
-                {it.cantidadDias > 1 && (
+                {aplicaDias && it.cantidadDias > 1 && (
                   <span className="text-tx-3"> × {it.cantidadDias} días</span>
                 )}
               </td>
               <td className="px-4 py-2 text-right tabular-nums">
                 {formatCurrency(it.tarifaAplicada)}
+                {aplicaDias && sufijo && (
+                  <span className="text-tx-3">{sufijo}</span>
+                )}
               </td>
               <td className="px-4 py-2 text-right tabular-nums font-medium">
                 {formatCurrency(it.subtotal)}
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
         <tfoot className="bg-bg-sunken text-sm">
           <tr>

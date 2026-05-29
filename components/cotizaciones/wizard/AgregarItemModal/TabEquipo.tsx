@@ -90,7 +90,7 @@ export function TabEquipo({ cotizacionId, onAdded }: TabChildProps) {
           </p>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-medium text-tx-2 mb-1">Período</label>
+              <label className="block text-xs font-medium text-tx-2 mb-1">Tarifa</label>
               <select
                 className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx"
                 value={periodo}
@@ -114,13 +114,18 @@ export function TabEquipo({ cotizacionId, onAdded }: TabChildProps) {
             <div>
               <label className="block text-xs font-medium text-tx-2 mb-1">Subtotal</label>
               <div className="px-3 py-2 text-sm rounded-md border border-bd bg-bg-sunken text-tx font-mono font-semibold">
-                {formatCurrency(
-                  (Number(
+                {(() => {
+                  // Solo la tarifa Día multiplica por dias; SEMANA y MES son
+                  // bloques planos — los dias se conservan como informacion
+                  // pero no multiplican el monto.
+                  const tarifa = Number(
                     periodo === 'DIA' ? selected.tarifaDia :
                     periodo === 'SEMANA' ? selected.tarifaSemana :
                     selected.tarifaMes,
-                  ) * cantidadDias).toFixed(2),
-                )}
+                  );
+                  const monto = periodo === 'DIA' ? tarifa * cantidadDias : tarifa;
+                  return formatCurrency(monto.toFixed(2));
+                })()}
               </div>
             </div>
           </div>

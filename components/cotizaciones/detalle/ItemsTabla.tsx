@@ -5,6 +5,10 @@ import type { Cotizacion, PeriodoItem, TipoItemCotizacion } from '@/types/api';
 const PERIODO_LABEL: Record<PeriodoItem, string> = {
   DIA: 'Día', SEMANA: 'Semana', QUINCENA: 'Quincena', MES: 'Mes', CUSTOM: 'Custom',
 };
+// Sufijo para la tarifa (ej "$50.00/sem"). Solo aplica a items rentables.
+const PERIODO_SUFIJO: Record<PeriodoItem, string> = {
+  DIA: '/día', SEMANA: '/sem', QUINCENA: '/quinc', MES: '/mes', CUSTOM: '',
+};
 const TIPO_LABEL: Record<TipoItemCotizacion, string> = {
   EQUIPO: 'Equipo', HERRAMIENTA: 'Herramienta', SERVICIO: 'Servicio',
   CONSUMIBLE: 'Consumible', PIEZA_ANDAMIO: 'Andamio', CUSTOM: 'Custom',
@@ -22,7 +26,7 @@ export function ItemsTabla({ cotizacion }: { cotizacion: Cotizacion }) {
         <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
           <tr>
             <th className="text-left px-3 py-2 font-medium">Descripción</th>
-            <th className="text-left px-3 py-2 font-medium w-28">Período</th>
+            <th className="text-left px-3 py-2 font-medium w-28">Tarifa</th>
             <th className="text-right px-3 py-2 font-medium w-28">Cant.</th>
             <th className="text-right px-3 py-2 font-medium w-28">Tarifa</th>
             <th className="text-right px-3 py-2 font-medium w-32">Subtotal</th>
@@ -57,6 +61,9 @@ export function ItemsTabla({ cotizacion }: { cotizacion: Cotizacion }) {
               </td>
               <td className="px-3 py-2 text-right font-mono">
                 {formatCurrency(it.tarifaAplicada)}
+                {it.tipo !== 'SERVICIO' && it.tipo !== 'CONSUMIBLE' && PERIODO_SUFIJO[it.periodo] && (
+                  <span className="text-tx-3">{PERIODO_SUFIJO[it.periodo]}</span>
+                )}
                 {it.esTarifaCustom && (
                   <div className="mt-0.5">
                     <Badge status="CUSTOM" kind="warn" />
