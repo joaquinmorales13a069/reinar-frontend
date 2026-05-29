@@ -152,6 +152,7 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
           cotizacionId={cotizacion.id}
           cliente={{
             id: cotizacion.cliente.id,
+            tipo: cotizacion.cliente.tipo,
             manejaQuedan: cotizacion.cliente.manejaQuedan,
           }}
           // No tenemos info de actas en el detalle de cotizacion (la relacion

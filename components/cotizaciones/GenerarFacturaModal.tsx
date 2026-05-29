@@ -10,7 +10,7 @@ import type { Cliente } from '@/types/api';
 
 interface Props {
   cotizacionId: string;
-  cliente: Pick<Cliente, 'id' | 'manejaQuedan'>;
+  cliente: Pick<Cliente, 'id' | 'tipo' | 'manejaQuedan'>;
   // Informativo: si las actas relacionadas a la cotizacion ya devolvieron todo
   // el inventario, no mostramos el banner recomendando esperar.
   actasTodasDevueltas: boolean;
@@ -35,8 +35,13 @@ export function GenerarFacturaModal({
   const router = useRouter();
   const generar = useGenerarFactura(cotizacionId);
 
+  // Pre-seleccion: las EMPRESAS suelen requerir CCF (credito fiscal) para
+  // reclamar IVA; PARTICULAR cobra como consumidor final (FC). El operador
+  // puede cambiarlo si el caso lo amerita.
   const [tipoDTE, setTipoDTE] =
-    useState<'FC' | 'CCF' | 'SUJETO_EXCLUIDO'>('FC');
+    useState<'FC' | 'CCF' | 'SUJETO_EXCLUIDO'>(
+      cliente.tipo === 'EMPRESA' ? 'CCF' : 'FC',
+    );
   const [contactoFacturacionId, setContactoFacturacionId] = useState<
     string | null
   >(null);
@@ -87,7 +92,7 @@ export function GenerarFacturaModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-lg rounded-lg border border-bd bg-surface shadow-xl">
+      <div className="w-full max-w-2xl rounded-lg border border-bd bg-surface shadow-xl">
         <div className="flex items-center justify-between px-4 py-3 border-b border-bd">
           <div>
             <h3 className="text-sm font-semibold text-tx">Generar factura</h3>
