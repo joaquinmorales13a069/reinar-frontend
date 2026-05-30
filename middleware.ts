@@ -1,37 +1,23 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC_PATHS = ['/login'];
-
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
-
-  // El access token vive solo en memoria Zustand y es invisible para el middleware.
-  // Usamos la cookie HTTP-only del refresh token como señal de sesión —
-  // si existe, el usuario tiene (o tuvo recientemente) una sesión válida.
-  // Se verifican varios nombres posibles porque el nombre exacto del backend no está confirmado aún.
-  const hasSession =
-    request.cookies.has('refreshToken') ||
-    request.cookies.has('refresh_token') ||
-    request.cookies.has('rt');
-
-  if (!isPublic && !hasSession) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = '/login';
-    // Preservamos el destino original para que el login pueda redirigir de vuelta tras autenticarse.
-    loginUrl.searchParams.set('from', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // La raíz `/` con sesión activa debe ir al dashboard, no a una página en blanco.
-  if (pathname === '/' && hasSession) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
-  // Evita que un usuario autenticado vea el login al presionar el botón atrás del navegador.
-  if (isPublic && hasSession && pathname === '/login') {
+  // En deploy cross-site (frontend en crmsv.reinarsa.com, backend en *.easypanel.host)
+  // la cookie HTTP-only del refresh token vive en el dominio del backend y NO es
+  // visible para este middleware que corre en el frontend. Antes chequeabamos
+  // request.cookies.has('refreshToken') como senal de sesion y eso causaba un loop:
+  // login OK -> cookie seteada en backend -> redirect a /dashboard -> middleware no ve
+  // cookie -> redirect a /login -> usuario nunca pasaba del login.
+  //
+  // La autenticacion se delega a AuthHydrator client-side: al montar el dashboard
+  // intenta /auth/renovar-token con la cookie cross-site; si falla, redirige a
+  // /login. Hay una micro-ventana donde un usuario anonimo ve el shell del
+  // dashboard antes del redirect — aceptable para herramienta interna.
+  //
+  // Solo conservamos un redirect cosmetico: / -> /dashboard, sin chequear sesion.
+  if (pathname === '/') {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
