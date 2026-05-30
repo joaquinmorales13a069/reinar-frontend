@@ -34,8 +34,13 @@ export function PerfilTarjeta({ perfil }: { perfil: Perfil }) {
   });
 
   async function onSubmit(v: ActualizarPerfilForm) {
-    await actualizar.mutateAsync({ nombre: v.nombre.trim(), apellido: v.apellido.trim() });
-    setEditando(false);
+    try {
+      await actualizar.mutateAsync({ nombre: v.nombre.trim(), apellido: v.apellido.trim() });
+      setEditando(false);
+    } catch {
+      // El hook ya dispara toast.error en onError. El catch evita unhandled
+      // rejection en consola y mantiene el form abierto si falló el guardado.
+    }
   }
 
   function cancelar() {
