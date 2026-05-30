@@ -26,9 +26,13 @@ function load(): Pick<UiState, 'theme' | 'equiposView'> {
   if (typeof window === 'undefined') return { theme: 'light', equiposView: 'tabla' };
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') as Persisted;
+    // Validación narrow: si el localStorage fue manipulado o quedó con valores
+    // de versiones futuras desconocidas, caemos a defaults en lugar de pasar
+    // strings inválidos a applyTheme (que setearía data-theme="purple" y rompería
+    // silenciosamente los estilos del proyecto).
     return {
-      theme: saved.theme ?? 'light',
-      equiposView: saved.equiposView ?? 'tabla',
+      theme: saved.theme === 'dark' ? 'dark' : 'light',
+      equiposView: saved.equiposView === 'grilla' ? 'grilla' : 'tabla',
     };
   } catch {
     return { theme: 'light', equiposView: 'tabla' };

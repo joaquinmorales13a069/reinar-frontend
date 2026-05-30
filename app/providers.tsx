@@ -17,17 +17,9 @@ const queryClient = new QueryClient({
   },
 });
 
-// El store aplica el tema en su propio init (cliente solo), por lo que este componente
-// ya no necesita llamar a hydrate(). Se conserva como placeholder por si en el futuro
-// se requiere algún efecto de DOM al montar providers.
-function ThemeHydrator() {
-  return null;
-}
-
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeHydrator />
       {children}
       {/* theme="system" para que los toasts respeten data-theme del HTML */}
       <Toaster position="top-right" richColors theme="system" />
