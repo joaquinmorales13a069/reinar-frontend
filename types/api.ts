@@ -1534,3 +1534,106 @@ export interface DepositoGarantia {
   createdAt: string;
   updatedAt: string;
 }
+
+// ─── Rama 17: Ajustes (usuarios + configuracion + reportes) ─────────
+
+// RolUsuario se duplica respecto a User.rol (línea ~25) intencionalmente:
+// la forma de User llega del login y no debería cambiar de shape; este alias
+// nombrado se usa en los formularios y filtros de /ajustes para escribir
+// menos uniones literales por todo el módulo.
+export type RolUsuario = 'ADMIN' | 'GERENTE' | 'OPERADOR' | 'LOGISTICA' | 'VISUALIZADOR';
+
+export type Usuario = {
+  id: string;
+  nombre: string;
+  apellido: string;
+  email: string;
+  rol: RolUsuario;
+  activo: boolean;
+  mfaActivo: boolean;
+  ultimoAcceso: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CrearUsuarioDto = {
+  nombre: string;
+  apellido: string;
+  email: string;
+  contrasena: string;
+  rol: RolUsuario;
+};
+
+export type ActualizarUsuarioDto = {
+  nombre: string;
+  apellido: string;
+  email: string;
+  rol: RolUsuario;
+  // contrasena opcional: si no se envía, el backend conserva el hash existente.
+  contrasena?: string;
+};
+
+export type FiltrosUsuarios = {
+  page?: number;
+  limit?: number;
+  busqueda?: string;
+  rol?: RolUsuario;
+};
+
+export type ConfiguracionEmpresa = {
+  nombreEmpresa: string;
+  nit: string | null;
+  ncr: string | null;
+  direccion: string | null;
+  telefono: string | null;
+  email: string | null;
+  telefonoCotizaciones: string | null;
+  emailCotizaciones: string | null;
+  logoUrl: string | null;
+  sitioWeb: string | null;
+  prefijoCotizacion: string | null;
+  prefijoFactura: string | null;
+  prefijoActa: string | null;
+  emailRemitente: string | null;
+  nombreRemitente: string | null;
+  emailCopiaInterna: string | null;
+  // El backend serializa porcentajeIvaDefault como string Decimal —
+  // convertir con Number(...) o new Decimal(...) antes de operar.
+  porcentajeIvaDefault: string | null;
+  updatedAt: string;
+};
+
+// DTO de actualización: todos los campos son opcionales excepto nombreEmpresa.
+// El backend hace upsert, así que un PUT parcial está permitido.
+export type ActualizarConfiguracionDto = {
+  nombreEmpresa: string;
+  nit?: string;
+  ncr?: string;
+  direccion?: string;
+  telefono?: string;
+  email?: string;
+  telefonoCotizaciones?: string;
+  emailCotizaciones?: string;
+  logoUrl?: string;
+  sitioWeb?: string;
+  prefijoCotizacion?: string;
+  prefijoFactura?: string;
+  prefijoActa?: string;
+  emailRemitente?: string;
+  nombreRemitente?: string;
+  emailCopiaInterna?: string;
+  // porcentajeIvaDefault va como number en el DTO (el backend lo convierte a Decimal).
+  porcentajeIvaDefault?: number;
+};
+
+export type ConfiguracionReportes = {
+  reporteSemanalActivo: boolean;
+  reporteSemanalEmails: string[];
+  reporteMensualActivo: boolean;
+  // Día del mes 1-28 (el backend rechaza 29-31 porque no existen en todos los meses).
+  reporteMensualDia: number;
+  reporteMensualEmails: string[];
+  formatoProgramado: 'pdf' | 'excel' | 'ambos';
+};
+
+export type ActualizarConfigReportesDto = Partial<ConfiguracionReportes>;
