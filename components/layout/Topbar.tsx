@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
@@ -162,6 +163,15 @@ export function Topbar({ onMenuClick, onTweaksOpen }: TopbarProps) {
                 <div className="px-3 py-2 text-2xs font-semibold tracking-widest uppercase text-tx-muted border-b border-bd">
                   {user?.email}
                 </div>
+                {/* Mi perfil arriba del divisor — es una acción personal del usuario,
+                    no un módulo del shell; va en este menú según convención del proyecto. */}
+                <Link
+                  href="/perfil"
+                  onClick={closeAll}
+                  className="flex items-center gap-2 px-3 py-2 text-xs text-tx cursor-pointer hover:bg-bg-sunken"
+                >
+                  <Icon name="user" size={14} /> Mi perfil
+                </Link>
                 <div className="h-px bg-bd my-1" />
                 <div
                   className="flex items-center gap-2 px-3 py-2 text-xs text-danger cursor-pointer hover:bg-bg-sunken"
