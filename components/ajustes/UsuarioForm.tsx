@@ -359,6 +359,7 @@ function Layout({
         e.preventDefault();
         onSubmit();
       }}
+      className="flex flex-col gap-4 pb-24"
     >
       <PageHeader
         title={title}
@@ -368,7 +369,7 @@ function Layout({
         onBack={() => router.push('/ajustes?tab=usuarios')}
       />
       <div className="max-w-3xl">{children}</div>
-      <div className="sticky bottom-0 -mx-4 sm:mx-0 mt-6 px-4 py-3 bg-surface border-t border-bd flex justify-end gap-2">
+      <div className="sticky bottom-0 left-0 right-0 -mx-4 px-4 py-3 bg-bg border-t border-bd flex justify-end gap-2">
         <button
           type="button"
           onClick={() => router.push('/ajustes?tab=usuarios')}

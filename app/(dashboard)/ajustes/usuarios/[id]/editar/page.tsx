@@ -21,7 +21,10 @@ export default function UsuarioEditarPage() {
     if (rol && !puedeEditar) router.replace('/ajustes?tab=usuarios');
   }, [rol, puedeEditar, router]);
 
-  const { data: usuario, isLoading, isError } = useUsuario(params.id);
+  // Solo disparamos la query cuando el rol permite editar; sin este guard,
+  // un usuario sin permiso que navega directo a la URL provoca un 403 inútil
+  // antes de que el useEffect alcance a redirigir.
+  const { data: usuario, isLoading, isError } = useUsuario(puedeEditar ? params.id : '');
 
   if (!puedeEditar) return null;
   if (isLoading) {
