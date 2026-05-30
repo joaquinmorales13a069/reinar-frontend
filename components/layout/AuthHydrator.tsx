@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth.store';
+import { socket } from '@/lib/socket';
 import type { ApiResponse } from '@/types/api';
 import type { User } from '@/types/api';
 
@@ -32,6 +33,10 @@ export function AuthHydrator() {
       .then(({ data }) => {
         if (data.success && data.data.user) {
           setAuth(data.data.accessToken, data.data.user);
+          // Conectar socket tras refresh tipico de F5: sin esto el usuario
+          // re-hidratado pierde notificaciones en tiempo real hasta el proximo
+          // login completo. socket.connect es idempotente cuando ya esta connected.
+          if (!socket.connected) socket.connect();
         }
         // Si el backend devuelve solo el token sin `user`, las llamadas API
         // funcionarán (el interceptor usará el token), pero el saludo mostrará "—".
