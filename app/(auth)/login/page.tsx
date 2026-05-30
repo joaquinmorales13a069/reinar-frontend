@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -18,6 +19,10 @@ const loginSchema = z.object({
   email:    z.string().email('Correo inválido'),
   password: z.string().min(1, 'Requerido'),
 });
+
+// Si la var no está configurada en build, el frontend muestra un mensaje claro
+// en lugar del form — preferimos sistema bloqueado a sin captcha.
+const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
 const mfaSchema = z.object({
   codigo: z.string().length(6, 'El código debe tener 6 dígitos').regex(/^\d+$/, 'Solo dígitos'),
@@ -38,17 +43,52 @@ type Step1Props = {
 };
 
 function LoginStep({ onMfaRequired }: Step1Props) {
+  if (!SITE_KEY) {
+    return (
+      <div className="text-sm text-danger p-4">
+        Variable NEXT_PUBLIC_TURNSTILE_SITE_KEY no configurada. Avisar a soporte.
+      </div>
+    );
+  }
+
   const [showPwd, setShowPwd]   = useState(false);
   const loginMutation = useLoginMutation();
   const setAuth  = useAuthStore((s) => s.setAuth);
   const router   = useRouter();
+
+  const turnstileRef = useRef<TurnstileInstance | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+
+  // Lee data-theme del <html> para que el widget coincida con el dark mode del shell.
+  // useState + useEffect porque el atributo se aplica cliente-side por TweaksHydrator
+  // y un read directo en render falla en SSR.
+  const [tema, setTema] = useState<'light' | 'dark'>('light');
+  useEffect(() => {
+    const html = document.documentElement;
+    const update = () => setTema(html.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
+    update();
+    // MutationObserver porque el TweaksPanel cambia data-theme en runtime sin recargar.
+    const obs = new MutationObserver(update);
+    obs.observe(html, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => obs.disconnect();
+  }, []);
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFields>({
     resolver: zodResolver(loginSchema),
   });
 
   async function onSubmit(data: LoginFields) {
-    const res = await loginMutation.mutateAsync(data).catch(() => null);
+    if (!turnstileToken) {
+      toast.error('Esperá a que termine la verificación de seguridad.');
+      return;
+    }
+    const res = await loginMutation.mutateAsync({ ...data, turnstileToken }).catch(() => null);
+    // Reset siempre después del submit: tokens son single-use. Si el login pasó,
+    // el redirect desmonta el componente y el reset es no-op; si falló, dejamos
+    // el widget listo para reintento inmediato sin token expirado.
+    turnstileRef.current?.reset();
+    setTurnstileToken(null);
+
     if (!res) return;
     if (!res.success) { toast.error(res.error.message); return; }
 
@@ -123,14 +163,28 @@ function LoginStep({ onMfaRequired }: Step1Props) {
         )}
       </div>
 
+      <div className="mb-4">
+        <Turnstile
+          ref={turnstileRef}
+          siteKey={SITE_KEY}
+          onSuccess={(token) => setTurnstileToken(token)}
+          onExpire={() => setTurnstileToken(null)}
+          onError={() => setTurnstileToken(null)}
+          options={{ theme: tema, size: 'flexible' }}
+        />
+      </div>
+
       <button
         type="submit"
         className="w-full flex items-center justify-center gap-1.5 h-11 rounded bg-accent text-navy text-sm font-semibold cursor-pointer border-none transition-colors hover:bg-accent-dim disabled:opacity-50 disabled:cursor-not-allowed"
-        disabled={loginMutation.isPending}
+        disabled={loginMutation.isPending || !turnstileToken}
       >
         {loginMutation.isPending
-          ? <><Spinner size={14} /> Verificando…</>
-          : <>Iniciar sesión <Icon name="arrowRight" size={14} /></>}
+          ? <><Spinner size={12} /> Iniciando sesión…</>
+          : !turnstileToken
+            ? <>Cargando verificación…</>
+            : <>Iniciar sesión <Icon name="arrowRight" size={14} /></>
+        }
       </button>
 
       <p className="mt-6 text-xs text-tx-muted text-center">
