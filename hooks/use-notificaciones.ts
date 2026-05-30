@@ -42,7 +42,8 @@ export function useMarcarTodasLeidas() {
 
   return useMutation<ApiResponse<null>, Error, void>({
     mutationFn: () =>
-      api.post<ApiResponse<null>>('/notificaciones/leer-todas').then((r) => r.data),
+      // Backend define router.patch('/leer-todas', ...) — usar POST devolvía 404 → toast genérico.
+      api.patch<ApiResponse<null>>('/notificaciones/leer-todas').then((r) => r.data),
     onSuccess: () => {
       // Invalidar en vez de actualizar manualmente — más simple cuando son todas
       qc.invalidateQueries({ queryKey: NOTIF_KEY });
