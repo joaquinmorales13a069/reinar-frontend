@@ -1,7 +1,9 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Spinner } from '@/components/ui/Spinner';
 import { Icon } from '@/components/ui/Icon';
 import { TabUsuarios } from '@/components/ajustes/TabUsuarios';
 import { TabEmpresa } from '@/components/ajustes/TabEmpresa';
@@ -20,6 +22,16 @@ function isTabKey(v: string | null): v is TabKey {
 }
 
 export default function AjustesPage() {
+  // useSearchParams requiere Suspense para que Next.js pueda prerenderizar
+  // estáticamente la página sin esperar a los query params del cliente.
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><Spinner /></div>}>
+      <AjustesPageInner />
+    </Suspense>
+  );
+}
+
+function AjustesPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
