@@ -52,14 +52,14 @@ function LoginStep({ onMfaRequired }: Step1Props) {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   // Lee data-theme del <html> para que el widget coincida con el dark mode del shell.
-  // useState + useEffect porque el atributo se aplica cliente-side por TweaksHydrator
+  // useState + useEffect porque el atributo se aplica cliente-side por el store (ui.store.ts)
   // y un read directo en render falla en SSR.
   const [tema, setTema] = useState<'light' | 'dark'>('light');
   useEffect(() => {
     const html = document.documentElement;
     const update = () => setTema(html.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
     update();
-    // MutationObserver porque el TweaksPanel cambia data-theme en runtime sin recargar.
+    // MutationObserver porque el dropdown de config cambia data-theme en runtime sin recargar.
     const obs = new MutationObserver(update);
     obs.observe(html, { attributes: true, attributeFilter: ['data-theme'] });
     return () => obs.disconnect();

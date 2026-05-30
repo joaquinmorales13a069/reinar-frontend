@@ -43,8 +43,8 @@ export function EquiposList() {
   useEquiposRealtime();
 
   const rol = useAuthStore((s) => s.user?.rol ?? 'VISUALIZADOR');
-  const view = useUiStore((s) => s.tweaks.equiposView);
-  const setTweak = useUiStore((s) => s.setTweak);
+  const view = useUiStore((s) => s.equiposView);
+  const setEquiposView = useUiStore((s) => s.setEquiposView);
 
   const [busqueda, setBusqueda] = useState('');
   const search = useDebounced(busqueda.trim(), 300);
@@ -98,7 +98,7 @@ export function EquiposList() {
                 className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs ${
                   view === 'tabla' ? 'bg-accent text-navy font-semibold' : 'bg-surface text-tx-2 hover:bg-bg-sunken'
                 }`}
-                onClick={() => setTweak('equiposView', 'tabla')}
+                onClick={() => setEquiposView('tabla')}
               >
                 <Icon name="list" size={12} /> Tabla
               </button>
@@ -107,7 +107,7 @@ export function EquiposList() {
                 className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 text-xs border-l border-bd ${
                   view === 'grilla' ? 'bg-accent text-navy font-semibold' : 'bg-surface text-tx-2 hover:bg-bg-sunken'
                 }`}
-                onClick={() => setTweak('equiposView', 'grilla')}
+                onClick={() => setEquiposView('grilla')}
               >
                 <Icon name="grid" size={12} /> Grilla
               </button>

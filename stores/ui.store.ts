@@ -6,98 +6,63 @@
 import { create } from 'zustand';
 
 export type Theme = 'light' | 'dark';
-export type Density = 'comfortable' | 'compact';
-export type SidebarMode = 'full' | 'mini';
-export type Accent = 'yellow' | 'blue' | 'green' | 'red';
 export type EquiposView = 'tabla' | 'grilla';
 
-export type Tweaks = {
+type UiState = {
   theme: Theme;
-  density: Density;
-  sidebar: SidebarMode;
-  accent: Accent;
   equiposView: EquiposView;
+  setTheme: (t: Theme) => void;
+  setEquiposView: (v: EquiposView) => void;
 };
 
-const STORAGE_KEY = 'reinar.tweaks';
+// Nuevo storage key (`reinar.ui`) y no el legacy `reinar.tweaks`: la migración del
+// shape viejo (density/sidebar/accent) es no-op visualmente, así que dejamos el
+// JSON viejo inerte en localStorage del usuario en lugar de escribir código one-shot.
+const STORAGE_KEY = 'reinar.ui';
 
-const DEFAULTS: Tweaks = {
-  theme: 'light',
-  density: 'comfortable',
-  sidebar: 'full',
-  accent: 'yellow',
-  equiposView: 'tabla',
-};
+type Persisted = Partial<Pick<UiState, 'theme' | 'equiposView'>>;
 
-// La paleta de acento replica el objeto ACCENT_COLORS del prototipo para que
-// cambiar el acento produzca el mismo resultado visual que en el diseño de referencia.
-const ACCENT_COLORS: Record<Accent, { main: string; dim: string; soft: string }> = {
-  yellow: { main: '#F2C037', dim: '#D9A820', soft: '#FFF1C2' },
-  blue:   { main: '#2F6CB7', dim: '#21528F', soft: '#DBE7F6' },
-  green:  { main: '#2E8C5A', dim: '#226E47', soft: '#D6EBDF' },
-  red:    { main: '#C23B3B', dim: '#9D2A2A', soft: '#F6D9D9' },
-};
-
-function loadTweaks(): Tweaks {
-  // Guard de SSR: esta función puede ejecutarse en el servidor si el módulo se importa
-  // en un contexto compartido; retornar DEFAULTS evita un ReferenceError en Node.
-  if (typeof window === 'undefined') return DEFAULTS;
+function load(): Pick<UiState, 'theme' | 'equiposView'> {
+  if (typeof window === 'undefined') return { theme: 'light', equiposView: 'tabla' };
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-    // Spread sobre DEFAULTS para que claves faltantes usen su valor por defecto
-    // en vez de ser undefined (maneja guardados parciales y nuevas claves futuras).
-    return { ...DEFAULTS, ...saved };
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') as Persisted;
+    return {
+      theme: saved.theme ?? 'light',
+      equiposView: saved.equiposView ?? 'tabla',
+    };
   } catch {
-    return DEFAULTS;
+    return { theme: 'light', equiposView: 'tabla' };
   }
 }
 
-function applyTweaks(tweaks: Tweaks) {
-  if (typeof document === 'undefined') return;
-  const root = document.documentElement;
-  // Usamos atributos data-* en vez de clases porque el CSS del prototipo usa selectores
-  // de atributo ([data-theme="dark"]) — mantener este contrato evita reescribir los estilos.
-  root.setAttribute('data-theme', tweaks.theme);
-  root.setAttribute('data-density', tweaks.density);
-  root.setAttribute('data-sidebar', tweaks.sidebar);
-  // Sobreescribimos las custom properties de CSS directamente para que el color de
-  // acento cascadee a todos los componentes sin que cada uno necesite conocer los acentos.
-  const accent = ACCENT_COLORS[tweaks.accent] ?? ACCENT_COLORS.yellow;
-  root.style.setProperty('--accent', accent.main);
-  root.style.setProperty('--accent-dim', accent.dim);
-  root.style.setProperty('--accent-soft', accent.soft);
+function persist(theme: Theme, equiposView: EquiposView) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ theme, equiposView }));
 }
 
-type UiState = {
-  tweaks: Tweaks;
-  tweaksOpen: boolean;
-  setTweak: <K extends keyof Tweaks>(key: K, value: Tweaks[K]) => void;
-  setTweaksOpen: (open: boolean) => void;
-  hydrate: () => void;
-};
+function applyTheme(theme: Theme) {
+  if (typeof document === 'undefined') return;
+  // Usamos data-theme en vez de clase porque el CSS del proyecto targetea
+  // [data-theme="dark"] — mantener este contrato evita reescribir estilos.
+  document.documentElement.setAttribute('data-theme', theme);
+}
 
-export const useUiStore = create<UiState>()((set, get) => ({
-  // El store se inicializa con DEFAULTS, no con localStorage, porque se crea al cargar
-  // el módulo (potencialmente en SSR). hydrate() se llama en un useEffect del cliente
-  // para leer los valores persistidos una vez que el navegador está disponible.
-  tweaks: DEFAULTS,
-  tweaksOpen: false,
-
-  setTweak: (key, value) => {
-    const next = { ...get().tweaks, [key]: value };
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    }
-    applyTweaks(next);
-    set({ tweaks: next });
-  },
-
-  setTweaksOpen: (open) => set({ tweaksOpen: open }),
-
-  hydrate: () => {
-    const tweaks = loadTweaks();
-    // Aplicamos al DOM de inmediato para evitar un flash de estilos por defecto en el primer render.
-    applyTweaks(tweaks);
-    set({ tweaks });
-  },
-}));
+export const useUiStore = create<UiState>((set, get) => {
+  const initial = load();
+  // Aplicar tema al boot del store (cliente solo) para que la primera render
+  // ya tenga el data-theme correcto sin esperar al hydrator.
+  if (typeof document !== 'undefined') applyTheme(initial.theme);
+  return {
+    theme: initial.theme,
+    equiposView: initial.equiposView,
+    setTheme: (theme) => {
+      applyTheme(theme);
+      persist(theme, get().equiposView);
+      set({ theme });
+    },
+    setEquiposView: (equiposView) => {
+      persist(get().theme, equiposView);
+      set({ equiposView });
+    },
+  };
+});
