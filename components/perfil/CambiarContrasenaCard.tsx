@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type UseFormRegister, type FieldError } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Icon } from '@/components/ui/Icon';
 import { useCambiarContrasena } from '@/hooks/use-perfil';
@@ -37,6 +37,49 @@ const FORTALEZA_TEXT: Record<'danger' | 'warn' | 'ok', string> = {
   warn: 'text-warn',
   ok: 'text-ok',
 };
+
+// PasswordInput vive a nivel de módulo (no dentro de CambiarContrasenaCard):
+// si se define inline, cada render del padre crea una nueva identidad de función
+// y React desmonta/remonta el input — perdiendo el foco después de cada keystroke.
+type PasswordFieldName = 'passwordActual' | 'passwordNuevo' | 'confirmar';
+
+function PasswordInput({
+  name,
+  label,
+  show,
+  onToggle,
+  register,
+  error,
+}: {
+  name: PasswordFieldName;
+  label: string;
+  show: boolean;
+  onToggle: () => void;
+  register: UseFormRegister<CambiarContrasenaForm>;
+  error?: FieldError;
+}) {
+  return (
+    <div>
+      <label className={labelCls}>{label}</label>
+      <div className="relative">
+        <input
+          type={show ? 'text' : 'password'}
+          className={error ? inputErr : inputOk}
+          {...register(name)}
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-tx-3 hover:text-tx transition-colors"
+          aria-label={show ? 'Ocultar' : 'Mostrar'}
+        >
+          <Icon name={show ? 'x' : 'eye'} size={14} />
+        </button>
+      </div>
+      {error && <p className={errorCls}>{error.message}</p>}
+    </div>
+  );
+}
 
 export function CambiarContrasenaCard() {
   const [showActual, setShowActual] = useState(false);
@@ -75,49 +118,28 @@ export function CambiarContrasenaCard() {
     }
   }
 
-  function PasswordInput({
-    name,
-    label,
-    show,
-    onToggle,
-  }: {
-    name: keyof Pick<CambiarContrasenaForm, 'passwordActual' | 'passwordNuevo' | 'confirmar'>;
-    label: string;
-    show: boolean;
-    onToggle: () => void;
-  }) {
-    const err = errors[name];
-    return (
-      <div>
-        <label className={labelCls}>{label}</label>
-        <div className="relative">
-          <input
-            type={show ? 'text' : 'password'}
-            className={err ? inputErr : inputOk}
-            {...register(name)}
-          />
-          <button
-            type="button"
-            onClick={onToggle}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-tx-3 hover:text-tx transition-colors"
-            aria-label={show ? 'Ocultar' : 'Mostrar'}
-          >
-            <Icon name={show ? 'x' : 'eye'} size={14} />
-          </button>
-        </div>
-        {err && <p className={errorCls}>{err.message}</p>}
-      </div>
-    );
-  }
-
   return (
     <div className="rounded-lg border border-bd bg-surface p-4">
       <h3 className="text-base font-semibold text-tx mb-3">Cambiar contraseña</h3>
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
-        <PasswordInput name="passwordActual" label="Contraseña actual" show={showActual} onToggle={() => setShowActual((s) => !s)} />
+        <PasswordInput
+          name="passwordActual"
+          label="Contraseña actual"
+          show={showActual}
+          onToggle={() => setShowActual((s) => !s)}
+          register={register}
+          error={errors.passwordActual}
+        />
 
         <div>
-          <PasswordInput name="passwordNuevo" label="Nueva contraseña" show={showNueva} onToggle={() => setShowNueva((s) => !s)} />
+          <PasswordInput
+            name="passwordNuevo"
+            label="Nueva contraseña"
+            show={showNueva}
+            onToggle={() => setShowNueva((s) => !s)}
+            register={register}
+            error={errors.passwordNuevo}
+          />
           {fortaleza && (
             <div className="mt-2">
               <div className="h-1 rounded-full bg-bg-sunken overflow-hidden">
@@ -132,7 +154,14 @@ export function CambiarContrasenaCard() {
           {!errors.passwordNuevo && !fortaleza && <p className={hintCls}>Mínimo 8 caracteres.</p>}
         </div>
 
-        <PasswordInput name="confirmar" label="Confirmar nueva contraseña" show={showConfirmar} onToggle={() => setShowConfirmar((s) => !s)} />
+        <PasswordInput
+          name="confirmar"
+          label="Confirmar nueva contraseña"
+          show={showConfirmar}
+          onToggle={() => setShowConfirmar((s) => !s)}
+          register={register}
+          error={errors.confirmar}
+        />
 
         <button
           type="submit"

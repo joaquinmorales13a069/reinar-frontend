@@ -1641,8 +1641,9 @@ export type ActualizarConfigReportesDto = Partial<ConfiguracionReportes>;
 
 // ─── Rama 18: Perfil y Auditlog ─────────────────────────────────────
 
-// Perfil reusa el shape de Usuario; alias por semántica del módulo.
-// El backend devuelve los mismos 10 campos para GET /auth/perfil y PATCH /auth/perfil.
+// Perfil reusa el tipo Usuario por conveniencia, pero el backend devuelve solo 7 campos
+// (id, nombre, apellido, email, rol, mfaActivo, ultimoAcceso) — los 3 faltantes
+// (activo, createdAt, updatedAt) son undefined en runtime; no usarlos en componentes de perfil.
 export type Perfil = Usuario;
 
 export type ActualizarPerfilDto = {
