@@ -1591,15 +1591,15 @@ export type ConfiguracionEmpresa = {
   emailCotizaciones: string | null;
   logoUrl: string | null;
   sitioWeb: string | null;
-  prefijoCotizacion: string | null;
-  prefijoFactura: string | null;
-  prefijoActa: string | null;
+  prefijoCotizacion: string;
+  prefijoFactura: string;
+  prefijoActa: string;
   emailRemitente: string | null;
   nombreRemitente: string | null;
   emailCopiaInterna: string | null;
   // El backend serializa porcentajeIvaDefault como string Decimal —
   // convertir con Number(...) o new Decimal(...) antes de operar.
-  porcentajeIvaDefault: string | null;
+  porcentajeIvaDefault: string;
   updatedAt: string;
 };
 
@@ -1634,6 +1634,7 @@ export type ConfiguracionReportes = {
   reporteMensualDia: number;
   reporteMensualEmails: string[];
   formatoProgramado: 'pdf' | 'excel' | 'ambos';
+  updatedAt: string;
 };
 
 export type ActualizarConfigReportesDto = Partial<ConfiguracionReportes>;
