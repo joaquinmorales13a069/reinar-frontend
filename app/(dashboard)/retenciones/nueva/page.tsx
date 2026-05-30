@@ -1,12 +1,20 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { RetencionForm } from '@/components/retenciones/RetencionForm';
 
-export default function NuevaRetencionPage() {
-  // Cuando se entra desde el detalle de factura llega `?facturaId=…`
-  // y la pre-seleccionamos.
+// useSearchParams() obliga a Suspense en build estatico (Next 16).
+function Contenido() {
   const sp = useSearchParams();
   const facturaIdPre = sp.get('facturaId') ?? undefined;
   return <RetencionForm facturaIdPre={facturaIdPre} />;
+}
+
+export default function NuevaRetencionPage() {
+  return (
+    <Suspense fallback={null}>
+      <Contenido />
+    </Suspense>
+  );
 }

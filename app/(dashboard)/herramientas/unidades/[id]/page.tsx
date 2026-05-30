@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { Suspense, use, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -32,7 +32,13 @@ const btnSec =
 
 export default function UnidadDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  return <UnidadDetalleClient unidadId={id} />;
+  // UnidadDetalleClient usa useSearchParams (?tipoId=…), por eso necesita
+  // Suspense para que Next 16 no rompa el prerender estatico.
+  return (
+    <Suspense fallback={<div className="flex justify-center p-12"><Spinner /></div>}>
+      <UnidadDetalleClient unidadId={id} />
+    </Suspense>
+  );
 }
 
 function UnidadDetalleClient({ unidadId }: { unidadId: string }) {

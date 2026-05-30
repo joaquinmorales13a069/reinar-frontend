@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { FormSection } from '@/components/ui/FormSection';
@@ -12,6 +12,16 @@ import { useFacturasPendientes } from '@/hooks/use-pagos';
 import type { FacturaListItem } from '@/types/api';
 
 export default function NuevoPagoPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><Spinner /></div>}>
+      <Contenido />
+    </Suspense>
+  );
+}
+
+// Extraido del page directo: useSearchParams obliga a Suspense boundary en
+// Next 16 para que el prerender estatico no falle.
+function Contenido() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // Soporta deep-link desde el detalle de factura (?facturaId=xxx) para que
