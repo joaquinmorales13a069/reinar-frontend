@@ -127,3 +127,21 @@ export function useResetMfaUsuario() {
     },
   });
 }
+
+// Envia link de reset de password a un usuario. Backend bloquea self-reset
+// (403 si id == solicitante) y propaga 502 EMAIL_FAILED si SMTP cae — ambos
+// llegan al toast.
+export function useEnviarLinkResetPassword() {
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.post<ApiResponse<unknown>>(`/usuarios/${id}/enviar-link-reset-password`).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+      }),
+    onSuccess: () => {
+      toast.success('Link de reset enviado al correo del usuario.');
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo enviar el link de reset.'));
+    },
+  });
+}

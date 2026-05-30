@@ -1569,8 +1569,12 @@ export type CrearUsuarioDto = {
   nombre: string;
   apellido: string;
   email: string;
-  contrasena: string;
+  // Opcional cuando enviarSetupLink === true; obligatoria si no.
+  contrasena?: string;
   rol: RolUsuario;
+  // Si true, el backend ignora contrasena, genera un token de 1 uso y envia
+  // un link al email del usuario para que la establezca el mismo.
+  enviarSetupLink?: boolean;
 };
 
 export type ActualizarUsuarioDto = {

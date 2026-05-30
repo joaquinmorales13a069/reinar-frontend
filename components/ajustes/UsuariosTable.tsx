@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
 import { Icon } from '@/components/ui/Icon';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
-import { useUsuarios, useCambiarEstadoUsuario, useResetMfaUsuario } from '@/hooks/use-usuarios';
+import { useUsuarios, useCambiarEstadoUsuario, useResetMfaUsuario, useEnviarLinkResetPassword } from '@/hooks/use-usuarios';
 import { useAuthStore } from '@/stores/auth.store';
 import { esAdmin, esElPropioUsuario } from '@/lib/ajustes';
 import { formatDateTime, getInitials } from '@/lib/utils';
@@ -31,6 +31,7 @@ export function UsuariosTable() {
   const [filtroRol, setFiltroRol] = useState<RolUsuario | undefined>(undefined);
   const [confirmEstado, setConfirmEstado] = useState<Usuario | null>(null);
   const [confirmResetMfa, setConfirmResetMfa] = useState<Usuario | null>(null);
+  const [confirmResetPwd, setConfirmResetPwd] = useState<Usuario | null>(null);
 
   const rolActual = useAuthStore((s) => s.user?.rol);
   const idActual = useAuthStore((s) => s.user?.id);
@@ -44,6 +45,7 @@ export function UsuariosTable() {
   });
   const cambiarEstado = useCambiarEstadoUsuario();
   const resetMfa = useResetMfaUsuario();
+  const enviarLinkResetPwd = useEnviarLinkResetPassword();
 
   function onChangeSearch(v: string) {
     setSearch(v);
@@ -65,6 +67,12 @@ export function UsuariosTable() {
     if (!confirmResetMfa) return;
     await resetMfa.mutateAsync(confirmResetMfa.id);
     setConfirmResetMfa(null);
+  }
+
+  async function onConfirmResetPwd() {
+    if (!confirmResetPwd) return;
+    await enviarLinkResetPwd.mutateAsync(confirmResetPwd.id);
+    setConfirmResetPwd(null);
   }
 
   return (
@@ -182,6 +190,18 @@ export function UsuariosTable() {
                                   <Icon name="shield" size={14} />
                                 </button>
                               )}
+                              {/* Reset de password: NO permitir self-reset (backend tambien
+                                  bloquea con 403, pero esconder el boton evita el roundtrip). */}
+                              <button
+                                type="button"
+                                onClick={() => setConfirmResetPwd(u)}
+                                disabled={esYo}
+                                title={esYo ? 'No podés resetear tu propia contraseña; pedile a otro ADMIN' : 'Enviar link de reset de contraseña'}
+                                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-tx-3 hover:bg-bg hover:text-tx transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                aria-label="Enviar link de reset de contraseña"
+                              >
+                                <Icon name="send" size={14} />
+                              </button>
                             </div>
                           </td>
                         )}
@@ -222,6 +242,24 @@ export function UsuariosTable() {
                               confirmLabel="Resetear MFA"
                               onCancel={() => setConfirmResetMfa(null)}
                               onConfirm={onConfirmResetMfa}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                      {confirmResetPwd?.id === u.id && (
+                        <tr>
+                          <td colSpan={puedeEditar ? 8 : 7} className="px-4 pb-3">
+                            <ConfirmRow
+                              variant="primary"
+                              message={
+                                <span>
+                                  ¿Enviar link de reset de contraseña a <b>{u.nombre} {u.apellido}</b> ({u.email})?
+                                  El usuario recibirá un correo con un enlace que vence en 24 horas.
+                                </span>
+                              }
+                              confirmLabel="Enviar link"
+                              onCancel={() => setConfirmResetPwd(null)}
+                              onConfirm={onConfirmResetPwd}
                             />
                           </td>
                         </tr>

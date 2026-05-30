@@ -16,13 +16,21 @@ const usuarioBase = z.object({
   rol: rolEnum,
 });
 
-// Crear: contrasena obligatoria + confirmar (igual) — el confirmar vive solo en UI.
+// Crear: si enviarSetupLink === true, contrasena/confirmar se ignoran (el backend
+// genera un token y manda el link por correo). Si no, contrasena obligatoria +
+// confirmar coincidente. El refine valida ambos casos.
 export const usuarioCrearSchema = usuarioBase.extend({
-  contrasena: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
-  confirmar: z.string().min(8, 'Confirmá la contraseña'),
-}).refine((d) => d.contrasena === d.confirmar, {
-  message: 'Las contraseñas no coinciden',
-  path: ['confirmar'],
+  enviarSetupLink: z.boolean().default(false),
+  contrasena: z.string().optional().or(z.literal('')),
+  confirmar: z.string().optional().or(z.literal('')),
+}).superRefine((d, ctx) => {
+  if (d.enviarSetupLink) return;  // contrasena no requerida si se envia link
+  if (!d.contrasena || d.contrasena.length < 8) {
+    ctx.addIssue({ code: 'custom', path: ['contrasena'], message: 'La contraseña debe tener al menos 8 caracteres' });
+  }
+  if (d.contrasena !== d.confirmar) {
+    ctx.addIssue({ code: 'custom', path: ['confirmar'], message: 'Las contraseñas no coinciden' });
+  }
 });
 
 export type UsuarioCrearForm = z.infer<typeof usuarioCrearSchema>;

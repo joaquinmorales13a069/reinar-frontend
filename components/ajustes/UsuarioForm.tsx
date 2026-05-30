@@ -82,6 +82,7 @@ function FormCrear() {
     register,
     handleSubmit,
     setError,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<UsuarioCrearForm>({
     resolver: zodResolver(usuarioCrearSchema) as never,
@@ -92,8 +93,12 @@ function FormCrear() {
       contrasena: '',
       confirmar: '',
       rol: 'OPERADOR',
+      enviarSetupLink: false,
     },
   });
+
+  // Watch para mostrar/ocultar el bloque de password segun el toggle.
+  const enviarLink = watch('enviarSetupLink');
 
   async function onSubmit(v: UsuarioCrearForm) {
     try {
@@ -101,8 +106,11 @@ function FormCrear() {
         nombre: v.nombre.trim(),
         apellido: v.apellido.trim(),
         email: v.email.trim(),
-        contrasena: v.contrasena,
+        // Si se envia link, no mandamos contrasena (backend la ignora igual,
+        // pero asi limpiamos el payload).
+        contrasena: v.enviarSetupLink ? undefined : v.contrasena,
         rol: v.rol,
+        enviarSetupLink: v.enviarSetupLink,
       });
       router.push('/ajustes?tab=usuarios');
     } catch (err) {
@@ -119,38 +127,60 @@ function FormCrear() {
   return (
     <Layout
       title="Nuevo usuario"
-      subtitle="Al crear el usuario podrá iniciar sesión inmediatamente con la contraseña indicada."
+      subtitle={
+        enviarLink
+          ? 'El usuario recibirá un enlace por correo para establecer su contraseña.'
+          : 'Al crear el usuario podrá iniciar sesión inmediatamente con la contraseña indicada.'
+      }
       submitLabel="Crear usuario"
       onSubmit={handleSubmit(onSubmit)}
       isSubmitting={isSubmitting || crear.isPending}
     >
       <CamposBaseCrear register={register} errors={errors} />
       <FormSection title="Contraseña">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Toggle: si esta activo, el ADMIN no define la pass — el usuario la
+            establece via link enviado por correo (token de 1 uso, 24h). */}
+        <label className="flex items-start gap-2.5 mb-4 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            className="mt-0.5 cursor-pointer"
+            {...register('enviarSetupLink')}
+          />
           <div>
-            <label className={labelCls}>
-              Contraseña <span className="text-danger">*</span>
-            </label>
-            <input
-              type="password"
-              className={errors.contrasena ? inputErr : inputOk}
-              {...register('contrasena')}
-            />
-            {errors.contrasena && <p className={errorCls}>{errors.contrasena.message}</p>}
-            {!errors.contrasena && <p className={hintCls}>Mínimo 8 caracteres.</p>}
+            <span className="text-sm text-tx">Enviar enlace por correo en lugar de definir contraseña</span>
+            <p className="text-xs text-tx-3 mt-0.5">
+              El usuario recibirá un email con un enlace para establecer su contraseña (vence en 24 horas).
+            </p>
           </div>
-          <div>
-            <label className={labelCls}>
-              Confirmar contraseña <span className="text-danger">*</span>
-            </label>
-            <input
-              type="password"
-              className={errors.confirmar ? inputErr : inputOk}
-              {...register('confirmar')}
-            />
-            {errors.confirmar && <p className={errorCls}>{errors.confirmar.message}</p>}
+        </label>
+
+        {!enviarLink && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>
+                Contraseña <span className="text-danger">*</span>
+              </label>
+              <input
+                type="password"
+                className={errors.contrasena ? inputErr : inputOk}
+                {...register('contrasena')}
+              />
+              {errors.contrasena && <p className={errorCls}>{errors.contrasena.message}</p>}
+              {!errors.contrasena && <p className={hintCls}>Mínimo 8 caracteres.</p>}
+            </div>
+            <div>
+              <label className={labelCls}>
+                Confirmar contraseña <span className="text-danger">*</span>
+              </label>
+              <input
+                type="password"
+                className={errors.confirmar ? inputErr : inputOk}
+                {...register('confirmar')}
+              />
+              {errors.confirmar && <p className={errorCls}>{errors.confirmar.message}</p>}
+            </div>
           </div>
-        </div>
+        )}
       </FormSection>
     </Layout>
   );
