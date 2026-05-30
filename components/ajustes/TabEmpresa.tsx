@@ -87,7 +87,10 @@ export function TabEmpresa() {
   const prefijoCot = watch('prefijoCotizacion');
   const prefijoFac = watch('prefijoFactura');
   const prefijoAct = watch('prefijoActa');
-  const anioActual = new Date().getFullYear();
+  // El backend genera números con formato {PREFIJO}{YY}{MM}{NNNNN} (sin guiones)
+  // — ver server/src/lib/numeracion.ts. La vista previa replica ese formato exacto.
+  const ahora = new Date();
+  const sufijoFecha = `${String(ahora.getFullYear()).slice(-2)}${String(ahora.getMonth() + 1).padStart(2, '0')}`;
 
   async function onSubmit(v: ConfiguracionEmpresaForm) {
     const payload: ActualizarConfiguracionDto = {
@@ -209,9 +212,9 @@ export function TabEmpresa() {
       <FormSection title="Numeración de documentos">
         {/* Los prefijos viven en el mismo endpoint /configuracion, por eso van en esta misma tab. */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <PrefijoField name="prefijoCotizacion" label="Cotizaciones" register={register} errors={errors} puedeEditar={puedeEditar} valor={prefijoCot} anio={anioActual} />
-          <PrefijoField name="prefijoFactura"    label="Facturas"     register={register} errors={errors} puedeEditar={puedeEditar} valor={prefijoFac} anio={anioActual} />
-          <PrefijoField name="prefijoActa"       label="Actas"        register={register} errors={errors} puedeEditar={puedeEditar} valor={prefijoAct} anio={anioActual} />
+          <PrefijoField name="prefijoCotizacion" label="Cotizaciones" register={register} errors={errors} puedeEditar={puedeEditar} valor={prefijoCot} sufijoFecha={sufijoFecha} />
+          <PrefijoField name="prefijoFactura"    label="Facturas"     register={register} errors={errors} puedeEditar={puedeEditar} valor={prefijoFac} sufijoFecha={sufijoFecha} />
+          <PrefijoField name="prefijoActa"       label="Actas"        register={register} errors={errors} puedeEditar={puedeEditar} valor={prefijoAct} sufijoFecha={sufijoFecha} />
         </div>
       </FormSection>
 
@@ -284,7 +287,7 @@ function PrefijoField({
   errors,
   puedeEditar,
   valor,
-  anio,
+  sufijoFecha,
 }: {
   name: 'prefijoCotizacion' | 'prefijoFactura' | 'prefijoActa';
   label: string;
@@ -292,7 +295,7 @@ function PrefijoField({
   errors: FieldErrors<ConfiguracionEmpresaForm>;
   puedeEditar: boolean;
   valor: string | undefined;
-  anio: number;
+  sufijoFecha: string;
 }) {
   const err = errors[name];
   return (
@@ -309,7 +312,7 @@ function PrefijoField({
       />
       {err && <p className={errorCls}>{err.message}</p>}
       {!err && valor && (
-        <p className={hintCls}>Vista previa: <span className="font-mono text-tx-2">{valor.toUpperCase()}-{anio}-XXXXX</span></p>
+        <p className={hintCls}>Vista previa: <span className="font-mono text-tx-2">{valor.toUpperCase()}{sufijoFecha}XXXXX</span></p>
       )}
     </div>
   );
