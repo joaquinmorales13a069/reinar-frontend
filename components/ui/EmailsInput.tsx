@@ -9,12 +9,15 @@ type EmailsInputProps = {
   onChange: (next: string[]) => void;
   placeholder?: string;
   disabled?: boolean;
+  // id opcional para que el <label htmlFor> del caller asocie el campo
+  // correctamente — sin esto los lectores de pantalla no enlazan label e input.
+  id?: string;
   // error se muestra debajo del input; los errores de items individuales
   // (duplicado, inválido) se muestran internamente y no propagan.
   error?: string;
 };
 
-export function EmailsInput({ value, onChange, placeholder, disabled, error }: EmailsInputProps) {
+export function EmailsInput({ value, onChange, placeholder, disabled, id, error }: EmailsInputProps) {
   const [draft, setDraft] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -63,7 +66,7 @@ export function EmailsInput({ value, onChange, placeholder, disabled, error }: E
 
   return (
     <div>
-      <div className={`flex flex-wrap items-center gap-1.5 px-2 py-1.5 rounded-md border bg-surface ${inputBorder} ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}>
+      <div className={`flex flex-wrap items-center gap-1.5 px-2 py-1.5 rounded-md border bg-surface transition-colors focus-within:border-accent ${inputBorder} ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}>
         {value.map((email, idx) => (
           <span key={email} className="inline-flex items-center gap-1 pl-2 pr-1 py-0.5 rounded-full bg-bg-sunken text-xs text-tx font-mono">
             {email}
@@ -80,6 +83,7 @@ export function EmailsInput({ value, onChange, placeholder, disabled, error }: E
           </span>
         ))}
         <input
+          id={id}
           type="text"
           value={draft}
           onChange={(e) => { setDraft(e.target.value); setLocalError(null); }}
