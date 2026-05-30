@@ -92,6 +92,8 @@
   .border-bd       { border-color: var(--bd); }
   .border-bd-soft  { border-color: var(--bd-soft); }
   .border-bd-strong { border-color: var(--bd-strong); }
+  .bg-bd           { background-color: var(--bd); }
+  .bg-bd-strong    { background-color: var(--bd-strong); }
   .bg-accent       { background-color: var(--accent); }
   .text-accent     { color: var(--accent); }
   .border-accent   { border-color: var(--accent); }
