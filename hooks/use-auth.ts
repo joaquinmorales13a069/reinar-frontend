@@ -20,7 +20,9 @@ function normalizeAxiosError<T>(err: unknown): ApiResponse<T> {
 }
 
 // Payload del primer paso del login (credenciales)
-type LoginPayload = { email: string; password: string };
+// turnstileToken: token emitido por el widget de Cloudflare en el LoginStep.
+// El backend lo valida contra siteverify antes de tocar bcrypt.
+type LoginPayload = { email: string; password: string; turnstileToken: string };
 
 // El backend tiene dos caminos en el paso 1:
 // - Sin MFA configurado → devuelve tokens directamente (login completo)
