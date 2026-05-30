@@ -53,30 +53,34 @@ export function TabEmpresa() {
 
   const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting, isDirty } } = form;
 
-  // Cargar valores del backend al hidratarse — reset es la forma canónica
-  // de RHF para repoblar defaultValues asincrónicos sin perder la validación.
+  // Mapeo explícito BD→form reutilizado por el efecto de carga y por Descartar
+  // cambios — un reset() sin args queda dependiente del orden de useEffect y
+  // puede revertir a valores vacíos si el botón se clickea antes de hidratar.
+  const mapDataToForm = (d: typeof data): ConfiguracionEmpresaForm => ({
+    nombreEmpresa: d!.nombreEmpresa,
+    nit: d!.nit ?? '',
+    ncr: d!.ncr ?? '',
+    direccion: d!.direccion ?? '',
+    telefono: d!.telefono ?? '',
+    email: d!.email ?? '',
+    telefonoCotizaciones: d!.telefonoCotizaciones ?? '',
+    emailCotizaciones: d!.emailCotizaciones ?? '',
+    logoUrl: d!.logoUrl ?? '',
+    sitioWeb: d!.sitioWeb ?? '',
+    prefijoCotizacion: d!.prefijoCotizacion ?? '',
+    prefijoFactura: d!.prefijoFactura ?? '',
+    prefijoActa: d!.prefijoActa ?? '',
+    emailRemitente: d!.emailRemitente ?? '',
+    nombreRemitente: d!.nombreRemitente ?? '',
+    emailCopiaInterna: d!.emailCopiaInterna ?? '',
+    porcentajeIvaDefault: d!.porcentajeIvaDefault != null ? Number(d!.porcentajeIvaDefault) : undefined,
+  });
+
   useEffect(() => {
-    if (data) {
-      reset({
-        nombreEmpresa: data.nombreEmpresa,
-        nit: data.nit ?? '',
-        ncr: data.ncr ?? '',
-        direccion: data.direccion ?? '',
-        telefono: data.telefono ?? '',
-        email: data.email ?? '',
-        telefonoCotizaciones: data.telefonoCotizaciones ?? '',
-        emailCotizaciones: data.emailCotizaciones ?? '',
-        logoUrl: data.logoUrl ?? '',
-        sitioWeb: data.sitioWeb ?? '',
-        prefijoCotizacion: data.prefijoCotizacion ?? '',
-        prefijoFactura: data.prefijoFactura ?? '',
-        prefijoActa: data.prefijoActa ?? '',
-        emailRemitente: data.emailRemitente ?? '',
-        nombreRemitente: data.nombreRemitente ?? '',
-        emailCopiaInterna: data.emailCopiaInterna ?? '',
-        porcentajeIvaDefault: data.porcentajeIvaDefault != null ? Number(data.porcentajeIvaDefault) : undefined,
-      });
-    }
+    if (data) reset(mapDataToForm(data));
+    // mapDataToForm es estable (cierra solo sobre `data` que ya está en deps);
+    // omitirlo de deps evita re-suscribir el efecto en cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, reset]);
 
   const logoUrlPreview = watch('logoUrl');
@@ -216,7 +220,7 @@ export function TabEmpresa() {
           <button
             type="button"
             disabled={!isDirty}
-            onClick={() => data && reset()}
+            onClick={() => data && reset(mapDataToForm(data))}
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm text-tx-2 border border-bd hover:bg-bg-sunken transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Descartar cambios

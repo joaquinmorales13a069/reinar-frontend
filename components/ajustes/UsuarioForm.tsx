@@ -19,6 +19,35 @@ import {
 import { useCrearUsuario, useActualizarUsuario } from '@/hooks/use-usuarios';
 import type { RolUsuario, Usuario } from '@/types/api';
 
+// Mapea VALIDATION_ERROR.details[] del backend a setError por campo.
+// El backend devuelve { code: 'VALIDATION_ERROR', details: [{ path: [...], message }] }
+// cuando el body falla la validación Zod. La validación cliente con Zod cubre
+// la mayoría de casos, pero este fallback evita que un mismatch FE/BE caiga
+// solo en el toast genérico sin contexto de campo.
+type ApiValidationError = {
+  response?: { data?: { error?: { code?: string; details?: { path?: (string | number)[]; message?: string }[] } } };
+};
+
+function applyValidationErrors<T extends Record<string, unknown>>(
+  err: unknown,
+  setError: (field: keyof T, opts: { type: string; message: string }) => void,
+  validFields: ReadonlyArray<keyof T>,
+): boolean {
+  const apiErr = err as ApiValidationError;
+  if (apiErr?.response?.data?.error?.code !== 'VALIDATION_ERROR') return false;
+  const details = apiErr.response.data.error.details;
+  if (!Array.isArray(details) || details.length === 0) return false;
+  let applied = false;
+  for (const d of details) {
+    const first = d.path?.[0];
+    if (typeof first !== 'string') continue;
+    if (!validFields.includes(first as keyof T)) continue;
+    setError(first as keyof T, { type: 'server', message: d.message ?? 'Valor inválido' });
+    applied = true;
+  }
+  return applied;
+}
+
 const ROLES: { value: RolUsuario; label: string }[] = [
   { value: 'ADMIN', label: 'Admin' },
   { value: 'GERENTE', label: 'Gerente' },
@@ -77,8 +106,13 @@ function FormCrear() {
       });
       router.push('/ajustes?tab=usuarios');
     } catch (err) {
-      // Mapear 409 email-duplicado a inline; los demás errores ya están toasteados por el hook.
-      trySetFieldErrorFromApi(err, setError, 'email', { codes: ['CONFLICT'], matchHint: 'email' });
+      // Primero intenta mapear 409 email-duplicado al campo email.
+      // Si no aplica, intenta mapear VALIDATION_ERROR a sus campos respectivos.
+      // Si ninguno aplica, el toast genérico del hook ya cubre el error.
+      const handled = trySetFieldErrorFromApi(err, setError, 'email', { codes: ['CONFLICT'], matchHint: 'email' });
+      if (!handled) {
+        applyValidationErrors<UsuarioCrearForm>(err, setError as never, ['nombre', 'apellido', 'email', 'contrasena', 'rol']);
+      }
     }
   }
 
@@ -165,7 +199,10 @@ function FormEditar({ usuario }: { usuario: Usuario }) {
       });
       router.push('/ajustes?tab=usuarios');
     } catch (err) {
-      trySetFieldErrorFromApi(err, setError, 'email', { codes: ['CONFLICT'], matchHint: 'email' });
+      const handled = trySetFieldErrorFromApi(err, setError, 'email', { codes: ['CONFLICT'], matchHint: 'email' });
+      if (!handled) {
+        applyValidationErrors<UsuarioEditarForm>(err, setError as never, ['nombre', 'apellido', 'email', 'contrasena', 'rol']);
+      }
     }
   }
 
