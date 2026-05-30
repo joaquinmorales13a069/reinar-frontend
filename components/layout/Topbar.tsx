@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { useAuthStore } from '@/stores/auth.store';
+import { useUiStore } from '@/stores/ui.store';
 import { useLogoutMutation } from '@/hooks/use-auth';
 import { useNotificaciones, useMarcarLeida, useMarcarTodasLeidas } from '@/hooks/use-notificaciones';
 import { NAV_ITEMS_FLAT } from '@/lib/nav';
@@ -30,11 +31,6 @@ const ICONO_POR_TIPO: Record<string, string> = {
   QUEDAN_POR_ENTREGAR:   'alertTriangle',
 };
 
-type TopbarProps = {
-  onMenuClick: () => void;
-  onTweaksOpen: () => void;
-};
-
 // Resuelve la info de navegación desde el pathname actual para construir el breadcrumb
 function useNavInfo() {
   const pathname = usePathname();
@@ -48,11 +44,14 @@ function useNavInfo() {
 const iconBtn =
   'size-8 grid place-items-center rounded text-tx-2 hover:bg-bg-sunken hover:text-tx transition-colors';
 
-export function Topbar({ onMenuClick, onTweaksOpen }: TopbarProps) {
+export function Topbar() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [userOpen,  setUserOpen]  = useState(false);
+  const [configOpen, setConfigOpen] = useState(false);
 
   const user          = useAuthStore((s) => s.user);
+  const theme         = useUiStore((s) => s.theme);
+  const setTheme      = useUiStore((s) => s.setTheme);
   const logoutMutation = useLogoutMutation();
 
   const { data: notifData, isLoading: notifLoading } = useNotificaciones();
@@ -66,16 +65,11 @@ export function Topbar({ onMenuClick, onTweaksOpen }: TopbarProps) {
   function closeAll() {
     setNotifOpen(false);
     setUserOpen(false);
+    setConfigOpen(false);
   }
 
   return (
     <header className="sticky top-0 z-20 h-14 bg-topbar-bg border-b border-bd flex items-center gap-4 px-5">
-      {/* md:hidden porque en desktop el sidebar siempre es visible; el hamburger solo tiene
-          sentido en móvil donde el sidebar está oculto vía CSS */}
-      <button className={`${iconBtn} md:hidden`} onClick={onMenuClick} aria-label="Abrir menú">
-        <Icon name="menu" size={18} />
-      </button>
-
       <div className="flex items-center gap-2 text-xs text-tx-3 min-w-0">
         <span className="shrink-0">Reinar</span>
         {navInfo && (
@@ -87,15 +81,56 @@ export function Topbar({ onMenuClick, onTweaksOpen }: TopbarProps) {
       </div>
 
       <div className="flex items-center gap-2 ml-auto">
-        <button className={iconBtn} title="Tweaks" onClick={onTweaksOpen} aria-label="Configuración visual">
-          <Icon name="gear" size={16} />
-        </button>
+        {/* Dropdown reemplaza al antiguo TweaksPanel. Solo conservamos toggle de tema;
+            density/sidebar mini/accent se eliminaron por simplicidad. */}
+        <div className="relative">
+          <button
+            className={iconBtn}
+            onClick={() => { setConfigOpen((o) => !o); setNotifOpen(false); setUserOpen(false); }}
+            aria-label="Configuración"
+          >
+            <Icon name="gear" size={18} />
+          </button>
+          {configOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={closeAll} />
+              <div className="absolute top-full translate-y-1.5 right-0 min-w-56 bg-surface border border-bd rounded shadow-lg z-50 overflow-hidden">
+                <Link
+                  href="/ajustes"
+                  onClick={closeAll}
+                  className="flex items-center gap-2 px-3 py-2 text-xs text-tx cursor-pointer hover:bg-bg-sunken"
+                >
+                  <Icon name="gear" size={14} /> Ajustes del sistema
+                </Link>
+                {(user?.rol === 'ADMIN' || user?.rol === 'GERENTE') && (
+                  <Link
+                    href="/auditlog"
+                    onClick={closeAll}
+                    className="flex items-center gap-2 px-3 py-2 text-xs text-tx cursor-pointer hover:bg-bg-sunken"
+                  >
+                    <Icon name="fileText" size={14} /> Auditoría
+                  </Link>
+                )}
+                <div className="h-px bg-bd my-1" />
+                {/* Toggle de tema NO cierra el dropdown — permite experimentar antes de decidir. */}
+                <button
+                  type="button"
+                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-tx cursor-pointer hover:bg-bg-sunken"
+                >
+                  <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={14} />
+                  Tema {theme === 'dark' ? 'claro' : 'oscuro'}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Notificaciones */}
         <div className="relative">
           <button
             className={`${iconBtn} relative`}
-            onClick={() => { setNotifOpen((o) => !o); setUserOpen(false); }}
+            onClick={() => { setNotifOpen((o) => !o); setUserOpen(false); setConfigOpen(false); }}
             aria-label="Notificaciones"
           >
             <Icon name="bell" size={16} />
@@ -175,7 +210,7 @@ export function Topbar({ onMenuClick, onTweaksOpen }: TopbarProps) {
         <div className="relative">
           <div
             className="flex items-center gap-2 px-2 py-1 rounded cursor-pointer hover:bg-bg-sunken transition-colors"
-            onClick={() => { setUserOpen((o) => !o); setNotifOpen(false); }}
+            onClick={() => { setUserOpen((o) => !o); setNotifOpen(false); setConfigOpen(false); }}
             role="button"
             tabIndex={0}
           >

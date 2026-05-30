@@ -74,7 +74,9 @@ export function BottomNav() {
             {isOpen && (
               <div
                 role="menu"
-                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 min-w-48 bg-sidebar-bg border border-white/10 rounded-lg shadow-lg overflow-hidden"
+                // max-h-[60vh] + overflow-y-auto defensivo: el grupo "Ventas" tiene 7 items
+                // y en pantallas pequeñas verticales el popover podría salir del viewport.
+                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 min-w-48 max-h-[60vh] overflow-y-auto bg-sidebar-bg border border-white/10 rounded-lg shadow-lg"
               >
                 {slot.children.map((child) => {
                   const childActive = isActiveHref(child.href);

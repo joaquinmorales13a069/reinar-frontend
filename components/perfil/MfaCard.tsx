@@ -185,16 +185,21 @@ function SetupWizard({ otpauthUri, onCancelar, onDone }: {
             <div className="text-2xs uppercase tracking-wider font-semibold text-tx-3 mb-1">¿No podés escanear?</div>
             <div className="text-sm text-tx mb-2">Ingresá este código manualmente:</div>
             {secret ? (
-              <div className="flex gap-2 items-center">
-                <code className="flex-1 px-3 py-2 bg-bg-sunken rounded font-mono text-sm tracking-widest">{secret}</code>
-                <button
-                  type="button"
-                  onClick={copiarSecret}
-                  className="inline-flex items-center gap-1 px-2 py-1.5 rounded text-xs text-tx-2 border border-bd hover:bg-bg-sunken transition-colors"
-                >
-                  <Icon name={copied ? 'check' : 'copy'} size={12} /> {copied ? 'Copiado' : 'Copiar'}
-                </button>
-              </div>
+              <>
+                {/* flex-col en mobile + break-all permiten que el secret base32 (~32 chars
+                    con tracking) wrappee por caracter sin desbordar el contenedor de 375px.
+                    tracking-wider (en lugar de widest) baja el ancho visual del bloque. */}
+                <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+                  <code className="flex-1 px-3 py-2 bg-bg-sunken rounded font-mono text-sm tracking-wider break-all">{secret}</code>
+                  <button
+                    type="button"
+                    onClick={copiarSecret}
+                    className="inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs text-tx-2 border border-bd hover:bg-bg-sunken transition-colors shrink-0"
+                  >
+                    <Icon name={copied ? 'check' : 'copy'} size={12} /> {copied ? 'Copiado' : 'Copiar'}
+                  </button>
+                </div>
+              </>
             ) : (
               <p className="text-xs text-tx-3 italic">Código manual no disponible — escaneá el QR.</p>
             )}
