@@ -24,13 +24,22 @@ export type User = {
 };
 
 // Notificaciones del usuario autenticado — mostradas en el dropdown del topbar.
+// Shape derivado del modelo Prisma `Notificacion`. El backend devuelve los registros
+// con `findMany` sin transform, así que los nombres deben coincidir con la BD —
+// nombres distintos (texto/meta/creadoEn) producían divs vacíos en runtime.
 export type Notificacion = {
   id: string;
-  texto: string;
-  meta: string;
+  usuarioId: string;
+  // Discriminador del evento (COTIZACION_APROBADA, FACTURA_EMITIDA, etc.).
+  // El frontend deriva el ícono a partir de este string vía un lookup map.
+  tipo: string;
+  titulo: string;
+  mensaje: string;
   leida: boolean;
-  creadoEn: string;
-  icono?: string;
+  // URL relativa al recurso (ej. `/cotizaciones/cmpx…`). El topbar la usa para
+  // navegar al hacer click sobre la notificación.
+  enlace: string | null;
+  createdAt: string;
 };
 
 export type Cliente = {
