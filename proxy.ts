@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // En deploy cross-site (frontend en crmsv.reinarsa.com, backend en *.easypanel.host)
   // la cookie HTTP-only del refresh token vive en el dominio del backend y NO es
-  // visible para este middleware que corre en el frontend. Antes chequeabamos
+  // visible para este proxy que corre en el frontend. Antes chequeabamos
   // request.cookies.has('refreshToken') como senal de sesion y eso causaba un loop:
-  // login OK -> cookie seteada en backend -> redirect a /dashboard -> middleware no ve
+  // login OK -> cookie seteada en backend -> redirect a /dashboard -> proxy no ve
   // cookie -> redirect a /login -> usuario nunca pasaba del login.
   //
   // La autenticacion se delega a AuthHydrator client-side: al montar el dashboard
@@ -25,7 +25,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Excluimos los archivos estáticos de Next.js para que el middleware no se ejecute
-  // en cada imagen, fuente o CSS — solo necesita proteger las rutas de navegación HTML.
+  // Excluimos los archivos estáticos de Next.js para que el proxy no se ejecute
+  // en cada imagen, fuente o CSS — solo necesita interceptar rutas de navegación HTML.
   matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };
