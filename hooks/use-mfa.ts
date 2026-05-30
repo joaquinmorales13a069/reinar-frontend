@@ -40,7 +40,12 @@ export function useVerificarMfa() {
       toast.success('2FA activado.');
     },
     onError: (err) => {
-      // El caller intercepta para mapear "Código TOTP inválido" a setError + shake.
+      // 401 "Código TOTP inválido" se mapea inline en el caller (setError + shake) —
+      // no toastear para evitar feedback duplicado.
+      const apiErr = err as { response?: { data?: { error?: { code?: string; message?: string } } } };
+      const code = apiErr?.response?.data?.error?.code;
+      const msg = apiErr?.response?.data?.error?.message ?? '';
+      if (code === 'UNAUTHORIZED' && msg.toLowerCase().includes('totp')) return;
       toast.error(extractErrorMessage(err, 'No se pudo verificar el código.'));
     },
   });
@@ -59,6 +64,10 @@ export function useDesactivarMfa() {
       toast.success('2FA desactivado.');
     },
     onError: (err) => {
+      const apiErr = err as { response?: { data?: { error?: { code?: string; message?: string } } } };
+      const code = apiErr?.response?.data?.error?.code;
+      const msg = apiErr?.response?.data?.error?.message ?? '';
+      if (code === 'UNAUTHORIZED' && msg.toLowerCase().includes('totp')) return;
       toast.error(extractErrorMessage(err, 'No se pudo desactivar 2FA.'));
     },
   });
