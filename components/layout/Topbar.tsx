@@ -11,6 +11,25 @@ import { useNotificaciones, useMarcarLeida, useMarcarTodasLeidas } from '@/hooks
 import { NAV_ITEMS_FLAT } from '@/lib/nav';
 import { getInitials } from '@/lib/utils';
 
+// Mapa de tipo de notificación → nombre de ícono. El backend emite el tipo como
+// string (no enum) y agrega tipos con cada módulo nuevo, por eso usamos lookup
+// con fallback en lugar de un Record exhaustivo: tipos nuevos caen al ícono
+// default sin requerir cambios en este archivo.
+const ICONO_POR_TIPO: Record<string, string> = {
+  COTIZACION_APROBADA:   'check',
+  COTIZACION_RECHAZADA:  'x',
+  COTIZACION_ENVIADA:    'send',
+  FACTURA_EMITIDA:       'fileText',
+  FACTURAS_VENCIDAS:     'alertTriangle',
+  PAGO_REGISTRADO:       'dollar',
+  ACTA_DESPACHADA:       'package',
+  ACTA_ENTREGADA:        'package',
+  ACTA_DEVUELTA:         'package',
+  DTE_APROBADO:          'check',
+  DTE_ENVIADO_MANUAL:    'send',
+  QUEDAN_POR_ENTREGAR:   'alertTriangle',
+};
+
 type TopbarProps = {
   onMenuClick: () => void;
   onTweaksOpen: () => void;
@@ -107,24 +126,42 @@ export function Topbar({ onMenuClick, onTweaksOpen }: TopbarProps) {
                   </div>
                 )}
 
-                {notificaciones.map((n) => (
-                  <div
-                    key={n.id}
-                    className={`flex items-start gap-2 px-2.5 py-2 hover:bg-bg-sunken ${!n.leida ? 'cursor-pointer' : ''}`}
-                    onClick={() => { if (!n.leida) marcarLeida.mutate(n.id); }}
-                  >
-                    <span className="size-6 shrink-0 grid place-items-center text-tx-3">
-                      {n.icono && <Icon name={n.icono as never} size={11} />}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className={`text-xs ${n.leida ? 'font-normal' : 'font-medium'}`}>{n.texto}</div>
-                      <div className="text-2xs text-tx-muted font-mono">{n.meta}</div>
+                {notificaciones.map((n) => {
+                  const icono = ICONO_POR_TIPO[n.tipo] ?? 'fileText';
+                  const cls = `flex items-start gap-2 px-2.5 py-2 hover:bg-bg-sunken cursor-pointer`;
+                  // Al click: marca como leída (si aún no lo está) Y cierra el dropdown
+                  // antes de navegar. Sin closeAll() el dropdown queda abierto sobre la
+                  // página destino.
+                  const handleClick = () => {
+                    if (!n.leida) marcarLeida.mutate(n.id);
+                    closeAll();
+                  };
+                  // Si hay enlace usamos <Link> para que Next.js haga client-side nav;
+                  // si no, un <div> sin href (no navega, solo marca como leída).
+                  const Contenido = (
+                    <>
+                      <span className="size-6 shrink-0 grid place-items-center text-tx-3">
+                        <Icon name={icono as never} size={11} />
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className={`text-xs ${n.leida ? 'font-normal' : 'font-medium'}`}>{n.titulo}</div>
+                        <div className="text-2xs text-tx-muted">{n.mensaje}</div>
+                      </div>
+                      {!n.leida && (
+                        <span className="size-1.5 bg-accent rounded-full mt-1 shrink-0" />
+                      )}
+                    </>
+                  );
+                  return n.enlace ? (
+                    <Link key={n.id} href={n.enlace} className={cls} onClick={handleClick}>
+                      {Contenido}
+                    </Link>
+                  ) : (
+                    <div key={n.id} className={cls} onClick={handleClick}>
+                      {Contenido}
                     </div>
-                    {!n.leida && (
-                      <span className="size-1.5 bg-accent rounded-full mt-1 shrink-0" />
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
 
                 {!notifLoading && notificaciones.length === 0 && (
                   <div className="px-3 py-2 text-xs text-tx-muted">Sin notificaciones</div>
