@@ -2,14 +2,20 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { BOTTOM_NAV_ITEMS, type BottomNavGroup } from '@/lib/nav';
+import { filtrarBottomNav } from '@/lib/permisos-nav';
+import { useAuthStore } from '@/stores/auth.store';
 
 export function BottomNav() {
   const pathname = usePathname();
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const navRef = useRef<HTMLElement>(null);
+  // Filtramos slots/childs por rol — un grupo con todos los hijos prohibidos
+  // se omite por completo, y un grupo parcial muestra solo los hijos visibles.
+  const rol = useAuthStore((s) => s.user?.rol);
+  const slots = useMemo(() => filtrarBottomNav(BOTTOM_NAV_ITEMS, rol), [rol]);
 
   function isActiveHref(href: string) {
     return pathname === href || pathname.startsWith(href + '/');
@@ -37,7 +43,7 @@ export function BottomNav() {
       ref={navRef}
       className="hidden max-lg:flex fixed bottom-0 left-0 right-0 h-15 bg-sidebar-bg border-t border-white/6 z-30 px-2"
     >
-      {BOTTOM_NAV_ITEMS.map((slot) => {
+      {slots.map((slot) => {
         if (slot.kind === 'link') {
           const active = isActiveHref(slot.href);
           return (

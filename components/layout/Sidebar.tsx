@@ -1,16 +1,24 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { NAV_GROUPS } from '@/lib/nav';
+import { filtrarNavGroups } from '@/lib/permisos-nav';
+import { useAuthStore } from '@/stores/auth.store';
 
 // Sin props: el Sidebar siempre se renderiza ancho completo en lg+. El modo mini
 // se eliminó con el cleanup de TweaksPanel.
 export function Sidebar() {
   // usePathname en vez de prop `route` — la fuente de verdad es la URL, no un estado local
   const pathname = usePathname();
+  // Filtramos los grupos por rol para que cada usuario vea solo lo que puede usar.
+  // El backend igual rechaza con 403 si manipulan la URL — esto es solo UX para
+  // que LOGISTICA no vea "Clientes" y caiga en pantalla de error.
+  const rol = useAuthStore((s) => s.user?.rol);
+  const grupos = useMemo(() => filtrarNavGroups(NAV_GROUPS, rol), [rol]);
 
   function isActive(href: string) {
     return pathname === href || pathname.startsWith(href + '/');
@@ -36,7 +44,7 @@ export function Sidebar() {
 
       {/* Navegación — texto escala en xl+/2xl+ para verse mejor en monitores grandes. */}
       <nav className="px-2 py-3 flex-1">
-        {NAV_GROUPS.map((group) => (
+        {grupos.map((group) => (
           <div key={group.label} className="mb-5">
             <div className="text-2xs xl:text-xs tracking-widest uppercase font-semibold opacity-50 px-2 pb-2">
               {group.label}
