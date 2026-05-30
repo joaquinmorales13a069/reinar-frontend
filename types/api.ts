@@ -1638,3 +1638,57 @@ export type ConfiguracionReportes = {
 };
 
 export type ActualizarConfigReportesDto = Partial<ConfiguracionReportes>;
+
+// ─── Rama 18: Perfil y Auditlog ─────────────────────────────────────
+
+// Perfil reusa el shape de Usuario; alias por semántica del módulo.
+// El backend devuelve los mismos 10 campos para GET /auth/perfil y PATCH /auth/perfil.
+export type Perfil = Usuario;
+
+export type ActualizarPerfilDto = {
+  nombre: string;
+  apellido: string;
+};
+
+export type CambiarContrasenaDto = {
+  passwordActual: string;
+  passwordNuevo: string;
+};
+
+export type ConfigurarMfaResponse = {
+  // URI otpauth:// completo, incluye secret + issuer + image. El frontend lo
+  // pasa directo a <QRCodeSVG /> y extrae el secret para mostrarlo en modo manual.
+  otpauthUri: string;
+};
+
+export type TotpDto = {
+  // 6 dígitos exactos — el backend rechaza otra cosa con 400.
+  totpCode: string;
+};
+
+export type AuditLog = {
+  id: string;
+  usuarioId: string | null;
+  // null si el usuario fue eliminado después del evento.
+  usuario: { nombre: string; apellido: string; email: string } | null;
+  entidad: string;
+  entidadId: string;
+  accion: string;
+  camposAntes: Record<string, unknown> | null;
+  camposDespues: Record<string, unknown> | null;
+  ip: string | null;
+  userAgent: string | null;
+  createdAt: string;
+};
+
+// Nombres del parámetro coinciden con el backend (NO `fechaDesde`/`fechaHasta`).
+export type FiltrosAuditLog = {
+  page?: number;
+  limit?: number;
+  entidad?: string;
+  entidadId?: string;
+  usuarioId?: string;
+  accion?: string;
+  desde?: string;
+  hasta?: string;
+};
