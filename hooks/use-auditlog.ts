@@ -4,9 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import type { PaginatedResponse, AuditLog, FiltrosAuditLog } from '@/types/api';
 
-export function useAuditLog(filtros: FiltrosAuditLog = {}) {
+// El segundo parámetro `enabled` permite al caller bloquear la query cuando
+// los filtros son inválidos cliente-side (ej: rango desde > hasta). Sin esto,
+// el backend recibe queries inútiles que devuelven listas vacías o errores.
+export function useAuditLog(filtros: FiltrosAuditLog = {}, enabled = true) {
   return useQuery({
     queryKey: ['auditlog', filtros],
+    enabled,
     queryFn: () =>
       api
         .get<PaginatedResponse<AuditLog>>('/auditlog', { params: filtros })

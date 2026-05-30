@@ -83,6 +83,8 @@ export function AuditLogDrawer({ log, onClose }: { log: AuditLog; onClose: () =>
 
           <section>
             <div className="text-2xs uppercase tracking-wider font-semibold text-tx-3 mb-2">Cambios registrados</div>
+            {/* grid 2-cols se mantiene incluso cuando camposAntes es null: la
+                asimetría visual cada N filas distrae más que la columna placeholder. */}
             <div className="grid grid-cols-2 gap-2.5">
               <div>
                 <div className="text-2xs text-tx-3 mb-1.5 font-semibold">Antes</div>

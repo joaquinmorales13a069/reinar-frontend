@@ -48,11 +48,12 @@ export function AuditLogTable() {
     setPage(1);
   }
 
-  const { data, isLoading, isError } = useAuditLog({
-    page,
-    limit: 50,
-    ...aFiltrosBackend(filtros),
-  });
+  // !rangoInvalido bloquea la query cuando desde > hasta — la spec exige
+  // que el query no se dispare en ese caso (el banner warn ya informa al usuario).
+  const { data, isLoading, isError } = useAuditLog(
+    { page, limit: 50, ...aFiltrosBackend(filtros) },
+    !rangoInvalido,
+  );
 
   return (
     <div className="rounded-lg border border-bd bg-surface overflow-hidden">
