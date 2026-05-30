@@ -23,6 +23,9 @@ const ibmPlexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: 'Reinar — Sistema Interno de Operaciones',
   description: 'ERP/CRM interno de Reinar S.A. de C.V.',
+  // Favicon servido desde public/ — Next.js no lo auto-descubre desde public,
+  // hay que declararlo explícitamente para que aparezca como <link rel="icon">.
+  icons: { icon: '/favicon-300x300.webp' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
