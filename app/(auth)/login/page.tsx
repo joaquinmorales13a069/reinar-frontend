@@ -43,14 +43,6 @@ type Step1Props = {
 };
 
 function LoginStep({ onMfaRequired }: Step1Props) {
-  if (!SITE_KEY) {
-    return (
-      <div className="text-sm text-danger p-4">
-        Variable NEXT_PUBLIC_TURNSTILE_SITE_KEY no configurada. Avisar a soporte.
-      </div>
-    );
-  }
-
   const [showPwd, setShowPwd]   = useState(false);
   const loginMutation = useLoginMutation();
   const setAuth  = useAuthStore((s) => s.setAuth);
@@ -76,6 +68,17 @@ function LoginStep({ onMfaRequired }: Step1Props) {
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFields>({
     resolver: zodResolver(loginSchema),
   });
+
+  // Guard del SITE_KEY DESPUÉS de todos los hooks — el linter
+  // react-hooks/rules-of-hooks exige que el conteo de hooks sea estable
+  // entre renders aunque SITE_KEY sea constante en build time.
+  if (!SITE_KEY) {
+    return (
+      <div className="text-sm text-danger p-4">
+        Variable NEXT_PUBLIC_TURNSTILE_SITE_KEY no configurada. Avisar a soporte.
+      </div>
+    );
+  }
 
   async function onSubmit(data: LoginFields) {
     if (!turnstileToken) {
