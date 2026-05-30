@@ -103,7 +103,23 @@ export const BOTTOM_NAV_ITEMS: BottomNavSlot[] = [
       NAV_GROUPS[0].items[2], // Contactos
     ],
   },
-  { kind: 'link', id: 'cotizaciones', label: 'Cotizaciones', href: '/cotizaciones', icon: 'fileText' },
+  {
+    kind: 'group',
+    id: 'ventas',
+    label: 'Ventas',
+    icon: 'fileText',
+    // Actas/Recepciones/Notas/Retenciones viven aquí (no en "Clientes") porque
+    // son documentos del flujo de venta, no propiedades del cliente.
+    children: [
+      NAV_GROUPS[1].items[0], // Cotizaciones
+      NAV_GROUPS[1].items[1], // Facturas
+      NAV_GROUPS[1].items[4], // Pagos
+      NAV_GROUPS[1].items[2], // Actas de Entrega
+      NAV_GROUPS[1].items[3], // Recepciones
+      NAV_GROUPS[1].items[5], // Notas de Crédito
+      NAV_GROUPS[1].items[6], // Retenciones
+    ],
+  },
   {
     kind: 'group',
     id: 'inventario',
@@ -114,6 +130,8 @@ export const BOTTOM_NAV_ITEMS: BottomNavSlot[] = [
       NAV_GROUPS[2].items[2], // Andamios
       NAV_GROUPS[2].items[3], // Herramientas & Consum.
       NAV_GROUPS[2].items[1], // Servicios
+      NAV_GROUPS[2].items[4], // Bodegas
+      NAV_GROUPS[2].items[5], // Mantenimientos
     ],
   },
   { kind: 'link', id: 'reportes', label: 'Reportes', href: '/reportes', icon: 'chartBar' },
