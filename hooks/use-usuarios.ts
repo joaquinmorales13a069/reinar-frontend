@@ -105,3 +105,25 @@ export function useCambiarEstadoUsuario() {
     },
   });
 }
+
+// Reset MFA por ADMIN. Backend valida que el usuario tenga MFA activo
+// (devuelve 400 MFA_NO_ACTIVO si no); el frontend lo previene escondiendo
+// el boton, pero el toast cubre el error como fallback defensivo.
+export function useResetMfaUsuario() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.post<ApiResponse<Usuario>>(`/usuarios/${id}/reset-mfa`).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: ['usuarios'] });
+      qc.invalidateQueries({ queryKey: ['usuario', id] });
+      toast.success('MFA reseteado. El usuario podrá entrar solo con email y contraseña.');
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo resetear el MFA.'));
+    },
+  });
+}

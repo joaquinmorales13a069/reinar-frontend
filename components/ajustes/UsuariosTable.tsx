@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
 import { Icon } from '@/components/ui/Icon';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
-import { useUsuarios, useCambiarEstadoUsuario } from '@/hooks/use-usuarios';
+import { useUsuarios, useCambiarEstadoUsuario, useResetMfaUsuario } from '@/hooks/use-usuarios';
 import { useAuthStore } from '@/stores/auth.store';
 import { esAdmin, esElPropioUsuario } from '@/lib/ajustes';
 import { formatDateTime, getInitials } from '@/lib/utils';
@@ -30,6 +30,7 @@ export function UsuariosTable() {
   const [search, setSearch] = useState('');
   const [filtroRol, setFiltroRol] = useState<RolUsuario | undefined>(undefined);
   const [confirmEstado, setConfirmEstado] = useState<Usuario | null>(null);
+  const [confirmResetMfa, setConfirmResetMfa] = useState<Usuario | null>(null);
 
   const rolActual = useAuthStore((s) => s.user?.rol);
   const idActual = useAuthStore((s) => s.user?.id);
@@ -42,6 +43,7 @@ export function UsuariosTable() {
     rol: filtroRol,
   });
   const cambiarEstado = useCambiarEstadoUsuario();
+  const resetMfa = useResetMfaUsuario();
 
   function onChangeSearch(v: string) {
     setSearch(v);
@@ -57,6 +59,12 @@ export function UsuariosTable() {
     if (!confirmEstado) return;
     await cambiarEstado.mutateAsync({ id: confirmEstado.id, activo: !confirmEstado.activo });
     setConfirmEstado(null);
+  }
+
+  async function onConfirmResetMfa() {
+    if (!confirmResetMfa) return;
+    await resetMfa.mutateAsync(confirmResetMfa.id);
+    setConfirmResetMfa(null);
   }
 
   return (
@@ -160,6 +168,20 @@ export function UsuariosTable() {
                               >
                                 <Icon name={u.activo ? 'x' : 'check'} size={14} />
                               </button>
+                              {/* Solo mostramos reset MFA si esta activo — el backend valida
+                                  igual y devuelve 400 MFA_NO_ACTIVO, pero esconderlo evita
+                                  confundir al admin con un boton que no hace nada visible. */}
+                              {u.mfaActivo && (
+                                <button
+                                  type="button"
+                                  onClick={() => setConfirmResetMfa(u)}
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded-md text-tx-3 hover:bg-bg hover:text-tx transition-colors"
+                                  aria-label="Resetear MFA del usuario"
+                                  title="Resetear MFA"
+                                >
+                                  <Icon name="shield" size={14} />
+                                </button>
+                              )}
                             </div>
                           </td>
                         )}
@@ -182,6 +204,24 @@ export function UsuariosTable() {
                               confirmLabel={u.activo ? 'Desactivar' : 'Activar'}
                               onCancel={() => setConfirmEstado(null)}
                               onConfirm={onConfirmCambiarEstado}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                      {confirmResetMfa?.id === u.id && (
+                        <tr>
+                          <td colSpan={puedeEditar ? 8 : 7} className="px-4 pb-3">
+                            <ConfirmRow
+                              variant="danger"
+                              message={
+                                <span>
+                                  ¿Resetear MFA de <b>{u.nombre} {u.apellido}</b>?
+                                  El usuario podrá entrar solo con email y contraseña hasta que reactive MFA desde su perfil.
+                                </span>
+                              }
+                              confirmLabel="Resetear MFA"
+                              onCancel={() => setConfirmResetMfa(null)}
+                              onConfirm={onConfirmResetMfa}
                             />
                           </td>
                         </tr>
