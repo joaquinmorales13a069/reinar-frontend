@@ -72,8 +72,12 @@ export function useCambiarContrasena() {
       toast.success('Contraseña actualizada.');
     },
     onError: (err) => {
-      // El caller puede interceptar para mapear 401 "Contraseña actual incorrecta"
-      // a setError('passwordActual'); si no, el toast genérico cubre el resto.
+      // 401 "Contraseña actual incorrecta" se mapea a setError('passwordActual')
+      // en el caller — no toastear para evitar feedback duplicado (inline + toast).
+      const apiErr = err as { response?: { data?: { error?: { code?: string; message?: string } } } };
+      const code = apiErr?.response?.data?.error?.code;
+      const msg = apiErr?.response?.data?.error?.message ?? '';
+      if (code === 'UNAUTHORIZED' && msg.toLowerCase().includes('actual')) return;
       toast.error(extractErrorMessage(err, 'No se pudo cambiar la contraseña.'));
     },
   });
