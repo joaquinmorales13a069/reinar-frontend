@@ -61,6 +61,7 @@ export function PagosCard({ factura, isOperador, isAdminOGerente }: Props) {
           <EmptyState icon="dollar" title="Sin pagos" message="Aún no se han registrado pagos para esta factura." />
         </div>
       ) : (
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
             <tr>
@@ -109,6 +110,7 @@ export function PagosCard({ factura, isOperador, isAdminOGerente }: Props) {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {editingPagoId && (() => {

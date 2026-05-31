@@ -59,6 +59,10 @@ export type DashboardKpis = {
   actividadReciente: {
     entidad: string;
     entidadId: string;
+    // Nombre/numero amigable de la entidad afectada (ej. razonSocial de Cliente,
+    // numeroFactura, codigoInterno de HerramientaUnidad). null para entidades
+    // sin display util (Configuracion*, Mantenimiento).
+    nombre: string | null;
     accion: string;
     usuario: string | null;
     createdAt: string; // ISO-8601

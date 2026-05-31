@@ -36,6 +36,7 @@ export function ItemsFacturadosCard({ factura }: { factura: Factura }) {
           </Link>
         </span>
       </div>
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead className="bg-bg-sunken text-2xs uppercase tracking-wider text-tx-3">
           <tr>
@@ -102,6 +103,7 @@ export function ItemsFacturadosCard({ factura }: { factura: Factura }) {
           </tr>
         </tfoot>
       </table>
+      </div>
     </div>
   );
 }

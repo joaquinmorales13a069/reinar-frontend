@@ -94,7 +94,7 @@ export function Topbar() {
           {configOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={closeAll} />
-              <div className="absolute top-full translate-y-1.5 right-0 min-w-56 bg-surface border border-bd rounded shadow-lg z-50 overflow-hidden">
+              <div className="fixed inset-x-2 top-14 mt-1.5 sm:absolute sm:top-full sm:inset-x-auto sm:right-0 sm:translate-y-1.5 sm:min-w-56 bg-surface border border-bd rounded shadow-lg z-50 overflow-hidden">
                 <Link
                   href="/ajustes"
                   onClick={closeAll}
@@ -142,7 +142,7 @@ export function Topbar() {
           {notifOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={closeAll} />
-              <div className="absolute top-full translate-y-1.5 right-0 min-w-80 bg-surface border border-bd rounded shadow-lg z-50 overflow-hidden">
+              <div className="fixed inset-x-2 top-14 mt-1.5 sm:absolute sm:top-full sm:inset-x-auto sm:right-0 sm:translate-y-1.5 sm:min-w-80 bg-surface border border-bd rounded shadow-lg z-50 overflow-hidden">
                 <div className="flex justify-between items-center px-3 py-2 text-2xs font-semibold tracking-widest uppercase text-tx-muted border-b border-bd">
                   <span>Notificaciones</span>
                   {unread > 0 && (
@@ -231,7 +231,7 @@ export function Topbar() {
           {userOpen && (
             <>
               <div className="fixed inset-0 z-40" onClick={closeAll} />
-              <div className="absolute top-full translate-y-1.5 right-0 min-w-48 bg-surface border border-bd rounded shadow-lg z-50 overflow-hidden">
+              <div className="fixed inset-x-2 top-14 mt-1.5 sm:absolute sm:top-full sm:inset-x-auto sm:right-0 sm:translate-y-1.5 sm:min-w-48 bg-surface border border-bd rounded shadow-lg z-50 overflow-hidden">
                 <div className="px-3 py-2 text-2xs font-semibold tracking-widest uppercase text-tx-muted border-b border-bd">
                   {user?.email}
                 </div>
