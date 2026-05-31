@@ -71,6 +71,20 @@ const ENTITY_ICON: Record<string, IconName> = {
   Configuracion:     'gear',
 };
 
+// Entidades cuyo `nombre` display es un numero o codigo (no un texto humano).
+// Se renderizan en font-mono para reforzar la lectura tipo identificador.
+const ENTIDADES_CON_NUMERO = new Set<string>([
+  'Cotizacion',
+  'Factura',
+  'ActaEntrega',
+  'ActaRecepcion',
+  'Pago',
+  'NotaCredito',
+  'ComprobanteRetencion',
+  'HerramientaUnidad',
+  'DepositoGarantia',
+]);
+
 // Prefijos ordenados por longitud descendente: "CAMBIAR_ESTADO" gana sobre "CAMBIAR".
 // Si la acción no matchea ningún prefijo, devolvemos el string original con espacios
 // para que al menos sea legible (fallback defensivo).
@@ -122,8 +136,21 @@ export function ActivityFeed({ actividad, onRefresh }: ActivityFeedProps) {
                 <p className="text-sm text-tx leading-snug">
                   <span className="font-medium">{item.usuario ?? 'Sistema'}</span>{' '}
                   {verbo}{' '}
-                  <span className="text-tx-2">{entidadLabel}</span>{' '}
-                  <span className="font-mono text-xs text-tx-3">{item.entidadId.slice(0, 8)}</span>
+                  <span className="text-tx-2">{entidadLabel}</span>
+                  {item.nombre && (
+                    <>
+                      {' '}
+                      <span
+                        className={
+                          ENTIDADES_CON_NUMERO.has(item.entidad)
+                            ? 'font-mono text-xs text-tx-2'
+                            : 'font-medium text-tx'
+                        }
+                      >
+                        {item.nombre}
+                      </span>
+                    </>
+                  )}
                 </p>
                 <p className="text-xs text-tx-3 mt-0.5">{tiempo}</p>
               </div>
