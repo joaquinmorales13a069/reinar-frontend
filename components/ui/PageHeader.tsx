@@ -35,7 +35,7 @@ export function PageHeader({ title, subtitle, back, backLabel, onBack, actions }
         </div>
       </div>
       {actions && (
-        <div className="flex flex-col sm:flex-row gap-2 sm:shrink-0 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-end gap-2 w-full sm:w-auto">
           {actions}
         </div>
       )}
