@@ -31,9 +31,11 @@ export const PERMISOS_NAV: Record<string, RolUsuario[]> = {
   herramientas:    ['ADMIN', 'GERENTE', 'OPERADOR', 'LOGISTICA', 'VISUALIZADOR'],
   bodegas:         ['ADMIN', 'GERENTE', 'OPERADOR', 'LOGISTICA', 'VISUALIZADOR'],
   mantenimientos:  ['ADMIN', 'GERENTE', 'OPERADOR', 'LOGISTICA', 'VISUALIZADOR'],
+  proveedores:          ['ADMIN', 'GERENTE', 'OPERADOR', 'LOGISTICA', 'VISUALIZADOR'],
+  'ingresos-inventario': ['ADMIN', 'GERENTE', 'LOGISTICA'],
 
-  // Analitica + Sistema — solo ADMIN/GERENTE
-  reportes:        ['ADMIN', 'GERENTE'],
+  // Analitica + Sistema — OPERADOR puede acceder al reporte de inventario
+  reportes:        ['ADMIN', 'GERENTE', 'LOGISTICA', 'OPERADOR'],
   ajustes:         ['ADMIN', 'GERENTE'],
   auditlog:        ['ADMIN', 'GERENTE'],
 };

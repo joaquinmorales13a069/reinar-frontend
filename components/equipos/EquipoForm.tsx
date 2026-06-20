@@ -11,6 +11,7 @@ import { FormSection } from '@/components/ui/FormSection';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { EquipoImagenUpload } from '@/components/equipos/EquipoImagenUpload';
 import { BodegaSelect } from '@/components/ui/BodegaSelect';
+import { DatosCompraFields, datosCompraSchema, construirDatosCompra } from '@/components/inventario/DatosCompraFields';
 import { useCrearEquipo, useEditarEquipo, useCambiarEstadoEquipo, useSubirImagenEquipo, useEliminarEquipo } from '@/hooks/use-equipos';
 import { CATEGORIA_LABELS, PREFIJO_POR_CATEGORIA, puedeEjecutar } from '@/lib/equipos';
 import { useAuthStore } from '@/stores/auth.store';
@@ -46,6 +47,7 @@ const crearSchema = baseSchema.extend({
     .max(10, 'Máximo 10 caracteres.')
     .regex(/^[A-Z0-9]+$/, 'Solo letras mayúsculas y números.'),
   bodegaId: z.string().min(1, 'La bodega es obligatoria.'),
+  datosCompra: datosCompraSchema,
 });
 
 type CrearFormData = z.infer<typeof crearSchema>;
@@ -163,6 +165,7 @@ export function EquipoForm(props: Props) {
           tarifaSemana: v.tarifaSemana,
           tarifaMes: v.tarifaMes,
           notas: v.notas || undefined,
+          datosCompra: construirDatosCompra(v.datosCompra),
         });
         if (imagenFile) {
           await subirImagen.mutateAsync({ id: equipo.id, file: imagenFile });
@@ -420,6 +423,10 @@ export function EquipoForm(props: Props) {
             Podrás completarlos y agregar/quitar campos desde la pantalla de ficha técnica una vez creado el equipo.
           </p>
         </FormSection>
+      )}
+
+      {isNew && (
+        <DatosCompraFields register={register} errors={errors} />
       )}
 
       <FormSection title="Notas internas">

@@ -13,6 +13,12 @@ import { useMantenimiento, useEliminarMantenimiento } from '@/hooks/use-mantenim
 import { useAuthStore } from '@/stores/auth.store';
 import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 
+const CATEGORIA_LABEL: Record<string, string> = {
+  INTERNO:    'Interno',
+  EXTERNO:    'Externo',
+  EN_CLIENTE: 'En cliente',
+};
+
 export default function DetalleMantenimientoPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -102,6 +108,7 @@ export default function DetalleMantenimientoPage() {
         <div className="rounded-lg border border-bd bg-surface p-4 flex flex-col gap-3">
           <h3 className="font-semibold">Datos</h3>
           <Dato label="Técnico"               value={m.tecnico} />
+          <Dato label="Categoría"             value={CATEGORIA_LABEL[m.categoria] ?? m.categoria} />
           <Dato label="Motivo"                value={m.motivo} />
           <Dato label="Horómetro"             value={m.horometro ?? '—'} />
           <Dato label="Fecha de entrada"      value={formatDateTime(m.fechaEntrada)} />
@@ -133,16 +140,59 @@ export default function DetalleMantenimientoPage() {
           {m.repuestos.length === 0 ? (
             <p className="text-sm text-tx-3">Sin repuestos registrados.</p>
           ) : (
-            <ul className="list-disc pl-5 text-sm flex flex-col gap-1">
-              {m.repuestos.map((r, i) => <li key={i}>{r}</li>)}
-            </ul>
+            <div className="flex flex-col gap-2">
+              {m.repuestos.map((r) => (
+                <div key={r.id} className="text-sm border-b border-bd pb-2 last:border-0 last:pb-0">
+                  {r.consumibleId ? (
+                    <div className="flex justify-between gap-2">
+                      <span className="text-tx-3">
+                        Interno — consumible{' '}
+                        <span className="font-mono text-xs">{r.consumibleId}</span>
+                      </span>
+                      <span className="font-medium">× {r.cantidad}</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex justify-between gap-2">
+                        <span>{r.descripcion}</span>
+                        <span className="font-medium">× {r.cantidad}</span>
+                      </div>
+                      {r.costoCompra && (
+                        <span className="text-xs text-tx-3">Costo: {formatCurrency(r.costoCompra)}</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
+
+        {m.diagnostico && (
+          <div className="rounded-lg border border-bd bg-surface p-4 lg:col-span-2">
+            <h3 className="font-semibold mb-2">Diagnóstico</h3>
+            <p className="text-sm whitespace-pre-wrap">{m.diagnostico}</p>
+          </div>
+        )}
+
+        {m.trabajoRealizado && (
+          <div className="rounded-lg border border-bd bg-surface p-4 lg:col-span-2">
+            <h3 className="font-semibold mb-2">Trabajo realizado</h3>
+            <p className="text-sm whitespace-pre-wrap">{m.trabajoRealizado}</p>
+          </div>
+        )}
 
         {m.observacionesSalida && (
           <div className="rounded-lg border border-bd bg-surface p-4 lg:col-span-2">
             <h3 className="font-semibold mb-2">Observaciones de salida</h3>
             <p className="text-sm whitespace-pre-wrap">{m.observacionesSalida}</p>
+          </div>
+        )}
+
+        {m.observaciones && (
+          <div className="rounded-lg border border-bd bg-surface p-4 lg:col-span-2">
+            <h3 className="font-semibold mb-2">Observaciones</h3>
+            <p className="text-sm whitespace-pre-wrap">{m.observaciones}</p>
           </div>
         )}
 

@@ -1,8 +1,10 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import api from '@/lib/api';
-import type { ApiResponse } from '@/types/api';
+import type { ApiResponse, EstadoResumen, FiltrosReporteInventario } from '@/types/api';
+import { extraerFilename, extraerErrorDeBlob } from '@/hooks/use-reportes';
 
 export type InventarioBodegaResumen = {
   bodegaId: string;
@@ -36,16 +38,36 @@ export type DatosInventario = {
     piezasSku: number;
     piezasUnid: number;
   };
+  // Campos enriquecidos del backend (E4) — opcionales:
+  estado?: {
+    equipos: EstadoResumen;
+    herramientas: EstadoResumen;
+  };
+  equiposPorCategoria?: (EstadoResumen & { categoria: string })[];
+  consumibles?: { sku: number; unidadesEnStock: number; unidadesConClientes: number };
+  piezas?: { sku: number; unidadesEnStock: number; unidadesConClientes: number };
+  porCliente?: {
+    clienteId: string;
+    clienteNombre: string;
+    equipos: number;
+    herramientas: number;
+    consumiblesUnid: number;
+    piezasUnid: number;
+  }[];
 };
 
-export function useReporteInventario() {
+export type FormatoExportInventario = 'pdf' | 'excel' | 'csv';
+
+export function useReporteInventario(filtros: FiltrosReporteInventario = {}) {
   return useQuery({
-    queryKey: ['reporte-inventario'],
+    queryKey: ['reporte-inventario', filtros],
     queryFn: () =>
-      api.get<ApiResponse<DatosInventario>>('/reportes/inventario').then((r) => {
-        if (!r.data.success) throw new Error(r.data.error.message);
-        return r.data.data;
-      }),
+      api
+        .get<ApiResponse<DatosInventario>>('/reportes/inventario', { params: filtros })
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
   });
 }
 
@@ -61,4 +83,35 @@ export function useReporteInventarioDetalle(bodegaId: string | null) {
         }),
     enabled: !!bodegaId,
   });
+}
+
+export async function exportarReporteInventario(
+  filtros: FiltrosReporteInventario,
+  formato: FormatoExportInventario,
+): Promise<void> {
+  const toastId = toast.loading('Generando reporte de inventario…');
+  try {
+    const res = await api.get('/reportes/inventario', {
+      responseType: 'blob',
+      params: { ...filtros, formato },
+    });
+    const filename = extraerFilename(
+      res.headers as Record<string, string | undefined>,
+      'inventario',
+      formato,
+    );
+    const url = URL.createObjectURL(res.data as Blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.dismiss(toastId);
+    toast.success('Reporte descargado.');
+  } catch (err) {
+    toast.dismiss(toastId);
+    const mensaje = await extraerErrorDeBlob(err, 'No se pudo exportar el reporte.');
+    toast.error(mensaje);
+    throw err;
+  }
 }

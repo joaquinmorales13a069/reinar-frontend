@@ -46,8 +46,10 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'servicios',      label: 'Servicios',              href: '/servicios',      icon: 'tool' },
       { id: 'andamios',       label: 'Andamios',               href: '/andamios',       icon: 'layers' },
       { id: 'herramientas',   label: 'Herramientas & Consum.', href: '/herramientas',   icon: 'hammer' },
-      { id: 'bodegas',        label: 'Bodegas',                href: '/bodegas',        icon: 'warehouse' },
-      { id: 'mantenimientos', label: 'Mantenimientos',         href: '/mantenimientos', icon: 'wrench' },
+      { id: 'bodegas',               label: 'Bodegas',                href: '/bodegas',               icon: 'warehouse' },
+      { id: 'mantenimientos',        label: 'Mantenimientos',         href: '/mantenimientos',        icon: 'wrench' },
+      { id: 'proveedores',           label: 'Proveedores',            href: '/proveedores',           icon: 'building' },
+      { id: 'ingresos-inventario',   label: 'Ingresos de inventario', href: '/ingresos-inventario',   icon: 'download' },
     ],
   },
   {
@@ -132,6 +134,8 @@ export const BOTTOM_NAV_ITEMS: BottomNavSlot[] = [
       NAV_GROUPS[2].items[1], // Servicios
       NAV_GROUPS[2].items[4], // Bodegas
       NAV_GROUPS[2].items[5], // Mantenimientos
+      NAV_GROUPS[2].items[6], // Proveedores
+      NAV_GROUPS[2].items[7], // Ingresos de inventario
     ],
   },
   { kind: 'link', id: 'reportes', label: 'Reportes', href: '/reportes', icon: 'chartBar' },

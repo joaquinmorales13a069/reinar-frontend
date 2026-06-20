@@ -9,6 +9,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ProyectoKpisCard } from '@/components/proyectos/ProyectoKpisCard';
+import { BodegaProyectoPanel } from '@/components/proyectos/BodegaProyectoPanel';
 import { useProyecto } from '@/hooks/use-proyectos';
 import { useAuthStore } from '@/stores/auth.store';
 import { puedeEjecutarProyecto } from '@/lib/proyectos';
@@ -108,6 +109,11 @@ export default function ProyectoDetallePage({
         <div className="flex flex-col gap-4">
           <ProyectoKpisCard proyecto={proyecto} />
         </div>
+      </div>
+
+      {/* Bodega de proyecto — panel completo debajo del grid principal */}
+      <div className="mt-4">
+        <BodegaProyectoPanel proyecto={proyecto} />
       </div>
     </div>
   );

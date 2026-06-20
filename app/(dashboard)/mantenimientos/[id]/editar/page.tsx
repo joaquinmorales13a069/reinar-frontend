@@ -20,8 +20,9 @@ const schema = z.object({
   motivo:               z.string().min(1, 'El motivo es requerido'),
   horometro:            z.number().nonnegative().optional(),
   costoEstimado:        z.number().nonnegative().optional(),
-  repuestos:            z.array(z.object({ value: z.string().min(1) })),
   proximoMantenimiento: z.string().optional(),
+  // categoria es display-only en edición; el backend no expone endpoint para cambiarla
+  categoria:            z.enum(['INTERNO', 'EXTERNO', 'EN_CLIENTE']).optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -38,9 +39,8 @@ export default function EditarMantenimientoPage() {
   const { control, register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      tecnico:   '',
-      motivo:    '',
-      repuestos: [],
+      tecnico: '',
+      motivo:  '',
     },
   });
 
@@ -68,7 +68,7 @@ export default function EditarMantenimientoPage() {
       motivo:        m.motivo,
       horometro:     m.horometro     ? Number(m.horometro)     : undefined,
       costoEstimado: m.costoEstimado ? Number(m.costoEstimado) : undefined,
-      repuestos:     m.repuestos.map((value) => ({ value })),
+      categoria:     m.categoria,
       proximoMantenimiento: m.proximoMantenimiento
         // datetime-local espera "YYYY-MM-DDTHH:mm" sin segundos ni TZ.
         ? m.proximoMantenimiento.slice(0, 16)
@@ -96,7 +96,6 @@ export default function EditarMantenimientoPage() {
         motivo:        values.motivo,
         horometro:     values.horometro,
         costoEstimado: values.costoEstimado,
-        repuestos:     values.repuestos.map((r) => r.value),
         // El input datetime-local produce "YYYY-MM-DDTHH:mm" sin timezone.
         // Convertimos a ISO completo que es lo que valida z.string().datetime() en el backend.
         // null explicito para limpiar la fecha; undefined la deja como estaba.
@@ -106,8 +105,7 @@ export default function EditarMantenimientoPage() {
       });
       router.push(`/mantenimientos/${id}`);
     } catch {
-      // El hook ya muestra el toast con el mensaje del backend. No hace falta
-      // mas manejo aqui; solo evitamos el unhandled rejection.
+      // El hook ya muestra el toast con el mensaje del backend.
     }
   }
 

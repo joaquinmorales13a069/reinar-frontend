@@ -45,14 +45,14 @@ export const ESTADO_HERRAMIENTA_KIND: Record<
 // consumibles.routes.ts): admins = ADMIN/GERENTE; inventario = ADMIN/GERENTE/LOGISTICA.
 // VISUALIZADOR solo lee.
 export const PERMISOS_HERRAMIENTAS = {
-  crearTipo: ['ADMIN', 'GERENTE'] as const,
-  editarTipo: ['ADMIN', 'GERENTE'] as const,
-  desactivarTipo: ['ADMIN', 'GERENTE'] as const,
+  crearTipo: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
+  editarTipo: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
+  desactivarTipo: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
   crearUnidad: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
   cambiarEstadoUnidad: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
-  crearConsumible: ['ADMIN', 'GERENTE'] as const,
-  editarConsumible: ['ADMIN', 'GERENTE'] as const,
-  desactivarConsumible: ['ADMIN', 'GERENTE'] as const,
+  crearConsumible: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
+  editarConsumible: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
+  desactivarConsumible: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
   ajustarStock: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
 } as const;
 

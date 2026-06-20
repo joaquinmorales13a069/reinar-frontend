@@ -87,9 +87,14 @@ function NuevaActaPage() {
   // useBodegas devuelve el array directamente en .data (el queryFn ya extrae .data.data).
   const { data: bodegasArr } = useBodegas();
   // Filtramos bodegas activas sin parentId (bodegas principales, no zonas).
+  // Excluimos tipo PROYECTO: el backend rechaza las bodegas-proyecto como
+  // origen de despacho con 400 — no las ofrecemos para evitar el error.
   // parentId es opcional en el tipo; tratamos undefined como principal.
   const bodegasPrincipales = (bodegasArr ?? []).filter(
-    (b) => b.activa && (b.parentId === null || b.parentId === undefined),
+    (b) =>
+      b.activa &&
+      b.tipo !== 'PROYECTO' &&
+      (b.parentId === null || b.parentId === undefined),
   );
 
   const [facturaSeleccionada, setFacturaSeleccionada] = useState<FacturaRef | null>(null);
@@ -132,7 +137,7 @@ function NuevaActaPage() {
     // antes el código tomaba solo nombre y se perdía el apellido.
     const nombreCompleto = [c?.nombre, c?.apellido].filter(Boolean).join(' ');
     const razonSocial = c?.razonSocial ?? (nombreCompleto || '—');
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setFacturaSeleccionada({
       id: facturaInicial.id,
       numeroFactura: facturaInicial.numeroFactura,
@@ -158,7 +163,7 @@ function NuevaActaPage() {
     // El usuario edita cada row (toggle incluido, condición salida, observaciones),
     // así que necesitamos una copia mutable derivada del query data. setState desde
     // useEffect es la forma estándar de sincronizar con datos externos en RHF + React Query.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setRows(inicial);
   }, [itemsDisp]);
 

@@ -14,7 +14,8 @@ export type TipoReporte =
   | 'proyectos'
   | 'servicios'
   | 'clientes'
-  | 'vendedores';
+  | 'vendedores'
+  | 'mantenimientos';
 
 // Coincide con backend `parametrosReporteSchema` — el formato `excel` produce .xlsx.
 export type FormatoReporte = 'pdf' | 'excel' | 'csv';
@@ -26,12 +27,19 @@ export interface GenerarReporteParams {
   formato: FormatoReporte;
   comparar?: boolean;
   top?: number;
+  // Filtros opcionales exclusivos del reporte de mantenimientos
+  tipoMant?: string;
+  categoria?: string;
+  estado?: string;
+  equipoId?: string;
+  herramientaUnidadId?: string;
+  tecnico?: string;
 }
 
 // El backend envía el filename en Content-Disposition. Lo extraemos para
 // preservar el nombre canónico ("reporte-ingresos-2026-01-01_2026-03-31.pdf");
 // si por algún motivo no llega, caemos a un nombre construido en el cliente.
-function extraerFilename(headers: Record<string, string | undefined>, tipo: string, formato: FormatoReporte): string {
+export function extraerFilename(headers: Record<string, string | undefined>, tipo: string, formato: FormatoReporte | string): string {
   const cd = headers['content-disposition'] ?? '';
   const match = cd.match(/filename="?([^";]+)"?/i);
   if (match) return match[1];
@@ -42,7 +50,7 @@ function extraerFilename(headers: Record<string, string | undefined>, tipo: stri
 // Cuando el backend responde con error a una request `responseType: 'blob'`,
 // el cuerpo viene como Blob aunque sea JSON: hay que leerlo como texto y parsear
 // manualmente para mostrar el mensaje real en el toast.
-async function extraerErrorDeBlob(err: unknown, fallback: string): Promise<string> {
+export async function extraerErrorDeBlob(err: unknown, fallback: string): Promise<string> {
   const anyErr = err as { response?: { data?: unknown } };
   const data = anyErr?.response?.data;
   if (data instanceof Blob) {
@@ -65,7 +73,8 @@ function aIsoUtc(fecha: string): string {
 }
 
 export async function generarReporte(params: GenerarReporteParams): Promise<void> {
-  const { tipo, desde, hasta, formato, comparar, top } = params;
+  const { tipo, desde, hasta, formato, comparar, top,
+          tipoMant, categoria, estado, equipoId, herramientaUnidadId, tecnico } = params;
   const toastId = toast.loading('Generando reporte…');
 
   try {
@@ -79,6 +88,14 @@ export async function generarReporte(params: GenerarReporteParams): Promise<void
         // sobreescribir los defaults del backend ni romper el schema (top tiene min/max).
         ...(comparar !== undefined ? { comparar: String(comparar) } : {}),
         ...(top !== undefined      ? { top: String(top) }           : {}),
+        // Filtros opcionales de mantenimientos: se omiten cuando no vienen definidos
+        // para no pisar defaults del backend ni enviar strings vacíos.
+        ...(tipoMant              ? { tipo: tipoMant }                               : {}),
+        ...(categoria             ? { categoria }                                     : {}),
+        ...(estado                ? { estado }                                        : {}),
+        ...(equipoId              ? { equipoId }                                      : {}),
+        ...(herramientaUnidadId   ? { herramientaUnidadId }                           : {}),
+        ...(tecnico               ? { tecnico }                                       : {}),
       },
     });
 

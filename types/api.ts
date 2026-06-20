@@ -162,6 +162,7 @@ export type CrearEquipoDto = {
   tarifaMes: number;
   notas?: string;
   fichaTecnica?: FichaTecnica;
+  datosCompra?: DatosCompraDto;
 };
 
 export type MoverBodegaDto = {
@@ -191,19 +192,35 @@ export type MantenimientoAdjunto = {
   createdAt:     string;
 };
 
-export type TipoMantenimiento   = 'PREVENTIVO' | 'CORRECTIVO' | 'EMERGENCIA';
-export type EstadoMantenimiento = 'ACTIVO' | 'COMPLETADO';
+export type TipoMantenimiento      = 'PREVENTIVO' | 'CORRECTIVO' | 'EMERGENCIA';
+export type EstadoMantenimiento    = 'ACTIVO' | 'COMPLETADO';
+export type CategoriaMantenimiento = 'INTERNO' | 'EXTERNO' | 'EN_CLIENTE';
+
+export type MantenimientoRepuesto = {
+  id:           string;
+  cantidad:     number;
+  consumibleId?: string | null;
+  bodegaId?:    string | null;
+  descripcion?: string | null;
+  proveedorId?: string | null;
+  costoCompra?: string | null; // Decimal string
+  fechaCompra?: string | null;
+};
 
 export type Mantenimiento = {
   id:                   string;
   tipo:                 TipoMantenimiento;
+  categoria:            CategoriaMantenimiento;
   estado:               EstadoMantenimiento;
   tecnico:              string;
   motivo:               string;
+  diagnostico?:         string | null;
+  trabajoRealizado?:    string | null;
+  observaciones?:       string | null;
   horometro:            string | null;        // Decimal serializado
   costoEstimado:        string | null;        // Decimal serializado
   costoReal:            string | null;        // Decimal serializado
-  repuestos:            string[];
+  repuestos:            MantenimientoRepuesto[];
   proximoMantenimiento: string | null;        // ISO datetime
   observacionesSalida:  string | null;
   fechaEntrada:         string;               // ISO datetime
@@ -228,17 +245,18 @@ export type FiltrosMantenimientos = {
   herramientaUnidadId?: string;
   estado?:              EstadoMantenimiento;
   tipo?:                TipoMantenimiento;
+  categoria?:           CategoriaMantenimiento;
 };
 
 export type CrearMantenimientoDto = {
-  equipoId?:            string;
-  herramientaUnidadId?: string;
-  tipo:                 TipoMantenimiento;
-  tecnico:              string;
-  motivo:               string;
-  horometro?:           number;
-  costoEstimado?:       number;
-  repuestos:            string[];
+  equipoId?:             string;
+  herramientaUnidadId?:  string;
+  tipo:                  TipoMantenimiento;
+  categoria:             CategoriaMantenimiento;
+  tecnico:               string;
+  motivo:                string;
+  horometro?:            number;
+  costoEstimado:         number;
   proximoMantenimiento?: string;
 };
 
@@ -247,14 +265,24 @@ export type ActualizarMantenimientoDto = {
   motivo?:               string;
   horometro?:            number;
   costoEstimado?:        number;
-  repuestos?:            string[];
   proximoMantenimiento?: string | null;
 };
 
 export type RegistrarSalidaDto = {
-  costoReal?:           number;
-  observacionesSalida?: string;
-  repuestos?:           string[];
+  costoReal?:            number;
+  observacionesSalida?:  string;
+  diagnostico?:          string;
+  trabajoRealizado?:     string;
+  observaciones?:        string;
+  repuestos?: Array<{
+    cantidad:      number;
+    consumibleId?: string;
+    bodegaId?:     string;
+    descripcion?:  string;
+    proveedorId?:  string;
+    costoCompra?:  number;
+    fechaCompra?:  string;
+  }>;
 };
 
 // Fila del historial de rentas — usado tanto en el detalle de equipo
@@ -370,7 +398,7 @@ export type FiltrosHerramientas = {
   activo?: boolean;
 };
 
-export type CrearUnidadDto = { bodegaId: string; notas?: string };
+export type CrearUnidadDto = { bodegaId: string; notas?: string; datosCompra?: DatosCompraDto };
 
 export type FiltrosUnidades = { estado?: EstadoHerramienta };
 
@@ -406,6 +434,7 @@ export type CrearConsumibleDto = {
   stockMinimo: number;
   unidad: string;
   notas?: string;
+  datosCompra?: DatosCompraDto;
 };
 
 // stockActual no es editable vía PUT — el backend lo rechaza, se ajusta solo
@@ -429,6 +458,7 @@ export type AjusteStockDto = {
   // El backend valida que sea entero != 0; positivo = entrada, negativo = salida.
   delta: number;
   motivo: string;
+  datosCompra?: DatosCompraDto;
 };
 
 export type TransferirStockDto = {
@@ -611,6 +641,10 @@ export type Bodega = {
   // omite el campo en su `select`). Sí viene en GET /bodegas/:id como
   // string|null. Marcarlo opcional refleja esa dualidad de shapes.
   parentId?: string | null;
+  // tipo y proyectoId vienen del backend (E8) — opcionales para compatibilidad
+  // con datos que lleguen sin el campo (bodegas antiguas sin migración).
+  tipo?: 'PRINCIPAL' | 'ZONA' | 'PROYECTO';
+  proyectoId?: string | null;
   createdAt: string;
   updatedAt: string;
   // zonas viene poblado por GET /bodegas/:id (solo si es principal).
@@ -733,6 +767,9 @@ export type CotizacionItem = {
   servicioId: string | null;
   consumibleId: string | null;
   piezaTipoId: string | null;
+  // Período de renta por línea — se precarga desde la BD si ya se capturó.
+  periodoRentaInicio?: string | null;
+  periodoRentaFin?: string | null;
 };
 
 // Forma reducida devuelta por GET /cotizaciones (lista).
@@ -1086,6 +1123,10 @@ export type ActualizarFacturaDto = {
   fechaVencimiento?: string;
 };
 
+export type PeriodosRentaDto = {
+  items: { cotizacionItemId: string; inicio: string; fin: string }[];
+};
+
 export type CambiarEstadoFacturaDto = {
   estado: EstadoFacturaEditable;
   motivo?: string;
@@ -1405,6 +1446,10 @@ export type CrearRecepcionDto = {
     observacionesRetorno?: string;
     horometroRetorno?: number;
     combustibleRetorno?: string;
+    // Solo para ítems CONSUMIBLE — el backend ignora estos campos en equipos/piezas.
+    // Si se omite cantidadDevuelta, el backend devuelve la totalidad del pendiente y cierra.
+    cantidadDevuelta?: number;
+    cerrar?: boolean;
   }>;
 };
 
@@ -1705,4 +1750,96 @@ export type FiltrosAuditLog = {
   accion?: string;
   desde?: string;
   hasta?: string;
+};
+
+// ─── Proveedores (E3) ────────────────────────────────────────────────
+
+export type Proveedor = {
+  id: string;
+  nombre: string;
+  nrc?: string | null;
+  nit?: string | null;
+  contacto?: string | null;
+  telefono?: string | null;
+  email?: string | null;
+  notas?: string | null;
+  activo: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CrearProveedorDto = {
+  nombre: string;
+  nrc?: string;
+  nit?: string;
+  contacto?: string;
+  telefono?: string;
+  email?: string;
+  notas?: string;
+};
+
+export type DatosCompraDto = {
+  valorUnitarioCompra: number;
+  numeroFacturaCompra?: string;
+  proveedorId?: string;
+  fechaCompra?: string;
+  numeroActaInterna?: string;
+  notas?: string;
+};
+
+export type FiltrosProveedores = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  activo?: boolean;
+};
+
+// ─── Ingresos de Inventario (E3) ─────────────────────────────────────
+// El backend incluye equipo, herramientaUnidad y consumible como destino.
+// registradoPor incluye apellido además del nombre.
+
+export type IngresoInventarioItem = {
+  id: string;
+  valorUnitarioCompra: string; // Decimal string
+  cantidad: number;
+  equipoId?: string | null;
+  herramientaUnidadId?: string | null;
+  consumibleId?: string | null;
+  equipo?: { id: string; codigo: string; nombre: string } | null;
+  herramientaUnidad?: { id: string; codigoInterno: string } | null;
+  consumible?: { id: string; codigo: string; nombre: string } | null;
+};
+
+export type IngresoInventario = {
+  id: string;
+  numeroFacturaCompra?: string | null;
+  proveedorId?: string | null;
+  proveedor?: Pick<Proveedor, 'id' | 'nombre'> | null;
+  fechaCompra?: string | null;
+  numeroActaInterna?: string | null;
+  notas?: string | null;
+  registradoPorId?: string | null;
+  registradoPor?: { id: string; nombre: string; apellido: string } | null;
+  createdAt: string;
+  items?: IngresoInventarioItem[];
+};
+
+// ─── Reporte de Inventario (E4) ──────────────────────────────────────────────
+// EstadoResumen agrupa los conteos por estado para equipos y herramientas.
+// pctRentado viene calculado por el backend para evitar división por cero
+// cuando total === 0 (devuelve 0 en ese caso).
+export type EstadoResumen = {
+  total: number;
+  disponibles: number;
+  rentadas: number;
+  mantenimiento: number;
+  usoInterno: number;
+  pctRentado: number;
+};
+
+export type FiltrosReporteInventario = {
+  clienteId?: string;
+  bodegaId?: string;
+  categoria?: string;
+  proyectoId?: string;
 };

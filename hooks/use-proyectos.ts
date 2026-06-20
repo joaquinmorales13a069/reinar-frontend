@@ -11,6 +11,7 @@ import type {
   ActualizarProyectoDto,
   EstadoProyecto,
   FiltrosProyectos,
+  Bodega,
 } from '@/types/api';
 
 // Helper duplicado intencionalmente para mantener cada archivo de hooks
@@ -48,7 +49,59 @@ export function useProyecto(id: string) {
   });
 }
 
+// Devuelve la bodega-proyecto asociada al proyecto, o null si aún no existe.
+// GET /proyectos/:id/bodega — disponible para todos los roles.
+export function useBodegaProyecto(proyectoId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['proyecto-bodega', proyectoId],
+    queryFn: () =>
+      api
+        .get<ApiResponse<Bodega | null>>(`/proyectos/${proyectoId}/bodega`)
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    enabled: !!proyectoId,
+  });
+}
+
 // ─── Mutations ───────────────────────────────────────────────────────
+
+// Crea la bodega-proyecto para el proyecto indicado.
+// POST /proyectos/:id/bodega — gated ADMIN/GERENTE/LOGISTICA en el backend.
+// Devuelve 409 si ya existe una; el frontend la maneja mostrando un toast claro.
+export function useCrearBodegaProyecto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data?: { nombre?: string; descripcion?: string };
+    }) =>
+      api
+        .post<ApiResponse<Bodega>>(`/proyectos/${id}/bodega`, data ?? {})
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    onSuccess: (_bodega, { id }) => {
+      qc.invalidateQueries({ queryKey: ['proyecto-bodega', id] });
+      toast.success('Bodega de proyecto creada.');
+    },
+    onError: (err, { id }) => {
+      const anyErr = err as { response?: { status?: number } };
+      if (anyErr?.response?.status === 409) {
+        // Forzamos revalidación para mostrar la bodega ya existente.
+        qc.invalidateQueries({ queryKey: ['proyecto-bodega', id] });
+        toast.error('El proyecto ya tiene una bodega.');
+      } else {
+        toast.error(extractErrorMessage(err, 'No se pudo crear la bodega de proyecto.'));
+      }
+    },
+  });
+}
 
 export function useCrearProyecto(clienteId: string) {
   const qc = useQueryClient();
@@ -108,9 +161,21 @@ export function useCambiarEstadoProyecto() {
       toast.success(`Estado: ${proyecto.estado}.`);
     },
     onError: (err) => {
-      // Backend devuelve 422 ESTADO_INVALIDO si la transición es inválida.
-      // El selector debería prevenirlo, pero si llega igual mostramos el mensaje.
-      toast.error(extractErrorMessage(err, 'No se pudo cambiar el estado.'));
+      const anyErr = err as { response?: { status?: number; data?: { error?: { message?: string } } } };
+      if (anyErr?.response?.status === 409) {
+        // El backend rechaza cerrar el proyecto cuando su bodega-proyecto aún
+        // tiene inventario. Mostramos el mensaje del backend si viene, o uno
+        // genérico guiando al usuario a vaciar la bodega primero.
+        const backendMsg = anyErr?.response?.data?.error?.message;
+        toast.error(
+          backendMsg ??
+            'No se puede cerrar el proyecto: aún hay inventario en su bodega. Vaciala primero.',
+        );
+      } else {
+        // Backend devuelve 422 ESTADO_INVALIDO si la transición es inválida.
+        // El selector debería prevenirlo, pero si llega igual mostramos el mensaje.
+        toast.error(extractErrorMessage(err, 'No se pudo cambiar el estado.'));
+      }
     },
   });
 }

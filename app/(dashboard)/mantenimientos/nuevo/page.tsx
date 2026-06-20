@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,20 +19,31 @@ import { useAuthStore } from '@/stores/auth.store';
 import type { Control, UseFormRegister, FieldErrors } from 'react-hook-form';
 import type { MantenimientoFormValues } from '@/components/mantenimientos/MantenimientoFormFields';
 
-// Espejo del tipo MantenimientoFormValues pero como z.object para que
-// zodResolver reciba el schema nativo sin annotación de tipo — patrón
-// estándar del proyecto (ver login, actas, etc.).
-const schema = z.object({
+// Schema base para derivar el tipo de FormValues — sin superRefine para que
+// TypeScript pueda inferir el tipo limpiamente.
+const baseSchema = z.object({
   tipo:                 z.enum(['PREVENTIVO', 'CORRECTIVO', 'EMERGENCIA']).optional(),
+  categoria:            z.enum(['INTERNO', 'EXTERNO', 'EN_CLIENTE']),
   tecnico:              z.string().min(1, 'El técnico es requerido'),
   motivo:               z.string().min(1, 'El motivo es requerido'),
   horometro:            z.number().nonnegative().optional(),
-  costoEstimado:        z.number().nonnegative().optional(),
-  repuestos:            z.array(z.object({ value: z.string().min(1) })),
+  costoEstimado:        z.number().nonnegative(),
   proximoMantenimiento: z.string().optional(),
 });
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = z.infer<typeof baseSchema>;
+
+// El horometro es requerido solo cuando el mantenimiento es de un equipo;
+// no podemos capturar esa condición en el schema estático porque depende del
+// estado del selector de entidad (componente), no de los valores del form.
+// Solución: factory que agrega superRefine con el booleano capturado en closure.
+function crearSchema(esEquipo: boolean) {
+  return baseSchema.superRefine((v, ctx) => {
+    if (esEquipo && (v.horometro === undefined || Number.isNaN(v.horometro))) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['horometro'], message: 'El horómetro es requerido para equipos' });
+    }
+  });
+}
 
 export default function NuevoMantenimientoPage() {
   // useSearchParams requiere Suspense para que Next.js pueda prerenderizar
@@ -55,8 +66,6 @@ function NuevoMantenimientoPageInner() {
 
   const { user } = useAuthStore();
   // La entidad inicial se deriva de los URL params en el primer render.
-  // Los params son estables al cargar la página, por lo que lazy initial
-  // state es suficiente; no necesitamos un efecto de sincronización.
   const [entidad, setEntidad] = useState<EntidadSeleccionada>(() => {
     if (equipoIdParam) {
       return { kind: 'equipo', equipoId: equipoIdParam, label: `Equipo (${equipoIdParam})` };
@@ -73,6 +82,12 @@ function NuevoMantenimientoPageInner() {
   const [entidadError, setEntidadError] = useState<string | undefined>();
   const crear = useCrearMantenimiento();
 
+  const esEquipo = entidad?.kind === 'equipo';
+
+  // Reconstruimos el schema cada vez que cambia el tipo de entidad seleccionada
+  // para que la validación condicional del horómetro sea correcta.
+  const schema = useMemo(() => crearSchema(esEquipo), [esEquipo]);
+
   // VISUALIZADOR no puede mutar datos; el backend lo rechazaria igual,
   // pero redirigimos aqui para no mostrar un formulario inutilizable.
   useEffect(() => {
@@ -81,16 +96,22 @@ function NuevoMantenimientoPageInner() {
     }
   }, [user, router]);
 
-  const { control, register, handleSubmit, formState: { errors }, setError } =
+  const { control, register, handleSubmit, formState: { errors }, setError, reset } =
     useForm<FormValues>({
       resolver: zodResolver(schema),
       defaultValues: {
         tipo:      'PREVENTIVO',
         tecnico:   '',
         motivo:    '',
-        repuestos: [],
       },
     });
+
+  // Cuando cambia el tipo de entidad, reseteamos el resolver con el nuevo schema
+  // (react-hook-form mantiene el resolver en cierre; reset con la misma data y
+  // el nuevo resolver hace que las validaciones condicionales funcionen).
+  useEffect(() => {
+    reset(undefined, { keepValues: true });
+  }, [esEquipo, reset]);
 
   async function onSubmit(values: FormValues) {
     if (!entidad) {
@@ -100,13 +121,12 @@ function NuevoMantenimientoPageInner() {
     setEntidadError(undefined);
     try {
       const m = await crear.mutateAsync({
-        // tipo siempre está definido: defaultValue='PREVENTIVO' y mostrarTipo=true
         tipo:                values.tipo ?? 'PREVENTIVO',
+        categoria:           values.categoria,
         tecnico:             values.tecnico,
         motivo:              values.motivo,
         horometro:           values.horometro,
         costoEstimado:       values.costoEstimado,
-        repuestos:           values.repuestos.map((r) => r.value),
         // El input datetime-local produce "YYYY-MM-DDTHH:mm" sin timezone.
         // Convertimos a ISO completo que es lo que valida z.string().datetime() en el backend.
         proximoMantenimiento: values.proximoMantenimiento
@@ -157,6 +177,7 @@ function NuevoMantenimientoPageInner() {
           register={register as unknown as UseFormRegister<MantenimientoFormValues>}
           errors={errors as unknown as FieldErrors<MantenimientoFormValues>}
           mostrarTipo
+          esEquipo={esEquipo}
         />
 
         <div className="flex justify-end gap-2">

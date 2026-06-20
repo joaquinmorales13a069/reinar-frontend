@@ -94,12 +94,12 @@ export const ESTADO_BADGE_KIND: Record<EstadoEquipo, 'ok' | 'warn' | 'danger' | 
 // Roles que pueden ejecutar cada operación. La regla viene del backend
 // (equipos.routes.ts) y se replica acá para ocultar botones en la UI.
 export const PERMISOS_EQUIPOS = {
-  crear: ['ADMIN', 'GERENTE'] as const,
-  editar: ['ADMIN', 'GERENTE'] as const,
+  crear: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
+  editar: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
   cambiarEstado: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
   subirImagen: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
-  eliminar: ['ADMIN', 'GERENTE'] as const,
-  verInactivos: ['ADMIN', 'GERENTE'] as const,
+  eliminar: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
+  verInactivos: ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
 };
 
 export function puedeEjecutar(
