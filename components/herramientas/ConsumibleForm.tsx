@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { FormSection } from '@/components/ui/FormSection';
 import { Icon } from '@/components/ui/Icon';
 import { BodegaSelect } from '@/components/ui/BodegaSelect';
+import { DatosCompraFields, datosCompraSchema, construirDatosCompra } from '@/components/inventario/DatosCompraFields';
 import { useCrearConsumible, useEditarConsumible } from '@/hooks/use-consumibles';
 import { CATEGORIAS_CONSUMIBLE_LABEL } from '@/lib/herramientas';
 import type { Consumible, CategoriaConsumible } from '@/types/api';
@@ -33,6 +34,7 @@ const crearSchema = baseSchema.extend({
   // bodegas el usuario usa ajustar-stock después.
   stockInicialBodegaId: z.string().optional(),
   stockInicialCantidad: z.coerce.number().int().min(0, 'No puede ser negativo.').optional(),
+  datosCompra: datosCompraSchema,
 }).refine(
   (d) => !d.stockInicialCantidad || d.stockInicialCantidad === 0 || !!d.stockInicialBodegaId,
   { message: 'Si cargás stock inicial, elegí una bodega.', path: ['stockInicialBodegaId'] },
@@ -120,6 +122,7 @@ export function ConsumibleForm(props: Props) {
           stockMinimo: v.stockMinimo,
           unidad: v.unidad,
           notas: v.notas || undefined,
+          datosCompra: construirDatosCompra(v.datosCompra),
         });
         router.push(`/herramientas/consumibles/${consumible.id}`);
       } else {
@@ -316,6 +319,10 @@ export function ConsumibleForm(props: Props) {
       <FormSection title="Notas internas">
         <textarea className={inputOk} rows={3} {...register('notas')} />
       </FormSection>
+
+      {isNew && (
+        <DatosCompraFields register={register} errors={errors} />
+      )}
 
       <div className="flex flex-col sm:flex-row gap-2 mt-4">
         <button

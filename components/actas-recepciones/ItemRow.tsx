@@ -26,6 +26,17 @@ export function ItemRow({ item, mode = 'view', rightSlot }: Props) {
   const info = describirItem(item);
   const cantidad = item.cantidadConsumible ?? item.cantidadRecibida ?? null;
 
+  // Para consumibles: mostrar el pendiente cuando haya datos de seguimiento disponibles.
+  // El pendiente es lo que queda por devolver (despachado − ya devuelto).
+  const esConsumible = !!item.consumible;
+  const tieneSeguimiento =
+    esConsumible &&
+    item.cantidadConsumible != null &&
+    item.cantidadRecibida != null;
+  const pendiente = tieneSeguimiento
+    ? (item.cantidadConsumible ?? 0) - (item.cantidadRecibida ?? 0)
+    : null;
+
   return (
     <div className="flex items-start justify-between gap-3 py-2">
       <div className="min-w-0 flex-1">
@@ -34,6 +45,9 @@ export function ItemRow({ item, mode = 'view', rightSlot }: Props) {
           <span className="uppercase tracking-wide font-medium">{info.tipo}</span>
           {info.codigo && <span className="font-mono">· {info.codigo}</span>}
           {cantidad !== null && <span>· cant. {cantidad}</span>}
+          {pendiente !== null && (
+            <span className="text-tx-2">· pendiente: <span className="font-semibold">{pendiente}</span></span>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-2 shrink-0">

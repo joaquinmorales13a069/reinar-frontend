@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Icon } from '@/components/ui/Icon';
 import { BodegaSelect } from '@/components/ui/BodegaSelect';
+import { DatosCompraFields, datosCompraSchema, construirDatosCompra } from '@/components/inventario/DatosCompraFields';
 import { useAjustarStock } from '@/hooks/use-consumibles';
 
 const schema = z.object({
@@ -15,6 +16,7 @@ const schema = z.object({
   // para que el usuario no tenga que pensar en números negativos.
   cantidad: z.coerce.number().int().positive('Debe ser un entero mayor a 0.'),
   motivo: z.string().min(1, 'Indicá el motivo.').max(255, 'Máximo 255 caracteres.'),
+  datosCompra: datosCompraSchema,
 });
 
 type FormData = z.infer<typeof schema>;
@@ -74,7 +76,13 @@ export function AjusteStockPanel({ consumibleId, stockActual, unidad, onClose }:
     try {
       await ajustar.mutateAsync({
         id: consumibleId,
-        data: { bodegaId: values.bodegaId, delta, motivo: values.motivo.trim() },
+        data: {
+          bodegaId: values.bodegaId,
+          delta,
+          motivo: values.motivo.trim(),
+          // datosCompra solo aplica en entradas (compras al proveedor)
+          datosCompra: delta > 0 ? construirDatosCompra(values.datosCompra) : undefined,
+        },
       });
       onClose();
     } catch {
@@ -159,6 +167,10 @@ export function AjusteStockPanel({ consumibleId, stockActual, unidad, onClose }:
         />
         {errors.motivo && <p className={errorCls}>{errors.motivo.message}</p>}
       </div>
+
+      {signo === 'entrada' && (
+        <DatosCompraFields register={register} errors={errors} />
+      )}
 
       <div className="flex justify-end gap-2">
         <button type="button" className={btnSec} onClick={onClose}>

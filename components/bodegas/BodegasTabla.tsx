@@ -115,7 +115,15 @@ export function BodegasTabla() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge status="PRINCIPAL" kind="info" />
+                        {b.tipo === 'PROYECTO' ? (
+                          <Badge status="PROYECTO" kind="accent" />
+                        ) : b.tipo === 'ZONA' ? (
+                          <Badge status="ZONA" kind="neutral" />
+                        ) : (
+                          // Fallback: si tipo no viene (datos sin migrar), inferir
+                          // por parentId igual que antes.
+                          <Badge status="PRINCIPAL" kind="info" />
+                        )}
                       </td>
                       <td className="px-4 py-3 text-tx-2">
                         {b.descripcion ? (

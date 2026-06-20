@@ -31,6 +31,10 @@ type RowState = {
   observacionesRetorno: string;
   horometroRetorno: string;
   combustibleRetorno: string;
+  // Solo para consumibles: cantidad que regresa al inventario (string para el input).
+  cantidadDevuelta: string;
+  // Si true, el sobrante se da por consumido y el ítem se cierra.
+  cerrar: boolean;
 };
 
 export default function NuevaRecepcionPageWrapper() {
@@ -67,6 +71,8 @@ function NuevaRecepcionPage() {
 
   // Errores de items se manejan manualmente fuera de Zod (ver schema).
   const [itemsError, setItemsError] = useState<string | null>(null);
+  // Error de backend 422 (sobre-devolución) para mostrar inline tras el submit.
+  const [backendError, setBackendError] = useState<string | null>(null);
 
   // Cargar filas al recibir grupos
   useEffect(() => {
@@ -83,6 +89,8 @@ function NuevaRecepcionPage() {
         observacionesRetorno: '',
         horometroRetorno: '',
         combustibleRetorno: '',
+        cantidadDevuelta: '',
+        cerrar: false,
       })),
     );
     // El usuario edita cada row (condición retorno, observaciones, horómetro, combustible),
@@ -112,26 +120,52 @@ function NuevaRecepcionPage() {
         setItemsError('Cada ítem marcado debe tener condición de retorno.');
         return;
       }
+
+      // Validar que ningún consumible exceda su pendiente antes de enviar al backend.
+      for (const r of itemsIncluidos) {
+        if (!r.item.consumible) continue;
+        if (r.cantidadDevuelta === '') continue;
+        const pendiente = (r.item.cantidadConsumible ?? 0) - (r.item.cantidadRecibida ?? 0);
+        const val = Number(r.cantidadDevuelta);
+        if (!Number.isInteger(val) || val < 0 || val > pendiente) {
+          setItemsError(`Cantidad a devolver de "${r.item.consumible.nombre}" debe ser un entero entre 0 y ${pendiente}.`);
+          return;
+        }
+      }
+
       setItemsError(null);
+      setBackendError(null);
 
       const dto: CrearRecepcionDto = {
         numeroActaFisico: data.numeroActaFisico || undefined,
         horaRecepcion: data.horaRecepcion || undefined,
         observaciones: data.observaciones || undefined,
-        items: itemsIncluidos.map((r) => ({
-          actaEntregaItemId: r.actaEntregaItemId,
-          condicionRetorno: r.condicionRetorno,
-          observacionesRetorno: r.observacionesRetorno || undefined,
-          horometroRetorno: r.horometroRetorno ? Number(r.horometroRetorno) : undefined,
-          combustibleRetorno: r.combustibleRetorno || undefined,
-        })),
+        items: itemsIncluidos.map((r) => {
+          const esConsumible = !!r.item.consumible;
+          return {
+            actaEntregaItemId: r.actaEntregaItemId,
+            condicionRetorno: r.condicionRetorno,
+            observacionesRetorno: r.observacionesRetorno || undefined,
+            horometroRetorno: r.horometroRetorno ? Number(r.horometroRetorno) : undefined,
+            combustibleRetorno: r.combustibleRetorno || undefined,
+            // Los campos de devolución parcial solo aplican a consumibles.
+            ...(esConsumible && {
+              cantidadDevuelta: r.cantidadDevuelta !== '' ? Number(r.cantidadDevuelta) : undefined,
+              cerrar: r.cerrar || undefined,
+            }),
+          };
+        }),
       };
 
       try {
         const recepcion = await crear.mutateAsync({ facturaId: facturaSeleccionada.id, data: dto });
         router.push(`/recepciones/${recepcion.id}`);
-      } catch {
-        // hook ya toasteó
+      } catch (err: unknown) {
+        // El hook ya toasteó el error genérico; adicionalmente mostrar el mensaje inline
+        // si el backend retornó un 422 con detalle (ej. sobre-devolución de consumible).
+        const apiErr = err as { response?: { data?: { error?: { message?: string } } } };
+        const msg = apiErr?.response?.data?.error?.message;
+        if (msg) setBackendError(msg);
       }
     },
     // Surface cualquier error de validación Zod del schema base (factura, etc.)
@@ -146,6 +180,14 @@ function NuevaRecepcionPage() {
 
   const itemsIncluidos = rows.filter((r) => r.incluido).length;
   const canAdvance = !!facturaSeleccionada && rows.length > 0 && itemsIncluidos > 0;
+
+  // Bloquear submit si algún consumible tiene cantidad inválida (evita llamada al backend).
+  const hayExceso = rows.some((r) => {
+    if (!r.incluido || !r.item.consumible || r.cantidadDevuelta === '') return false;
+    const pendiente = (r.item.cantidadConsumible ?? 0) - (r.item.cantidadRecibida ?? 0);
+    const val = Number(r.cantidadDevuelta);
+    return !Number.isInteger(val) || val < 0 || val > pendiente;
+  });
 
   // Agrupa rows por actaEntregaId para renderizar en bloques.
   const gruposVisuales = Object.entries(
@@ -290,6 +332,18 @@ function NuevaRecepcionPage() {
               {rows.filter(r => r.incluido).map((r) => {
                 const empeoro = r.item.condicionSalida != null && COND_RANK[r.condicionRetorno] > COND_RANK[r.item.condicionSalida];
                 const esEquipo = !!r.item.equipo;
+                const esConsumible = !!r.item.consumible;
+                const pendiente = esConsumible
+                  ? (r.item.cantidadConsumible ?? 0) - (r.item.cantidadRecibida ?? 0)
+                  : 0;
+                const cantDevVal = r.cantidadDevuelta !== '' ? Number(r.cantidadDevuelta) : pendiente;
+                const vuelveInventario = esConsumible ? cantDevVal : 0;
+                const quedaConsumido = esConsumible ? pendiente - cantDevVal : 0;
+                const cantExcede = esConsumible && r.cantidadDevuelta !== '' && (
+                  !Number.isInteger(Number(r.cantidadDevuelta)) ||
+                  Number(r.cantidadDevuelta) < 0 ||
+                  Number(r.cantidadDevuelta) > pendiente
+                );
                 const info = describirItem(r.item);
                 return (
                   <div key={r.actaEntregaItemId} className={`rounded-md border p-3 ${empeoro ? 'border-warn bg-warn-soft/30' : 'border-bd bg-surface'}`}>
@@ -346,6 +400,51 @@ function NuevaRecepcionPage() {
                         />
                       </div>
                     </div>
+                    {/* Controles de devolución parcial — solo para consumibles */}
+                    {esConsumible && (
+                      <div className="mt-3 pt-3 border-t border-bd space-y-2">
+                        <div className="text-xs text-tx-2 font-medium">
+                          Saldo pendiente: <span className="font-semibold text-tx">{pendiente}</span> {r.item.consumible?.nombre}
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-2">
+                          <div>
+                            <label className={labelCls}>Cantidad a devolver (vacío = todo el pendiente)</label>
+                            <input
+                              type="number"
+                              min="0"
+                              max={pendiente}
+                              step="1"
+                              className={`${inputBase} font-mono ${cantExcede ? 'border-danger' : ''}`}
+                              value={r.cantidadDevuelta}
+                              placeholder={String(pendiente)}
+                              onChange={(e) => setRows(prev => prev.map(x => x.actaEntregaItemId === r.actaEntregaItemId ? { ...x, cantidadDevuelta: e.target.value } : x))}
+                            />
+                            {cantExcede && (
+                              <p className="text-xs text-danger mt-1">
+                                Debe ser un entero entre 0 y {pendiente}.
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-end pb-2">
+                            <label className="flex items-center gap-2 cursor-pointer text-sm text-tx">
+                              <input
+                                type="checkbox"
+                                checked={r.cerrar}
+                                onChange={(e) => setRows(prev => prev.map(x => x.actaEntregaItemId === r.actaEntregaItemId ? { ...x, cerrar: e.target.checked } : x))}
+                              />
+                              Dar por consumido el resto y cerrar el ítem
+                            </label>
+                          </div>
+                        </div>
+                        {r.cantidadDevuelta !== '' && !cantExcede && (
+                          <div className="text-xs text-tx-2">
+                            Vuelve a inventario: <span className="font-semibold text-ok">{vuelveInventario}</span>
+                            {' · '}
+                            Queda consumido: <span className="font-semibold text-tx">{quedaConsumido}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {empeoro && (
                       <div className="mt-2 text-xs text-warn flex items-center gap-1.5">
                         <Icon name="alertTriangle" size={12} /> Condición peor a la salida — documentá el daño en observaciones.
@@ -393,7 +492,7 @@ function NuevaRecepcionPage() {
         {step === 1 && (
           <button
             type="submit"
-            disabled={crear.isPending || itemsIncluidos === 0}
+            disabled={crear.isPending || itemsIncluidos === 0 || hayExceso}
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-accent text-navy text-xs font-semibold hover:bg-accent-dim transition-colors disabled:opacity-60"
           >
             <Icon name="check" size={14} /> {crear.isPending ? 'Registrando…' : 'Registrar recepción'}
@@ -403,6 +502,9 @@ function NuevaRecepcionPage() {
 
       {itemsError && (
         <div className="text-xs text-danger mt-2 text-right">{itemsError}</div>
+      )}
+      {backendError && (
+        <div className="text-xs text-danger mt-2 text-right">{backendError}</div>
       )}
     </form>
   );

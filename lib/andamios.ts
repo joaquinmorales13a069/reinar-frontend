@@ -6,13 +6,13 @@
 // VISUALIZADOR solo lee.
 
 export const PERMISOS_ANDAMIOS = {
-  crearPieza:           ['ADMIN', 'GERENTE'] as const,
-  editarPieza:          ['ADMIN', 'GERENTE'] as const,
-  cambiarEstadoPieza:   ['ADMIN', 'GERENTE'] as const,
+  crearPieza:           ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
+  editarPieza:          ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
+  cambiarEstadoPieza:   ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
   ajustarStockPieza:    ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
-  crearCuerpo:          ['ADMIN', 'GERENTE'] as const,
-  editarCuerpo:         ['ADMIN', 'GERENTE'] as const,
-  cambiarEstadoCuerpo:  ['ADMIN', 'GERENTE'] as const,
+  crearCuerpo:          ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
+  editarCuerpo:         ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
+  cambiarEstadoCuerpo:  ['ADMIN', 'GERENTE', 'LOGISTICA'] as const,
   expandirCuerpo:       ['ADMIN', 'GERENTE', 'OPERADOR', 'LOGISTICA'] as const,
 } as const;
 
