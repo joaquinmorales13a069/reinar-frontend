@@ -8,13 +8,14 @@ import { Pagination } from '@/components/ui/Pagination';
 import { Spinner } from '@/components/ui/Spinner';
 import { Icon } from '@/components/ui/Icon';
 import { useEquipos } from '@/hooks/use-equipos';
+import { useCategorias } from '@/hooks/use-categorias';
 import { useEquiposRealtime } from '@/hooks/use-equipos-realtime';
 import { useAuthStore } from '@/stores/auth.store';
 import { useUiStore } from '@/stores/ui.store';
-import { CATEGORIA_LABELS, puedeEjecutar } from '@/lib/equipos';
+import { puedeEjecutar } from '@/lib/equipos';
 import { EquipoTabla } from '@/components/equipos/EquipoTabla';
 import { EquipoGrilla } from '@/components/equipos/EquipoGrilla';
-import type { CategoriaEquipo, EstadoEquipo } from '@/types/api';
+import type { EstadoEquipo } from '@/types/api';
 
 const btnSec = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-bd text-tx-2 bg-surface text-xs font-medium hover:bg-bg-sunken transition-colors';
 const btnPri = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-accent text-navy text-xs font-semibold hover:bg-accent-dim transition-colors';
@@ -49,16 +50,19 @@ export function EquiposList() {
   const [busqueda, setBusqueda] = useState('');
   const search = useDebounced(busqueda.trim(), 300);
 
-  const [filterCat, setFilterCat] = useState<CategoriaEquipo | null>(null);
+  const [filterCatId, setFilterCatId] = useState<string | null>(null);
   const [filterEstado, setFilterEstado] = useState<EstadoEquipo | null>(null);
   const [incluirInactivos, setIncluirInactivos] = useState(false);
   const [page, setPage] = useState(1);
+
+  // Categorías de la API para los chips de filtro.
+  const { data: categorias } = useCategorias('EQUIPO');
 
   const { data, isLoading } = useEquipos({
     page,
     limit: PAGE_SIZE,
     search: search || undefined,
-    categoria: filterCat ?? undefined,
+    categoriaId: filterCatId ?? undefined,
     estado: filterEstado ?? undefined,
     incluirInactivos: incluirInactivos || undefined,
   });
@@ -66,8 +70,8 @@ export function EquiposList() {
   const puedeVerInactivos = puedeEjecutar('verInactivos', rol);
   const puedeCrear = puedeEjecutar('crear', rol);
 
-  function toggleCat(c: CategoriaEquipo) {
-    setFilterCat((prev) => (prev === c ? null : c));
+  function toggleCat(id: string) {
+    setFilterCatId((prev) => (prev === id ? null : id));
     setPage(1);
   }
   function toggleEstado(e: EstadoEquipo) {
@@ -76,7 +80,7 @@ export function EquiposList() {
   }
   function clearAll() {
     setBusqueda('');
-    setFilterCat(null);
+    setFilterCatId(null);
     setFilterEstado(null);
     setIncluirInactivos(false);
     setPage(1);
@@ -86,7 +90,7 @@ export function EquiposList() {
     <div>
       <PageHeader
         title="Equipos"
-        subtitle={`${data?.meta.total ?? '—'} unidades · ${Object.keys(CATEGORIA_LABELS).length} categorías`}
+        subtitle={`${data?.meta.total ?? '—'} unidades · ${categorias?.length ?? '—'} categorías`}
         actions={
           <>
             {/* En móvil el toggle ocupa el ancho completo con cada botón en 50%,
@@ -130,10 +134,10 @@ export function EquiposList() {
           onSearch={(v) => { setBusqueda(v); setPage(1); }}
           placeholder="Buscar por nombre, código, marca, modelo…"
           chips={[
-            ...Object.entries(CATEGORIA_LABELS).map(([k, label]) => ({
-              label,
-              active: filterCat === k,
-              onToggle: () => toggleCat(k as CategoriaEquipo),
+            ...(categorias ?? []).map((c) => ({
+              label: c.nombre,
+              active: filterCatId === c.id,
+              onToggle: () => toggleCat(c.id),
             })),
             ...ESTADOS_FILTRABLES.map(({ label, value }) => ({
               label,

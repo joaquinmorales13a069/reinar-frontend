@@ -19,7 +19,7 @@ import {
   useTransferirStock,
 } from '@/hooks/use-consumibles';
 import { useAuthStore } from '@/stores/auth.store';
-import { CATEGORIAS_CONSUMIBLE_LABEL, puedeEjecutar } from '@/lib/herramientas';
+import { puedeEjecutar } from '@/lib/herramientas';
 import { formatCurrency } from '@/lib/utils';
 
 const btnSec =
@@ -81,7 +81,7 @@ function ConsumibleDetalleClient({ id }: { id: string }) {
           <span className="inline-flex items-center gap-2 flex-wrap">
             <span className="font-mono text-tx-3">{c.codigo}</span>
             <span className="text-tx-3">·</span>
-            <Badge status={CATEGORIAS_CONSUMIBLE_LABEL[c.categoria]} kind="info" />
+            <Badge status={c.categoria?.nombre ?? '—'} kind="info" />
             <Badge
               status={c.activo ? 'ACTIVO' : 'INACTIVO'}
               kind={c.activo ? 'ok' : 'neutral'}

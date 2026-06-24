@@ -10,13 +10,13 @@ import { Icon } from '@/components/ui/Icon';
 import { BodegaSelect } from '@/components/ui/BodegaSelect';
 import { DatosCompraFields, datosCompraSchema, construirDatosCompra } from '@/components/inventario/DatosCompraFields';
 import { useCrearConsumible, useEditarConsumible } from '@/hooks/use-consumibles';
-import { CATEGORIAS_CONSUMIBLE_LABEL } from '@/lib/herramientas';
-import type { Consumible, CategoriaConsumible } from '@/types/api';
+import { useCategorias } from '@/hooks/use-categorias';
+import type { Consumible } from '@/types/api';
 
 const baseSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio.'),
   descripcion: z.string().optional(),
-  categoria: z.enum(['ABRASIVO', 'PINTURA', 'LUBRICANTE', 'QUIMICO', 'OTRO']),
+  categoriaId: z.string().min(1, 'La categoría es obligatoria.'),
   precioUnitario: z.coerce.number().positive('El precio debe ser positivo.'),
   unidad: z.string().min(1, 'La unidad es obligatoria.').max(50),
   stockMinimo: z.coerce.number().int().min(0, 'No puede ser negativo.'),
@@ -62,6 +62,9 @@ export function ConsumibleForm(props: Props) {
   const crear = useCrearConsumible();
   const editar = useEditarConsumible();
 
+  // Las categorías vienen de la API para que el backend sea la fuente de verdad.
+  const { data: categorias } = useCategorias('CONSUMIBLE');
+
   type FormData = CrearFormData | EditarFormData;
   const {
     register,
@@ -76,7 +79,7 @@ export function ConsumibleForm(props: Props) {
       ? {
           codigo: '',
           nombre: '',
-          categoria: 'ABRASIVO' as CategoriaConsumible,
+          categoriaId: '',
           precioUnitario: undefined as unknown as number,
           unidad: '',
           stockInicialBodegaId: '',
@@ -86,7 +89,7 @@ export function ConsumibleForm(props: Props) {
       : {
           nombre: props.consumible.nombre,
           descripcion: props.consumible.descripcion ?? '',
-          categoria: props.consumible.categoria,
+          categoriaId: props.consumible.categoriaId,
           precioUnitario: Number(props.consumible.precioUnitario),
           unidad: props.consumible.unidad,
           stockMinimo: props.consumible.stockMinimo,
@@ -116,7 +119,7 @@ export function ConsumibleForm(props: Props) {
           codigo: v.codigo,
           nombre: v.nombre,
           descripcion: v.descripcion || undefined,
-          categoria: v.categoria,
+          categoriaId: v.categoriaId,
           precioUnitario: v.precioUnitario,
           stockInicial,
           stockMinimo: v.stockMinimo,
@@ -132,7 +135,7 @@ export function ConsumibleForm(props: Props) {
           data: {
             nombre: v.nombre,
             descripcion: v.descripcion || undefined,
-            categoria: v.categoria,
+            categoriaId: v.categoriaId,
             precioUnitario: v.precioUnitario,
             unidad: v.unidad,
             stockMinimo: v.stockMinimo,
@@ -201,13 +204,22 @@ export function ConsumibleForm(props: Props) {
 
           <div>
             <label className={labelCls}>Categoría *</label>
-            <select className={inputOk} {...register('categoria')}>
-              {Object.entries(CATEGORIAS_CONSUMIBLE_LABEL).map(([k, label]) => (
-                <option key={k} value={k}>
-                  {label}
+            <select
+              className={(errors as Record<string, unknown>).categoriaId ? inputErr : inputOk}
+              {...register('categoriaId')}
+            >
+              <option value="">Seleccioná una categoría…</option>
+              {categorias?.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
                 </option>
               ))}
             </select>
+            {(errors as Record<string, { message?: string }>).categoriaId && (
+              <p className={errorCls}>
+                {(errors as Record<string, { message?: string }>).categoriaId.message}
+              </p>
+            )}
           </div>
 
           <div className="sm:col-span-2">

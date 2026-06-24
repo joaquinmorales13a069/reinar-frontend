@@ -1,24 +1,4 @@
-import type {
-  CategoriaHerramienta,
-  CategoriaConsumible,
-  EstadoHerramienta,
-} from '@/types/api';
-
-export const CATEGORIAS_HERRAMIENTA_LABEL: Record<CategoriaHerramienta, string> = {
-  MANGUERA: 'Manguera',
-  BOQUILLA: 'Boquilla',
-  EPP: 'EPP',
-  HERRAMIENTA_MANUAL: 'Herramienta manual',
-  OTRO: 'Otro',
-};
-
-export const CATEGORIAS_CONSUMIBLE_LABEL: Record<CategoriaConsumible, string> = {
-  ABRASIVO: 'Abrasivo',
-  PINTURA: 'Pintura',
-  LUBRICANTE: 'Lubricante',
-  QUIMICO: 'Químico',
-  OTRO: 'Otro',
-};
+import type { EstadoHerramienta } from '@/types/api';
 
 export const ESTADO_HERRAMIENTA_LABEL: Record<EstadoHerramienta, string> = {
   DISPONIBLE: 'Disponible',

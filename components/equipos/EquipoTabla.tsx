@@ -54,7 +54,7 @@ export function EquipoTabla({ equipos, rol, pageOffset }: Props) {
               )}
             </td>
             <td className={`${tdCls} hidden md:table-cell`}>
-              <EquipoCategoriaBadge categoria={e.categoria} />
+              <EquipoCategoriaBadge nombre={e.categoria?.nombre} />
             </td>
             <td className={`${tdCls} hidden lg:table-cell text-tx-2`}>
               {e.marca ?? <span className="text-tx-3">—</span>}

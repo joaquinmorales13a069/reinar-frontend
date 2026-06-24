@@ -9,10 +9,10 @@ import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Icon } from '@/components/ui/Icon';
 import { useConsumibles } from '@/hooks/use-consumibles';
+import { useCategorias } from '@/hooks/use-categorias';
 import { useAuthStore } from '@/stores/auth.store';
-import { CATEGORIAS_CONSUMIBLE_LABEL, puedeEjecutar } from '@/lib/herramientas';
+import { puedeEjecutar } from '@/lib/herramientas';
 import { formatCurrency } from '@/lib/utils';
-import type { CategoriaConsumible } from '@/types/api';
 
 const PAGE_SIZE = 10;
 
@@ -31,16 +31,19 @@ export function ConsumiblesList() {
 
   const [busqueda, setBusqueda] = useState('');
   const search = useDebounced(busqueda.trim(), 300);
-  const [filterCat, setFilterCat] = useState<CategoriaConsumible | null>(null);
+  const [filterCatId, setFilterCatId] = useState<string | null>(null);
   const [stockBajo, setStockBajo] = useState(false);
   const [incluirInactivos, setIncluirInactivos] = useState(false);
   const [page, setPage] = useState(1);
+
+  // Categorías de la API para los chips de filtro.
+  const { data: categorias } = useCategorias('CONSUMIBLE');
 
   const { data, isLoading } = useConsumibles({
     page,
     limit: PAGE_SIZE,
     search: search || undefined,
-    categoria: filterCat ?? undefined,
+    categoriaId: filterCatId ?? undefined,
     // El backend filtra de forma mutuamente exclusiva: `activo: true` muestra
     // activos, `activo: false` muestra solo inactivos. No hay modo "ambos",
     // así que el checkbox conmuta entre las dos vistas.
@@ -48,13 +51,13 @@ export function ConsumiblesList() {
     stockBajo: stockBajo || undefined,
   });
 
-  function toggleCat(c: CategoriaConsumible) {
-    setFilterCat((prev) => (prev === c ? null : c));
+  function toggleCat(id: string) {
+    setFilterCatId((prev) => (prev === id ? null : id));
     setPage(1);
   }
   function clearAll() {
     setBusqueda('');
-    setFilterCat(null);
+    setFilterCatId(null);
     setStockBajo(false);
     setIncluirInactivos(false);
     setPage(1);
@@ -70,10 +73,10 @@ export function ConsumiblesList() {
         }}
         placeholder="Buscar por código o nombre…"
         chips={[
-          ...Object.entries(CATEGORIAS_CONSUMIBLE_LABEL).map(([k, label]) => ({
-            label,
-            active: filterCat === k,
-            onToggle: () => toggleCat(k as CategoriaConsumible),
+          ...(categorias ?? []).map((c) => ({
+            label: c.nombre,
+            active: filterCatId === c.id,
+            onToggle: () => toggleCat(c.id),
           })),
           {
             label: 'Stock bajo',
@@ -156,7 +159,7 @@ export function ConsumiblesList() {
                     </Link>
                   </td>
                   <td className="px-4 py-3">
-                    <Badge status={CATEGORIAS_CONSUMIBLE_LABEL[c.categoria]} kind="info" />
+                    <Badge status={c.categoria?.nombre ?? '—'} kind="info" />
                   </td>
                   <td className="px-4 py-3 text-xs text-tx-2">{c.unidad}</td>
                   <td className={`px-4 py-3 text-right font-mono ${bajo ? 'text-warn font-semibold' : ''}`}>

@@ -9,6 +9,7 @@ import { Icon } from '@/components/ui/Icon';
 import { DataTable } from '@/components/ui/DataTable';
 import { BodegaSelect } from '@/components/ui/BodegaSelect';
 import { useClientes } from '@/hooks/use-clientes';
+import { useCategorias } from '@/hooks/use-categorias';
 import {
   useReporteInventario,
   useReporteInventarioDetalle,
@@ -16,28 +17,9 @@ import {
   type InventarioBodegaResumen,
   type FormatoExportInventario,
 } from '@/hooks/use-reporte-inventario';
-import type { CategoriaEquipo, FiltrosReporteInventario, EstadoResumen } from '@/types/api';
+import type { FiltrosReporteInventario, EstadoResumen } from '@/types/api';
 
 const cardCls = 'rounded-lg border border-bd bg-surface p-4';
-
-// Labels legibles para cada categoría de equipo.
-const CATEGORIA_LABELS: Record<CategoriaEquipo, string> = {
-  COMPRESOR_GENERADOR: 'Compresor / Generador',
-  SANDBLASTING: 'Sandblasting',
-  ANDAMIO_PLATAFORMA: 'Andamio / Plataforma',
-  COMPACTADOR_RODILLO: 'Compactador / Rodillo',
-  HERRAMIENTA_ESPECIALIZADA: 'Herramienta especializada',
-  OTRO: 'Otro',
-};
-
-const CATEGORIAS: CategoriaEquipo[] = [
-  'COMPRESOR_GENERADOR',
-  'SANDBLASTING',
-  'ANDAMIO_PLATAFORMA',
-  'COMPACTADOR_RODILLO',
-  'HERRAMIENTA_ESPECIALIZADA',
-  'OTRO',
-];
 
 const selectBase =
   'px-3 py-1.5 text-sm rounded-md border border-bd bg-surface text-tx focus:outline-none focus:border-accent transition-colors';
@@ -46,22 +28,26 @@ export default function ReporteInventarioPage() {
   // ── Filtros ──────────────────────────────────────────────────────────────────
   const [clienteId, setClienteId] = useState('');
   const [bodegaId, setBodegaId] = useState('');
-  const [categoria, setCategoria] = useState<CategoriaEquipo | ''>('');
+  const [categoriaId, setCategoriaId] = useState('');
   const [proyectoId, setProyectoId] = useState('');
+
+  // Categorías de equipos de la API — el filtro del reporte es por equipo.
+  const { data: categorias } = useCategorias('EQUIPO');
 
   const filtros: FiltrosReporteInventario = {
     ...(clienteId ? { clienteId } : {}),
     ...(bodegaId ? { bodegaId } : {}),
-    ...(categoria ? { categoria } : {}),
+    // El backend espera categoriaId como parámetro de query.
+    ...(categoriaId ? { categoriaId } : {}),
     ...(proyectoId ? { proyectoId } : {}),
   };
 
-  const hayFiltros = !!(clienteId || bodegaId || categoria || proyectoId);
+  const hayFiltros = !!(clienteId || bodegaId || categoriaId || proyectoId);
 
   function limpiarFiltros() {
     setClienteId('');
     setBodegaId('');
-    setCategoria('');
+    setCategoriaId('');
     setProyectoId('');
   }
 
@@ -192,18 +178,18 @@ export default function ReporteInventarioPage() {
           />
         </div>
 
-        {/* Categoría de equipo */}
+        {/* Categoría de equipo — opciones dinámicas de la API */}
         <div className="flex flex-col gap-1 min-w-52">
           <label className="text-xs text-tx-3 font-medium">Categoría de equipo</label>
           <select
             className={selectBase}
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value as CategoriaEquipo | '')}
+            value={categoriaId}
+            onChange={(e) => setCategoriaId(e.target.value)}
           >
             <option value="">Todas las categorías</option>
-            {CATEGORIAS.map((cat) => (
-              <option key={cat} value={cat}>
-                {CATEGORIA_LABELS[cat]}
+            {(categorias ?? []).map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.nombre}
               </option>
             ))}
           </select>
@@ -277,7 +263,7 @@ export default function ReporteInventarioPage() {
               {data.equiposPorCategoria.map((row) => (
                 <tr key={row.categoria} className="border-t border-bd/40 text-sm">
                   <td className="py-2 pr-3">
-                    {CATEGORIA_LABELS[row.categoria as CategoriaEquipo] ?? row.categoria}
+                    {row.categoria}
                   </td>
                   <td className="py-2 px-2 text-right font-mono">{row.total}</td>
                   <td className="py-2 px-2 text-right font-mono text-ok">{row.disponibles}</td>

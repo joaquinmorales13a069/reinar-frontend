@@ -2,7 +2,8 @@
 
 import { type Control, type UseFormRegister, type FieldErrors } from 'react-hook-form';
 import { FormSection } from '@/components/ui/FormSection';
-import type { TipoMantenimiento, CategoriaMantenimiento } from '@/types/api';
+import { useCategorias } from '@/hooks/use-categorias';
+import type { TipoMantenimiento } from '@/types/api';
 
 const TIPOS: { value: TipoMantenimiento; label: string }[] = [
   { value: 'PREVENTIVO', label: 'Preventivo' },
@@ -10,16 +11,10 @@ const TIPOS: { value: TipoMantenimiento; label: string }[] = [
   { value: 'EMERGENCIA', label: 'Emergencia' },
 ];
 
-const CATEGORIAS: { value: CategoriaMantenimiento; label: string }[] = [
-  { value: 'INTERNO', label: 'Interno' },
-  { value: 'EXTERNO', label: 'Externo' },
-  { value: 'EN_CLIENTE', label: 'En cliente' },
-];
-
 // Forma del formulario compartida. mostrarTipo=true en `nuevo`, false en `editar`.
 export type MantenimientoFormValues = {
   tipo?:                 TipoMantenimiento;
-  categoria:             CategoriaMantenimiento;
+  categoriaId:           string;
   tecnico:               string;
   motivo:                string;
   horometro?:            number;
@@ -39,6 +34,9 @@ type Props = {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function MantenimientoFormFields({ control: _control, register, errors, mostrarTipo, esEquipo }: Props) {
+  // Las categorías vienen de la API para que el backend sea la fuente de verdad.
+  const { data: categorias } = useCategorias('MANTENIMIENTO');
+
   return (
     <FormSection title="Datos del mantenimiento">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -58,13 +56,13 @@ export function MantenimientoFormFields({ control: _control, register, errors, m
         <div>
           <label className="text-xs text-tx-3">Categoría</label>
           <select
-            {...register('categoria')}
+            {...register('categoriaId')}
             className="mt-1 w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx focus:outline-none focus:border-accent"
           >
             <option value="">Seleccionar categoría…</option>
-            {CATEGORIAS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            {categorias?.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </select>
-          {errors.categoria && <p className="text-xs text-danger mt-1">{errors.categoria.message}</p>}
+          {errors.categoriaId && <p className="text-xs text-danger mt-1">{errors.categoriaId.message}</p>}
         </div>
 
         <div>

@@ -21,8 +21,8 @@ const schema = z.object({
   horometro:            z.number().nonnegative().optional(),
   costoEstimado:        z.number().nonnegative().optional(),
   proximoMantenimiento: z.string().optional(),
-  // categoria es display-only en edición; el backend no expone endpoint para cambiarla
-  categoria:            z.enum(['INTERNO', 'EXTERNO', 'EN_CLIENTE']).optional(),
+  // categoriaId es display-only en edición; el backend no expone endpoint para cambiarla
+  categoriaId:          z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -68,7 +68,7 @@ export default function EditarMantenimientoPage() {
       motivo:        m.motivo,
       horometro:     m.horometro     ? Number(m.horometro)     : undefined,
       costoEstimado: m.costoEstimado ? Number(m.costoEstimado) : undefined,
-      categoria:     m.categoria,
+      categoriaId:   m.categoriaId,
       proximoMantenimiento: m.proximoMantenimiento
         // datetime-local espera "YYYY-MM-DDTHH:mm" sin segundos ni TZ.
         ? m.proximoMantenimiento.slice(0, 16)

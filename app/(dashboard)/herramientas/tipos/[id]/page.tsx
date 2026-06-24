@@ -17,7 +17,6 @@ import {
 } from '@/hooks/use-herramientas';
 import { useAuthStore } from '@/stores/auth.store';
 import {
-  CATEGORIAS_HERRAMIENTA_LABEL,
   ESTADO_HERRAMIENTA_LABEL,
   ESTADO_HERRAMIENTA_KIND,
   puedeEjecutar,
@@ -78,7 +77,7 @@ function TipoDetalleClient({ id }: { id: string }) {
           <span className="inline-flex items-center gap-2 flex-wrap">
             <span className="font-mono text-tx-3">{tipo.codigo}</span>
             <span className="text-tx-3">·</span>
-            <Badge status={CATEGORIAS_HERRAMIENTA_LABEL[tipo.categoria]} kind="info" />
+            <Badge status={tipo.categoria?.nombre ?? '—'} kind="info" />
             <Badge
               status={tipo.activo ? 'ACTIVO' : 'INACTIVO'}
               kind={tipo.activo ? 'ok' : 'neutral'}

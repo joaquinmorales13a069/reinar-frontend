@@ -13,21 +13,15 @@ import { EquipoImagenUpload } from '@/components/equipos/EquipoImagenUpload';
 import { BodegaSelect } from '@/components/ui/BodegaSelect';
 import { DatosCompraFields, datosCompraSchema, construirDatosCompra } from '@/components/inventario/DatosCompraFields';
 import { useCrearEquipo, useEditarEquipo, useCambiarEstadoEquipo, useSubirImagenEquipo, useEliminarEquipo } from '@/hooks/use-equipos';
-import { CATEGORIA_LABELS, PREFIJO_POR_CATEGORIA, puedeEjecutar } from '@/lib/equipos';
+import { useCategorias } from '@/hooks/use-categorias';
+import { puedeEjecutar } from '@/lib/equipos';
 import { useAuthStore } from '@/stores/auth.store';
-import type { Equipo, CategoriaEquipo, EstadoEquipoEditable } from '@/types/api';
+import type { Equipo, EstadoEquipoEditable } from '@/types/api';
 
 const baseSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio.'),
   descripcion: z.string().optional(),
-  categoria: z.enum([
-    'COMPRESOR_GENERADOR',
-    'SANDBLASTING',
-    'ANDAMIO_PLATAFORMA',
-    'COMPACTADOR_RODILLO',
-    'HERRAMIENTA_ESPECIALIZADA',
-    'OTRO',
-  ]),
+  categoriaId: z.string().min(1, 'La categoría es obligatoria.'),
   marca: z.string().optional(),
   modelo: z.string().optional(),
   anoFabricacion: z.coerce.number().int().min(1900).max(new Date().getFullYear()).optional().or(z.literal('')),
@@ -76,6 +70,9 @@ export function EquipoForm(props: Props) {
   const subirImagen = useSubirImagenEquipo();
   const eliminar = useEliminarEquipo();
 
+  // Las categorías vienen de la API para que el backend sea la fuente de verdad.
+  const { data: categorias } = useCategorias('EQUIPO');
+
   // Estado local de la imagen pendiente. En modo crear se manda tras
   // el POST exitoso; en editar se manda inmediatamente si el archivo cambia.
   const [imagenFile, setImagenFile] = useState<File | null>(null);
@@ -83,10 +80,6 @@ export function EquipoForm(props: Props) {
     !isNew ? props.equipo.imagenUrl : null,
   );
   const [confirmDesact, setConfirmDesact] = useState(false);
-  // Marca si el usuario editó el prefijo a mano. Solo auto-rellenamos el prefijo
-  // al cambiar la categoría cuando el usuario NO lo customizó — así respetamos
-  // el override manual sin perder la sugerencia automática para los demás.
-  const [prefijoTouched, setPrefijoTouched] = useState(false);
 
   type FormData = CrearFormData | EditarFormData;
   const { register, handleSubmit, setError, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
@@ -94,8 +87,8 @@ export function EquipoForm(props: Props) {
     defaultValues: isNew
       ? {
           nombre: '',
-          categoria: 'COMPRESOR_GENERADOR' as CategoriaEquipo,
-          prefijo: PREFIJO_POR_CATEGORIA.COMPRESOR_GENERADOR,
+          categoriaId: '',
+          prefijo: '',
           bodegaId: '',
           tarifaDia: undefined as unknown as number,
           tarifaSemana: undefined as unknown as number,
@@ -104,7 +97,7 @@ export function EquipoForm(props: Props) {
       : {
           nombre: props.equipo.nombre,
           descripcion: props.equipo.descripcion ?? '',
-          categoria: props.equipo.categoria,
+          categoriaId: props.equipo.categoriaId,
           marca: props.equipo.marca ?? '',
           modelo: props.equipo.modelo ?? '',
           anoFabricacion: props.equipo.anoFabricacion ?? undefined,
@@ -120,13 +113,18 @@ export function EquipoForm(props: Props) {
         },
   });
 
-  // Solo en modo crear: cuando la categoría cambia y el usuario no editó el
-  // prefijo a mano, lo sincronizamos con el sugerido para esa categoría.
-  const categoriaActual = watch('categoria') as CategoriaEquipo | undefined;
+  // Auto-rellena el prefijo con el prefijoCodigo de la categoría seleccionada
+  // solo cuando el usuario no lo haya tocado — para no pisar un override manual.
+  const [prefijoTouched, setPrefijoTouched] = useState(false);
+  // FormData es una unión, por eso se necesita unknown como puente antes de string.
+  const categoriaIdActual = (watch as (field: string) => unknown)('categoriaId') as string | undefined;
   useEffect(() => {
-    if (!isNew || prefijoTouched || !categoriaActual) return;
-    setValue('prefijo' as never, PREFIJO_POR_CATEGORIA[categoriaActual] as never);
-  }, [isNew, prefijoTouched, categoriaActual, setValue]);
+    if (!isNew || prefijoTouched || !categoriaIdActual || !categorias) return;
+    const cat = categorias.find((c) => c.id === categoriaIdActual);
+    if (cat?.prefijoCodigo) {
+      setValue('prefijo' as never, cat.prefijoCodigo as never);
+    }
+  }, [isNew, prefijoTouched, categoriaIdActual, categorias, setValue]);
 
   function handleImagen(file: File, preview: string) {
     setImagenFile(file);
@@ -156,7 +154,7 @@ export function EquipoForm(props: Props) {
           prefijo: v.prefijo,
           nombre: v.nombre,
           descripcion: v.descripcion || undefined,
-          categoria: v.categoria,
+          categoriaId: v.categoriaId,
           bodegaId: v.bodegaId,
           marca: v.marca || undefined,
           modelo: v.modelo || undefined,
@@ -178,7 +176,7 @@ export function EquipoForm(props: Props) {
           data: {
             nombre: v.nombre,
             descripcion: v.descripcion || undefined,
-            // categoria no se manda en edit — está deshabilitada (ver UI).
+            // categoriaId no se manda en edit — está deshabilitada (ver UI).
             marca: v.marca || undefined,
             modelo: v.modelo || undefined,
             anoFabricacion: typeof v.anoFabricacion === 'number' ? v.anoFabricacion : undefined,
@@ -261,7 +259,7 @@ export function EquipoForm(props: Props) {
               <label className={labelCls}>Prefijo *</label>
               <input
                 className={`${(errors as Record<string, unknown>).prefijo ? inputErr : inputOk} font-mono uppercase`}
-                placeholder={categoriaActual ? PREFIJO_POR_CATEGORIA[categoriaActual] : 'EQ'}
+                placeholder="EQ"
                 {...register('prefijo' as never, {
                   // Forzamos uppercase en cliente para que coincida con el regex del backend.
                   // Además marcamos prefijoTouched para que cambios posteriores de
@@ -294,15 +292,19 @@ export function EquipoForm(props: Props) {
           <div>
             <label className={labelCls}>Categoría *</label>
             <select
-              className={`${inputOk} ${!isNew ? 'opacity-60 cursor-not-allowed' : ''}`}
+              className={`${(errors as Record<string, unknown>).categoriaId ? inputErr : inputOk} ${!isNew ? 'opacity-60 cursor-not-allowed' : ''}`}
               disabled={!isNew}
-              {...register('categoria')}
+              {...register('categoriaId')}
               title={!isNew ? 'La categoría no se modifica desde este formulario.' : undefined}
             >
-              {Object.entries(CATEGORIA_LABELS).map(([k, label]) => (
-                <option key={k} value={k}>{label}</option>
+              <option value="">Seleccioná una categoría…</option>
+              {categorias?.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
               ))}
             </select>
+            {(errors as Record<string, { message?: string }>).categoriaId && (
+              <p className={errorCls}>{(errors as Record<string, { message?: string }>).categoriaId.message}</p>
+            )}
             {!isNew && (
               <p className={hintCls}>La categoría no se modifica desde este formulario.</p>
             )}

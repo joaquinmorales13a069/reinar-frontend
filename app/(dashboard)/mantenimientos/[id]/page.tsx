@@ -13,12 +13,6 @@ import { useMantenimiento, useEliminarMantenimiento } from '@/hooks/use-mantenim
 import { useAuthStore } from '@/stores/auth.store';
 import { formatDate, formatDateTime, formatCurrency } from '@/lib/utils';
 
-const CATEGORIA_LABEL: Record<string, string> = {
-  INTERNO:    'Interno',
-  EXTERNO:    'Externo',
-  EN_CLIENTE: 'En cliente',
-};
-
 export default function DetalleMantenimientoPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -108,7 +102,7 @@ export default function DetalleMantenimientoPage() {
         <div className="rounded-lg border border-bd bg-surface p-4 flex flex-col gap-3">
           <h3 className="font-semibold">Datos</h3>
           <Dato label="Técnico"               value={m.tecnico} />
-          <Dato label="Categoría"             value={CATEGORIA_LABEL[m.categoria] ?? m.categoria} />
+          <Dato label="Categoría"             value={m.categoria?.nombre ?? '—'} />
           <Dato label="Motivo"                value={m.motivo} />
           <Dato label="Horómetro"             value={m.horometro ?? '—'} />
           <Dato label="Fecha de entrada"      value={formatDateTime(m.fechaEntrada)} />

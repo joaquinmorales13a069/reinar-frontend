@@ -6,7 +6,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Icon } from '@/components/ui/Icon';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useEditarEquipo } from '@/hooks/use-equipos';
-import { PLANTILLAS_FICHA } from '@/lib/equipos';
 import type { Equipo, FichaTecnica } from '@/types/api';
 
 type Row = { key: string; value: string };
@@ -26,8 +25,6 @@ export function EquipoFichaEditor({ equipo }: { equipo: Equipo }) {
   const [rows, setRows] = useState<Row[]>(() => fichaToRows(equipo.fichaTecnica));
   const [touched, setTouched] = useState(false);
 
-  const plantilla = PLANTILLAS_FICHA[equipo.categoria];
-
   function update(i: number, patch: Partial<Row>) {
     setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
   }
@@ -36,21 +33,6 @@ export function EquipoFichaEditor({ equipo }: { equipo: Equipo }) {
   }
   function add() {
     setRows((rs) => [...rs, { key: '', value: '' }]);
-  }
-  function aplicarPlantilla() {
-    if (!plantilla) return;
-    // Mantenemos los pares existentes y agregamos solo las claves de la plantilla
-    // que aún no estén en la ficha actual, así no pisamos valores que el usuario
-    // ya completó.
-    const existentes = new Set(rows.map((r) => r.key.trim()).filter(Boolean));
-    const nuevos = Object.keys(plantilla)
-      .filter((k) => !existentes.has(k))
-      .map((k) => ({ key: k, value: '' }));
-    // Si la única fila es vacía, la reemplazamos en vez de dejarla.
-    setRows((rs) => {
-      const base = rs.length === 1 && !rs[0].key.trim() && !rs[0].value.trim() ? [] : rs;
-      return [...base, ...nuevos];
-    });
   }
 
   const previewEntries = rows.filter((r) => r.key.trim());
@@ -82,15 +64,6 @@ export function EquipoFichaEditor({ equipo }: { equipo: Equipo }) {
         <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
           <h3 className="font-semibold text-tx">Especificaciones ({rows.length})</h3>
           <div className="flex gap-2">
-            {plantilla && (
-              <button
-                type="button"
-                onClick={aplicarPlantilla}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-bd text-xs text-tx-2 hover:bg-bg-sunken transition-colors"
-              >
-                <Icon name="copy" size={12} /> Aplicar plantilla de la categoría
-              </button>
-            )}
             <button
               type="button"
               onClick={add}
