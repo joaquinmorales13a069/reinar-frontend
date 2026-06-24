@@ -49,7 +49,7 @@ export function EquipoGrilla({ equipos }: { equipos: Equipo[] }) {
               {e.marca ?? '—'} {e.modelo && <span className="font-mono">· {e.modelo}</span>}
             </div>
             <div className="mb-2">
-              <EquipoCategoriaBadge categoria={e.categoria} />
+              <EquipoCategoriaBadge nombre={e.categoria?.nombre} />
             </div>
             <div className="flex items-end justify-between pt-2 border-t border-bd">
               <span className="text-2xs uppercase tracking-wider text-tx-3 font-semibold">Por día</span>

@@ -97,7 +97,7 @@ function EquipoDetalleClient({ id }: { id: string }) {
           <span className="inline-flex items-center gap-2 flex-wrap">
             <span className="font-mono text-tx-3">{equipo.codigo}</span>
             <span className="text-tx-3">·</span>
-            <EquipoCategoriaBadge categoria={equipo.categoria} />
+            <EquipoCategoriaBadge nombre={equipo.categoria?.nombre} />
             <Badge status={ESTADO_LABELS[equipo.estado]} kind={ESTADO_BADGE_KIND[equipo.estado]} />
           </span>
         }
@@ -217,7 +217,7 @@ function EquipoDetalleClient({ id }: { id: string }) {
                     </div>
                     <div>
                       <dt className="text-xs text-tx-3">Categoría</dt>
-                      <dd>{<EquipoCategoriaBadge categoria={equipo.categoria} />}</dd>
+                      <dd>{<EquipoCategoriaBadge nombre={equipo.categoria?.nombre} />}</dd>
                     </div>
                     <div className="sm:col-span-2">
                       <dt className="text-xs text-tx-3">Descripción</dt>
