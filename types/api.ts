@@ -1,3 +1,20 @@
+// ============================================================
+// Categorías administrables (feat/categorias-administrables)
+// ============================================================
+
+// Cuatro contextos posibles; el backend valida que solo lleguen estos valores.
+export type TipoCategoria = 'EQUIPO' | 'HERRAMIENTA' | 'CONSUMIBLE' | 'MANTENIMIENTO';
+
+export interface Categoria {
+  id: string;
+  tipo: TipoCategoria;
+  nombre: string;
+  // Prefijo generado por el backend (p.ej. "COM", "EQP") — read-only desde el frontend.
+  prefijoCodigo: string;
+  orden: number;
+  activo: boolean;
+}
+
 // Unión discriminada sobre `success` para que TypeScript estreche el tipo automáticamente:
 // tras `if (res.success)`, `data` está garantizado; en el else, `error` está garantizado.
 export type ApiResponse<T> =
@@ -102,14 +119,6 @@ export type Contacto = {
 // Equipos (Rama 5)
 // ============================================================
 
-export type CategoriaEquipo =
-  | 'COMPRESOR_GENERADOR'
-  | 'SANDBLASTING'
-  | 'ANDAMIO_PLATAFORMA'
-  | 'COMPACTADOR_RODILLO'
-  | 'HERRAMIENTA_ESPECIALIZADA'
-  | 'OTRO';
-
 export type EstadoEquipo =
   | 'DISPONIBLE'
   | 'RENTADO'        // gestionado por el módulo de cotizaciones
@@ -128,7 +137,9 @@ export type Equipo = {
   codigo: string;
   nombre: string;
   descripcion: string | null;
-  categoria: CategoriaEquipo;
+  // El backend ahora devuelve categoriaId + relacion categoria en lugar del enum plano.
+  categoriaId: string;
+  categoria?: { id: string; nombre: string };
   estado: EstadoEquipo;
   marca: string | null;
   modelo: string | null;
@@ -152,7 +163,7 @@ export type CrearEquipoDto = {
   prefijo: string;
   nombre: string;
   descripcion?: string;
-  categoria: CategoriaEquipo;
+  categoriaId: string;
   bodegaId: string;
   marca?: string;
   modelo?: string;
@@ -176,7 +187,7 @@ export type FiltrosEquipos = {
   page?: number;
   limit?: number;
   search?: string;
-  categoria?: CategoriaEquipo;
+  categoriaId?: string;
   estado?: EstadoEquipo;
   incluirInactivos?: boolean;
 };
@@ -192,9 +203,8 @@ export type MantenimientoAdjunto = {
   createdAt:     string;
 };
 
-export type TipoMantenimiento      = 'PREVENTIVO' | 'CORRECTIVO' | 'EMERGENCIA';
-export type EstadoMantenimiento    = 'ACTIVO' | 'COMPLETADO';
-export type CategoriaMantenimiento = 'INTERNO' | 'EXTERNO' | 'EN_CLIENTE';
+export type TipoMantenimiento   = 'PREVENTIVO' | 'CORRECTIVO' | 'EMERGENCIA';
+export type EstadoMantenimiento = 'ACTIVO' | 'COMPLETADO';
 
 export type MantenimientoRepuesto = {
   id:           string;
@@ -210,7 +220,9 @@ export type MantenimientoRepuesto = {
 export type Mantenimiento = {
   id:                   string;
   tipo:                 TipoMantenimiento;
-  categoria:            CategoriaMantenimiento;
+  // El backend ahora devuelve categoriaId + relacion categoria en lugar del enum plano.
+  categoriaId:          string;
+  categoria?:           { id: string; nombre: string };
   estado:               EstadoMantenimiento;
   tecnico:              string;
   motivo:               string;
@@ -245,14 +257,14 @@ export type FiltrosMantenimientos = {
   herramientaUnidadId?: string;
   estado?:              EstadoMantenimiento;
   tipo?:                TipoMantenimiento;
-  categoria?:           CategoriaMantenimiento;
+  categoriaId?:         string;
 };
 
 export type CrearMantenimientoDto = {
   equipoId?:             string;
   herramientaUnidadId?:  string;
   tipo:                  TipoMantenimiento;
-  categoria:             CategoriaMantenimiento;
+  categoriaId:           string;
   tecnico:               string;
   motivo:                string;
   horometro?:            number;
@@ -310,20 +322,6 @@ export type HistorialRentaItem = {
 // Herramientas & Consumibles (Rama 6)
 // ============================================================
 
-export type CategoriaHerramienta =
-  | 'MANGUERA'
-  | 'BOQUILLA'
-  | 'EPP'
-  | 'HERRAMIENTA_MANUAL'
-  | 'OTRO';
-
-export type CategoriaConsumible =
-  | 'ABRASIVO'
-  | 'PINTURA'
-  | 'LUBRICANTE'
-  | 'QUIMICO'
-  | 'OTRO';
-
 export type EstadoHerramienta =
   | 'DISPONIBLE'
   | 'RESERVADA'     // gestionado por reservas/cotizaciones
@@ -345,7 +343,9 @@ export type HerramientaTipo = {
   codigo: string;
   nombre: string;
   descripcion: string | null;
-  categoria: CategoriaHerramienta;
+  // El backend ahora devuelve categoriaId + relacion categoria en lugar del enum plano.
+  categoriaId: string;
+  categoria?: { id: string; nombre: string };
   // Decimal serializado como string — usar decimal.js para operar, formatCurrency para mostrar.
   tarifaDia: string;
   tarifaSemana: string;
@@ -379,7 +379,7 @@ export type CrearHerramientaTipoDto = {
   codigo: string;
   nombre: string;
   descripcion?: string;
-  categoria: CategoriaHerramienta;
+  categoriaId: string;
   tarifaDia: number;
   tarifaSemana: number;
   tarifaMes: number;
@@ -394,7 +394,7 @@ export type FiltrosHerramientas = {
   page?: number;
   limit?: number;
   search?: string;
-  categoria?: CategoriaHerramienta;
+  categoriaId?: string;
   activo?: boolean;
 };
 
@@ -407,7 +407,9 @@ export type Consumible = {
   codigo: string;
   nombre: string;
   descripcion: string | null;
-  categoria: CategoriaConsumible;
+  // El backend ahora devuelve categoriaId + relacion categoria en lugar del enum plano.
+  categoriaId: string;
+  categoria?: { id: string; nombre: string };
   precioUnitario: string;
   stockActual: number;
   stockMinimo: number;
@@ -427,7 +429,7 @@ export type CrearConsumibleDto = {
   codigo: string;
   nombre: string;
   descripcion?: string;
-  categoria: CategoriaConsumible;
+  categoriaId: string;
   precioUnitario: number;
   // Stock inicial distribuido por bodega — reemplaza al stockActual único.
   stockInicial?: StockInicialPorBodega[];
@@ -447,7 +449,7 @@ export type FiltrosConsumibles = {
   page?: number;
   limit?: number;
   search?: string;
-  categoria?: CategoriaConsumible;
+  categoriaId?: string;
   activo?: boolean;
   stockBajo?: boolean;
 };
