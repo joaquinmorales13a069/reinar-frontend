@@ -21,7 +21,6 @@ import {
 } from '@/hooks/use-herramientas';
 import { useAuthStore } from '@/stores/auth.store';
 import {
-  CATEGORIAS_HERRAMIENTA_LABEL,
   ESTADO_HERRAMIENTA_LABEL,
   ESTADO_HERRAMIENTA_KIND,
   puedeEjecutar,
@@ -125,7 +124,7 @@ function UnidadDetalleClient({ unidadId }: { unidadId: string }) {
               <div>
                 <dt className="text-xs text-tx-3">Categoría</dt>
                 <dd>
-                  <Badge status={CATEGORIAS_HERRAMIENTA_LABEL[tipo.categoria]} kind="info" />
+                  <Badge status={tipo.categoria?.nombre ?? '—'} kind="info" />
                 </dd>
               </div>
               <div>

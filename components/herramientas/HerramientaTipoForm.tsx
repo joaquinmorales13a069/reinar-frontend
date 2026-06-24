@@ -11,28 +11,24 @@ import {
   useCrearHerramientaTipo,
   useEditarHerramientaTipo,
 } from '@/hooks/use-herramientas';
-import { CATEGORIAS_HERRAMIENTA_LABEL } from '@/lib/herramientas';
-import type { HerramientaTipo, CategoriaHerramienta } from '@/types/api';
+import { useCategorias } from '@/hooks/use-categorias';
+import type { HerramientaTipo } from '@/types/api';
 
 // Replica el schema del backend (herramientas.schemas.ts) — los mensajes en
 // español dan feedback inmediato sin esperar al server.
 const baseSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio.'),
   descripcion: z.string().optional(),
-  categoria: z.enum(['MANGUERA', 'BOQUILLA', 'EPP', 'HERRAMIENTA_MANUAL', 'OTRO']),
+  categoriaId: z.string().min(1, 'La categoría es obligatoria.'),
   tarifaDia: z.coerce.number().positive('La tarifa por día debe ser positiva.'),
   tarifaSemana: z.coerce.number().positive('La tarifa por semana debe ser positiva.'),
   tarifaMes: z.coerce.number().positive('La tarifa por mes debe ser positiva.'),
   notas: z.string().optional(),
 });
 
-const crearSchema = baseSchema.extend({
-  codigo: z
-    .string()
-    .min(1, 'El código es obligatorio.')
-    .max(20, 'Máximo 20 caracteres.')
-    .regex(/^[A-Z0-9-]+$/, 'Solo letras mayúsculas, números y guiones.'),
-});
+// En creación el código es autogenerado por el backend (según categoría);
+// no lo enviamos ni lo validamos en el form.
+const crearSchema = baseSchema;
 
 type CrearFormData = z.infer<typeof crearSchema>;
 type EditarFormData = z.infer<typeof baseSchema>;
@@ -56,6 +52,9 @@ export function HerramientaTipoForm(props: Props) {
   const crear = useCrearHerramientaTipo();
   const editar = useEditarHerramientaTipo();
 
+  // Las categorías vienen de la API para que el backend sea la fuente de verdad.
+  const { data: categorias } = useCategorias('HERRAMIENTA');
+
   type FormData = CrearFormData | EditarFormData;
   const {
     register,
@@ -66,9 +65,8 @@ export function HerramientaTipoForm(props: Props) {
     resolver: zodResolver(isNew ? crearSchema : baseSchema) as never,
     defaultValues: isNew
       ? {
-          codigo: '',
           nombre: '',
-          categoria: 'HERRAMIENTA_MANUAL' as CategoriaHerramienta,
+          categoriaId: '',
           tarifaDia: undefined as unknown as number,
           tarifaSemana: undefined as unknown as number,
           tarifaMes: undefined as unknown as number,
@@ -76,7 +74,7 @@ export function HerramientaTipoForm(props: Props) {
       : {
           nombre: props.tipo.nombre,
           descripcion: props.tipo.descripcion ?? '',
-          categoria: props.tipo.categoria,
+          categoriaId: props.tipo.categoriaId,
           tarifaDia: Number(props.tipo.tarifaDia),
           tarifaSemana: Number(props.tipo.tarifaSemana),
           tarifaMes: Number(props.tipo.tarifaMes),
@@ -100,10 +98,11 @@ export function HerramientaTipoForm(props: Props) {
       if (isNew) {
         const v = values as CrearFormData;
         const tipo = await crear.mutateAsync({
-          codigo: v.codigo,
+          // codigo omitido: el backend lo autogenera según la categoría (prefijoCodigo + secuencia)
+          codigo: '',
           nombre: v.nombre,
           descripcion: v.descripcion || undefined,
-          categoria: v.categoria,
+          categoriaId: v.categoriaId,
           tarifaDia: v.tarifaDia,
           tarifaSemana: v.tarifaSemana,
           tarifaMes: v.tarifaMes,
@@ -117,7 +116,7 @@ export function HerramientaTipoForm(props: Props) {
           data: {
             nombre: v.nombre,
             descripcion: v.descripcion || undefined,
-            categoria: v.categoria,
+            categoriaId: v.categoriaId,
             tarifaDia: v.tarifaDia,
             tarifaSemana: v.tarifaSemana,
             tarifaMes: v.tarifaMes,
@@ -151,23 +150,15 @@ export function HerramientaTipoForm(props: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {isNew ? (
             <div>
-              <label className={labelCls}>Código *</label>
+              <label className={labelCls}>Código</label>
               <input
-                className={`${(errors as Record<string, unknown>).codigo ? inputErr : inputOk} font-mono uppercase`}
-                placeholder="HT-007"
-                {...register('codigo' as never, {
-                  // Mismo patrón que EquipoForm: forzamos uppercase en cliente para
-                  // que coincida con el regex /^[A-Z0-9-]+$/ del backend.
-                  onChange: (e) => {
-                    e.target.value = String(e.target.value).toUpperCase();
-                  },
-                })}
+                className={`${inputOk} font-mono`}
+                value=""
+                placeholder="Se generará automáticamente"
+                readOnly
+                disabled
               />
-              {(errors as Record<string, { message?: string }>).codigo && (
-                <p className={errorCls}>
-                  {(errors as Record<string, { message?: string }>).codigo.message}
-                </p>
-              )}
+              <p className={hintCls}>El código se asigna al guardar, según la categoría.</p>
             </div>
           ) : (
             <div>
@@ -184,13 +175,20 @@ export function HerramientaTipoForm(props: Props) {
 
           <div>
             <label className={labelCls}>Categoría *</label>
-            <select className={inputOk} {...register('categoria')}>
-              {Object.entries(CATEGORIAS_HERRAMIENTA_LABEL).map(([k, label]) => (
-                <option key={k} value={k}>
-                  {label}
+            <select
+              className={(errors as Record<string, unknown>).categoriaId ? inputErr : inputOk}
+              {...register('categoriaId')}
+            >
+              <option value="">Seleccioná una categoría…</option>
+              {categorias?.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
                 </option>
               ))}
             </select>
+            {(errors as Record<string, { message?: string }>).categoriaId && (
+              <p className={errorCls}>{(errors as Record<string, { message?: string }>).categoriaId.message}</p>
+            )}
           </div>
 
           <div className="sm:col-span-2">

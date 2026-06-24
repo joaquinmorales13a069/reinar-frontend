@@ -8,10 +8,10 @@ import { Spinner } from '@/components/ui/Spinner';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useHerramientaTipos } from '@/hooks/use-herramientas';
+import { useCategorias } from '@/hooks/use-categorias';
 import { useAuthStore } from '@/stores/auth.store';
-import { CATEGORIAS_HERRAMIENTA_LABEL, puedeEjecutar } from '@/lib/herramientas';
+import { puedeEjecutar } from '@/lib/herramientas';
 import { formatCurrency } from '@/lib/utils';
-import type { CategoriaHerramienta } from '@/types/api';
 
 const PAGE_SIZE = 10;
 
@@ -31,28 +31,31 @@ export function HerramientasTiposList() {
 
   const [busqueda, setBusqueda] = useState('');
   const search = useDebounced(busqueda.trim(), 300);
-  const [filterCat, setFilterCat] = useState<CategoriaHerramienta | null>(null);
+  const [filterCatId, setFilterCatId] = useState<string | null>(null);
   const [incluirInactivos, setIncluirInactivos] = useState(false);
   const [page, setPage] = useState(1);
+
+  // Categorías de la API para los chips de filtro.
+  const { data: categorias } = useCategorias('HERRAMIENTA');
 
   const { data, isLoading } = useHerramientaTipos({
     page,
     limit: PAGE_SIZE,
     search: search || undefined,
-    categoria: filterCat ?? undefined,
+    categoriaId: filterCatId ?? undefined,
     // El backend filtra de forma mutuamente exclusiva: `activo: true` muestra
     // activos, `activo: false` muestra solo inactivos. No hay modo "ambos",
     // así que el checkbox conmuta entre las dos vistas.
     activo: incluirInactivos ? false : true,
   });
 
-  function toggleCat(c: CategoriaHerramienta) {
-    setFilterCat((prev) => (prev === c ? null : c));
+  function toggleCat(id: string) {
+    setFilterCatId((prev) => (prev === id ? null : id));
     setPage(1);
   }
   function clearAll() {
     setBusqueda('');
-    setFilterCat(null);
+    setFilterCatId(null);
     setIncluirInactivos(false);
     setPage(1);
   }
@@ -66,10 +69,10 @@ export function HerramientasTiposList() {
           setPage(1);
         }}
         placeholder="Buscar por código o nombre…"
-        chips={Object.entries(CATEGORIAS_HERRAMIENTA_LABEL).map(([k, label]) => ({
-          label,
-          active: filterCat === k,
-          onToggle: () => toggleCat(k as CategoriaHerramienta),
+        chips={(categorias ?? []).map((c) => ({
+          label: c.nombre,
+          active: filterCatId === c.id,
+          onToggle: () => toggleCat(c.id),
         }))}
         onClear={clearAll}
       />
@@ -137,7 +140,7 @@ export function HerramientasTiposList() {
                     </Link>
                   </td>
                   <td className="px-4 py-3">
-                    <Badge status={CATEGORIAS_HERRAMIENTA_LABEL[t.categoria]} kind="info" />
+                    <Badge status={t.categoria?.nombre ?? '—'} kind="info" />
                   </td>
                   <td className="px-4 py-3 text-right font-mono">{formatCurrency(t.tarifaDia)}</td>
                   <td className="px-4 py-3 font-mono text-xs text-tx-2">
