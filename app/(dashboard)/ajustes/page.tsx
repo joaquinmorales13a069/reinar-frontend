@@ -8,17 +8,20 @@ import { Icon } from '@/components/ui/Icon';
 import { TabUsuarios } from '@/components/ajustes/TabUsuarios';
 import { TabEmpresa } from '@/components/ajustes/TabEmpresa';
 import { TabReportes } from '@/components/ajustes/TabReportes';
+import { TabCategorias } from '@/components/ajustes/TabCategorias';
 
-type TabKey = 'usuarios' | 'empresa' | 'reportes';
+type TabKey = 'usuarios' | 'empresa' | 'reportes' | 'categorias';
 
-const TABS: { key: TabKey; label: string; icon: 'users' | 'building' | 'fileText' }[] = [
+// 'layers' es el ícono disponible más cercano a "categorías/jerarquía" en el diccionario de Icon.
+const TABS: { key: TabKey; label: string; icon: 'users' | 'building' | 'fileText' | 'layers' }[] = [
   { key: 'usuarios', label: 'Usuarios y roles', icon: 'users' },
   { key: 'empresa', label: 'Datos de Reinar', icon: 'building' },
+  { key: 'categorias', label: 'Categorías', icon: 'layers' },
   { key: 'reportes', label: 'Reportes programados', icon: 'fileText' },
 ];
 
 function isTabKey(v: string | null): v is TabKey {
-  return v === 'usuarios' || v === 'empresa' || v === 'reportes';
+  return v === 'usuarios' || v === 'empresa' || v === 'reportes' || v === 'categorias';
 }
 
 export default function AjustesPage() {
@@ -77,6 +80,7 @@ function AjustesPageInner() {
 
       {tab === 'usuarios' && <TabUsuarios />}
       {tab === 'empresa' && <TabEmpresa />}
+      {tab === 'categorias' && <TabCategorias />}
       {tab === 'reportes' && <TabReportes />}
     </div>
   );
