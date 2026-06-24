@@ -1842,6 +1842,6 @@ export type EstadoResumen = {
 export type FiltrosReporteInventario = {
   clienteId?: string;
   bodegaId?: string;
-  categoria?: string;
+  categoriaId?: string;
   proyectoId?: string;
 };
