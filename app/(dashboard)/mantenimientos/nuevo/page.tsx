@@ -23,7 +23,7 @@ import type { MantenimientoFormValues } from '@/components/mantenimientos/Manten
 // TypeScript pueda inferir el tipo limpiamente.
 const baseSchema = z.object({
   tipo:                 z.enum(['PREVENTIVO', 'CORRECTIVO', 'EMERGENCIA']).optional(),
-  categoria:            z.enum(['INTERNO', 'EXTERNO', 'EN_CLIENTE']),
+  categoriaId:          z.string().min(1, 'La categoría es requerida'),
   tecnico:              z.string().min(1, 'El técnico es requerido'),
   motivo:               z.string().min(1, 'El motivo es requerido'),
   horometro:            z.number().nonnegative().optional(),
@@ -122,7 +122,7 @@ function NuevoMantenimientoPageInner() {
     try {
       const m = await crear.mutateAsync({
         tipo:                values.tipo ?? 'PREVENTIVO',
-        categoria:           values.categoria,
+        categoriaId:         values.categoriaId,
         tecnico:             values.tecnico,
         motivo:              values.motivo,
         horometro:           values.horometro,

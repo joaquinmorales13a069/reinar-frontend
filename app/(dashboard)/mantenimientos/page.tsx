@@ -12,19 +12,13 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import { MantenimientoEstadoBadge } from '@/components/mantenimientos/MantenimientoEstadoBadge';
 import { useMantenimientos } from '@/hooks/use-mantenimientos';
+import { useCategorias } from '@/hooks/use-categorias';
 import { useAuthStore } from '@/stores/auth.store';
 import { formatDate, formatCurrency } from '@/lib/utils';
-import type { EstadoMantenimiento, TipoMantenimiento, CategoriaMantenimiento } from '@/types/api';
+import type { EstadoMantenimiento, TipoMantenimiento } from '@/types/api';
 
-const TIPOS:      TipoMantenimiento[]      = ['PREVENTIVO', 'CORRECTIVO', 'EMERGENCIA'];
-const ESTADOS:    EstadoMantenimiento[]    = ['ACTIVO', 'COMPLETADO'];
-const CATEGORIAS: CategoriaMantenimiento[] = ['INTERNO', 'EXTERNO', 'EN_CLIENTE'];
-
-const CATEGORIA_LABEL: Record<CategoriaMantenimiento, string> = {
-  INTERNO:    'Interno',
-  EXTERNO:    'Externo',
-  EN_CLIENTE: 'En cliente',
-};
+const TIPOS:   TipoMantenimiento[]   = ['PREVENTIVO', 'CORRECTIVO', 'EMERGENCIA'];
+const ESTADOS: EstadoMantenimiento[] = ['ACTIVO', 'COMPLETADO'];
 
 export default function MantenimientosPage() {
   // useSearchParams requiere Suspense para que Next.js pueda prerenderizar
@@ -49,14 +43,17 @@ function MantenimientosPageInner() {
   const [page, setPage]         = useState(1);
   const [estado, setEstado]     = useState<EstadoMantenimiento | undefined>();
   const [tipo, setTipo]         = useState<TipoMantenimiento | undefined>();
-  const [categoria, setCategoria] = useState<CategoriaMantenimiento | undefined>();
+  const [categoriaId, setCategoriaId] = useState<string | undefined>();
+
+  // Categorías de la API para los chips de filtro.
+  const { data: categorias } = useCategorias('MANTENIMIENTO');
 
   const { data, isLoading } = useMantenimientos({
     page,
     limit: 20,
     estado,
     tipo,
-    categoria,
+    categoriaId,
     equipoId:            equipoIdParam,
     herramientaUnidadId: herramientaUnidadIdParam,
   });
@@ -79,7 +76,7 @@ function MantenimientosPageInner() {
       />
 
       <div className="rounded-lg border border-bd bg-surface overflow-hidden">
-        {/* El backend soporta filtros por estado, tipo y categoria; sin búsqueda libre.
+        {/* El backend soporta filtros por estado, tipo y categoriaId; sin búsqueda libre.
             Pasamos search="" y onSearch vacío para cumplir la interfaz de FilterBar
             sin exponer un input que el backend ignoraría. */}
         <FilterBar
@@ -97,13 +94,13 @@ function MantenimientosPageInner() {
               active:   tipo === t,
               onToggle: () => { setTipo(tipo === t ? undefined : t); setPage(1); },
             })),
-            ...CATEGORIAS.map((c) => ({
-              label:    CATEGORIA_LABEL[c],
-              active:   categoria === c,
-              onToggle: () => { setCategoria(categoria === c ? undefined : c); setPage(1); },
+            ...(categorias ?? []).map((c) => ({
+              label:    c.nombre,
+              active:   categoriaId === c.id,
+              onToggle: () => { setCategoriaId(categoriaId === c.id ? undefined : c.id); setPage(1); },
             })),
           ]}
-          onClear={() => { setEstado(undefined); setTipo(undefined); setCategoria(undefined); setPage(1); }}
+          onClear={() => { setEstado(undefined); setTipo(undefined); setCategoriaId(undefined); setPage(1); }}
         />
 
         {(equipoIdParam || herramientaUnidadIdParam) && (
@@ -164,7 +161,7 @@ function MantenimientosPageInner() {
                       {(page - 1) * data.meta.limit + idx + 1}
                     </td>
                     <td className="px-4 py-2">{m.tipo}</td>
-                    <td className="px-4 py-2 text-tx-3">{CATEGORIA_LABEL[m.categoria] ?? m.categoria}</td>
+                    <td className="px-4 py-2 text-tx-3">{m.categoria?.nombre ?? '—'}</td>
                     <td className="px-4 py-2"><MantenimientoEstadoBadge estado={m.estado} /></td>
                     <td className="px-4 py-2 font-mono text-xs">{entidadLabel}</td>
                     <td className="px-4 py-2">{m.tecnico}</td>
