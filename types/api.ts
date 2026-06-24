@@ -376,7 +376,7 @@ export type HerramientaUnidad = {
 };
 
 export type CrearHerramientaTipoDto = {
-  codigo: string;
+  codigo?: string;
   nombre: string;
   descripcion?: string;
   categoriaId: string;

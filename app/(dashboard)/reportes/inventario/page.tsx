@@ -37,8 +37,8 @@ export default function ReporteInventarioPage() {
   const filtros: FiltrosReporteInventario = {
     ...(clienteId ? { clienteId } : {}),
     ...(bodegaId ? { bodegaId } : {}),
-    // El reporte recibe categoriaId (ID dinámico) en lugar del enum estático.
-    ...(categoriaId ? { categoria: categoriaId } : {}),
+    // El backend espera categoriaId como parámetro de query.
+    ...(categoriaId ? { categoriaId } : {}),
     ...(proyectoId ? { proyectoId } : {}),
   };
 

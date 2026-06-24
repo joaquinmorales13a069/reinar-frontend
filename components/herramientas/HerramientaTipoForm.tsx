@@ -98,8 +98,7 @@ export function HerramientaTipoForm(props: Props) {
       if (isNew) {
         const v = values as CrearFormData;
         const tipo = await crear.mutateAsync({
-          // codigo omitido: el backend lo autogenera según la categoría (prefijoCodigo + secuencia)
-          codigo: '',
+          // El backend autogenera el código según la categoría (prefijoCodigo + secuencia).
           nombre: v.nombre,
           descripcion: v.descripcion || undefined,
           categoriaId: v.categoriaId,
