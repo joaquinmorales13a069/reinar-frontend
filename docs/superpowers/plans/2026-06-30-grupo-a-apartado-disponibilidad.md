@@ -409,17 +409,33 @@ Dentro de `eliminarCotizacion` (líneas ~262-306), eliminar toda la recolección
 
 Eliminar también el `const io = getIO()` de `eliminarCotizacion` si queda sin uso.
 
-- [ ] **Step 4: Verificar que compila**
+- [ ] **Step 4: Limpiar `cancelarCotizacionPorAnulacionFactura`**
+
+Esta función (líneas ~899-965) cancela una cotización APROBADA cuando se anula su factura, y hoy libera reservas. Bajo el nuevo modelo: los equipos comprometidos vuelven a `DISPONIBLE` (se mantiene), pero ya no hay reservas que liberar y las herramientas no se comprometen a nivel de cotización (se gestionan en el flujo de acta/recepción). Reemplazar los pasos 1 y 2 de la función:
+
+- En el `for (const item of itemsEquipo)` (paso 1), eliminar el bloque `await tx.reservaEquipo.updateMany({ ... CONVERTIDA -> LIBERADA ... })`, dejando solo:
+
+```typescript
+  for (const item of itemsEquipo) {
+    if (!item.equipoId) continue
+    await tx.equipo.update({ where: { id: item.equipoId }, data: { estado: 'DISPONIBLE' } })
+    eventosEquipo.push(item.equipoId)
+  }
+```
+
+- Eliminar por completo el paso 2 (el `const reservasHerramienta = await tx.reservaHerramientaUnidad.findMany({ ... CONVERTIDA ... })` y su `for`). El resto de la función (cotización → CANCELADA, audit, `return`) permanece igual.
+
+- [ ] **Step 5: Verificar que compila**
 
 Run: `cd /Users/joaquinmorales13a06/Desktop/Reinar/server && npx tsc --noEmit`
 Expected: sin errores nuevos. (`reservasService` puede quedar sin uso ahora; si `noUnusedLocals` se queja del import, se elimina en la Tarea 6 junto con el módulo — si tsc falla aquí por el import sin uso, quitar el import `import * as reservasService ...` en este commit.)
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 cd /Users/joaquinmorales13a06/Desktop/Reinar/server
 git add src/modules/cotizaciones/cotizaciones.service.ts
-git commit -m "refactor(cotizaciones): editar/eliminar ítem y cotización sin lógica de reservas"
+git commit -m "refactor(cotizaciones): editar/eliminar/cancelar sin lógica de reservas"
 ```
 
 ---
@@ -446,16 +462,82 @@ export async function listarHistorialRentas(equipoId: string) {
 
 (La nueva función ya valida que el equipo exista y deriva el historial de cotizaciones APROBADAS, devolviendo la misma forma `{ cotizacionId, numeroCotizacion, fechaAprobacion, cliente, periodo, periodoCustomLabel, fechaServicio }` que consumía el controlador antes.)
 
-- [ ] **Step 2: Verificar que compila**
+- [ ] **Step 2: Reescribir `listarHistorialRentasUnidad` (herramientas.service.ts)**
+
+`server/src/modules/herramientas/herramientas.service.ts` tiene la función análoga para unidades de herramienta (líneas ~308-358), que hoy usa `prisma.reservaHerramientaUnidad` con estado `CONVERTIDA`. Bajo el nuevo modelo, la unidad física se asigna en el **despacho** del acta, no en la cotización, así que el historial se deriva de `ActaEntregaItem` (donde `herramientaUnidadId` quedó registrado). Reemplazar todo el cuerpo de la función — desde el comentario que la precede (`// Historial de rentas de una unidad...`) hasta el `}` de cierre — por:
+
+```typescript
+// Historial de rentas de una unidad: actas de entrega donde la unidad física
+// fue despachada (la unidad se asigna en el despacho, no en la cotización).
+// Derivado de ActaEntregaItem → ActaEntrega → Factura → Cotización.
+export async function listarHistorialRentasUnidad(unidadId: string) {
+  const unidad = await prisma.herramientaUnidad.findUnique({
+    where: { id: unidadId },
+    select: { id: true },
+  })
+  if (!unidad) throw new AppError(404, 'NOT_FOUND', 'Unidad de herramienta no encontrada')
+
+  const actaItems = await prisma.actaEntregaItem.findMany({
+    where: { herramientaUnidadId: unidadId },
+    select: {
+      cotizacionItemId: true,
+      actaEntrega: {
+        select: {
+          factura: {
+            select: {
+              cotizacion: {
+                select: {
+                  id:               true,
+                  numeroCotizacion: true,
+                  fechaAprobacion:  true,
+                  cliente: { select: { id: true, tipo: true, razonSocial: true, nombre: true, apellido: true } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  // periodo/fechaServicio viven en el CotizacionItem original (ActaEntregaItem
+  // guarda cotizacionItemId como string plano, sin relación). Lo cruzamos aparte.
+  const cotItems = await prisma.cotizacionItem.findMany({
+    where: { id: { in: actaItems.map((a) => a.cotizacionItemId) } },
+    select: { id: true, periodo: true, periodoCustomLabel: true, fechaServicio: true },
+  })
+  const cotItemMap = new Map(cotItems.map((ci) => [ci.id, ci]))
+
+  return actaItems
+    .map((a) => {
+      const cot = a.actaEntrega.factura.cotizacion
+      const ci  = cotItemMap.get(a.cotizacionItemId)
+      return {
+        cotizacionId:       cot.id,
+        numeroCotizacion:   cot.numeroCotizacion,
+        fechaAprobacion:    cot.fechaAprobacion,
+        cliente:            cot.cliente,
+        periodo:            ci?.periodo            ?? null,
+        periodoCustomLabel: ci?.periodoCustomLabel ?? null,
+        fechaServicio:      ci?.fechaServicio      ?? null,
+      }
+    })
+    .sort((a, b) => (b.fechaAprobacion?.getTime() ?? 0) - (a.fechaAprobacion?.getTime() ?? 0))
+}
+```
+
+Mantiene la misma forma de retorno que antes, así que el controlador no cambia.
+
+- [ ] **Step 3: Verificar que compila**
 
 Run: `cd /Users/joaquinmorales13a06/Desktop/Reinar/server && npx tsc --noEmit`
 Expected: sin errores nuevos.
 
-- [ ] **Step 3: Verificación manual**
+- [ ] **Step 4: Verificación manual**
 
-Aprobar una cotización con un equipo y abrir el detalle del equipo → su historial de rentas debe listar esa cotización.
+Aprobar una cotización con un equipo y abrir el detalle del equipo → su historial de rentas debe listar esa cotización. Para herramientas, el historial de una unidad lista los despachos (actas) de esa unidad.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 cd /Users/joaquinmorales13a06/Desktop/Reinar/server
@@ -508,23 +590,57 @@ git rm src/modules/reservas/reservas.service.ts src/modules/reservas/reservas.co
 git rm src/jobs/limpiarReservasExpiradas.ts
 ```
 
-- [ ] **Step 5: Verificar que compila**
+- [ ] **Step 5: Quitar las comparaciones contra `'RESERVADA'`**
+
+Al eliminar `RESERVADA` del enum `EstadoHerramienta` (Tarea 7), cualquier comparación `estado === 'RESERVADA'` deja de compilar. Quitarlas ahora:
+
+- `src/modules/herramientas/herramientas.service.ts` línea ~249 (en mover bodega): cambiar
+  ```typescript
+  if (unidad.estado === 'RENTADA' || unidad.estado === 'RESERVADA') {
+    throw new AppError(422, 'ESTADO_INVALIDO', `No se puede mover una unidad ${unidad.estado}`)
+  }
+  ```
+  por:
+  ```typescript
+  if (unidad.estado === 'RENTADA') {
+    throw new AppError(422, 'ESTADO_INVALIDO', `No se puede mover una unidad ${unidad.estado}`)
+  }
+  ```
+- `src/modules/herramientas/herramientas.service.ts` líneas ~287-290 (en cambiar estado de unidad): cambiar el comentario y la condición:
+  ```typescript
+  // RENTADA es gestionada por actas, no editable manualmente
+  if (unidad.estado === 'RENTADA') {
+    throw new AppError(422, 'ESTADO_INVALIDO', `No se puede cambiar el estado de una unidad ${unidad.estado} manualmente`)
+  }
+  ```
+- `src/modules/mantenimientos/mantenimientos.service.ts` línea ~99: cambiar
+  ```typescript
+  if (unidad.estado === 'RENTADA' || unidad.estado === 'RESERVADA')
+  ```
+  por:
+  ```typescript
+  if (unidad.estado === 'RENTADA')
+  ```
+- `src/modules/herramientas/herramientas.schemas.ts` línea ~40: actualizar el comentario para que no mencione `RESERVADA` (p. ej. "RENTADA no se permite aquí — la gestiona automáticamente la capa de actas").
+- `src/modules/disponibilidad/disponibilidad.service.ts` (comentario ~línea 57 de `historialRentasEquipo`): reformular el comentario para que no nombre el modelo eliminado `ReservaEquipo` (p. ej. "deriva de las cotizaciones APROBADAS que referencian el equipo").
+
+- [ ] **Step 6: Verificar que compila**
 
 Run: `cd /Users/joaquinmorales13a06/Desktop/Reinar/server && npx tsc --noEmit`
 Expected: sin errores. Si tsc reporta uso de `RESERVA_TTL_MINUTOS` o `reservasService` en algún archivo no contemplado, hacer grep y limpiarlo:
 
 ```bash
-grep -rn "reservasService\|RESERVA_TTL_MINUTOS\|limpiarReservasExpiradas\|reservas.routes\|reservas.service" src/
+grep -rn "reservasService\|RESERVA_TTL_MINUTOS\|limpiarReservasExpiradas\|reservas.routes\|reservas.service\|'RESERVADA'" src/
 ```
 
-Expected: sin resultados.
+Expected: sin resultados (las comparaciones `'RESERVADA'` quedaron eliminadas en el Step 5).
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
 cd /Users/joaquinmorales13a06/Desktop/Reinar/server
 git add -A
-git commit -m "chore(reservas): eliminar módulo de reservas, job de expiración y env TTL"
+git commit -m "chore(reservas): eliminar módulo/job/env y comparaciones a estado RESERVADA"
 ```
 
 ---
