@@ -324,14 +324,13 @@ export type HistorialRentaItem = {
 
 export type EstadoHerramienta =
   | 'DISPONIBLE'
-  | 'RESERVADA'     // gestionado por reservas/cotizaciones
   | 'RENTADA'       // gestionado por actas
   | 'MANTENIMIENTO' // gestionado por el módulo de mantenimientos
   | 'USO_INTERNO'
   | 'INACTIVO';
 
 // Subconjunto de estados que el backend acepta vía PATCH /unidades/:id/estado.
-// Los otros (RESERVADA, RENTADA) los maneja el sistema y el UI no debe ofrecerlos.
+// El otro (RENTADA) lo maneja el sistema y el UI no debe ofrecerlo.
 export type EstadoUnidadEditable =
   | 'DISPONIBLE'
   | 'MANTENIMIENTO'

@@ -32,9 +32,9 @@ export function UnidadEstadoSelector({ unidadId, tipoId, estadoActual }: Props) 
   const cambiar = useCambiarEstadoUnidad();
   const [confirmEstado, setConfirmEstado] = useState<EstadoUnidadEditable | null>(null);
 
-  // RESERVADA y RENTADA no se ofrecen como opción — los gestiona el sistema
-  // (reservas/cotizaciones/actas). Mostramos un aviso en lugar del selector.
-  if (estadoActual === 'RESERVADA' || estadoActual === 'RENTADA') {
+  // RENTADA no se ofrece como opción — lo gestiona el sistema
+  // (actas). Mostramos un aviso en lugar del selector.
+  if (estadoActual === 'RENTADA') {
     return (
       <p className="text-sm text-tx-2">
         Este estado lo gestionan automáticamente cotizaciones y actas. No se puede modificar manualmente.

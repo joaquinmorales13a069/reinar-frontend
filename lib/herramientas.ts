@@ -2,7 +2,6 @@ import type { EstadoHerramienta } from '@/types/api';
 
 export const ESTADO_HERRAMIENTA_LABEL: Record<EstadoHerramienta, string> = {
   DISPONIBLE: 'Disponible',
-  RESERVADA: 'Reservada',
   RENTADA: 'Rentada',
   MANTENIMIENTO: 'Mantenimiento',
   USO_INTERNO: 'Uso interno',
@@ -14,7 +13,6 @@ export const ESTADO_HERRAMIENTA_KIND: Record<
   'ok' | 'warn' | 'danger' | 'info' | 'neutral'
 > = {
   DISPONIBLE: 'ok',
-  RESERVADA: 'warn',
   RENTADA: 'info',
   MANTENIMIENTO: 'warn',
   USO_INTERNO: 'neutral',
