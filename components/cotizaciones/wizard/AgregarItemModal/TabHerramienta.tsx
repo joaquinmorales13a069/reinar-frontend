@@ -18,7 +18,8 @@ const PERIODOS: { value: Exclude<PeriodoItem, 'CUSTOM' | 'QUINCENA'>; label: str
 ];
 
 // El backend asigna las unidades automáticamente; el usuario solo elige el tipo
-// y cuántas necesita. La cantidad está acotada por unidadesDisponibles del tipo.
+// y cuántas necesita. No hay tope de cantidad al cotizar: la disponibilidad real
+// se valida al aprobar la cotización, no al agregarla.
 export function TabHerramienta({ cotizacionId, onAdded }: TabChildProps) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<HerramientaTipo | null>(null);
@@ -66,9 +67,8 @@ export function TabHerramienta({ cotizacionId, onAdded }: TabChildProps) {
               <button
                 key={h.id}
                 type="button"
-                disabled={sinStock}
                 className={`w-full text-left px-3 py-2 border-b border-bd last:border-b-0 transition-colors ${
-                  sinStock ? 'opacity-50 cursor-not-allowed' : isActive ? 'bg-accent-soft' : 'hover:bg-bg-sunken'
+                  isActive ? 'bg-accent-soft' : 'hover:bg-bg-sunken'
                 }`}
                 onClick={() => {
                   setSelected(h);

@@ -126,7 +126,7 @@ export default function AnularDtePage({ params }: { params: Promise<{ id: string
             <li>El DTE se anulará ante el Ministerio de Hacienda y no podrá emitirse nuevamente bajo el mismo número de control.</li>
             <li>La factura quedará en estado <b>ANULADA</b>.</li>
             <li>La cotización origen pasará a <b>CANCELADA</b> (no se puede re-aprobar; hay que crear una nueva si se quiere rehacer).</li>
-            <li>Se libera el inventario reservado (equipos, herramientas, stock de consumibles y piezas).</li>
+            <li>Los equipos incluidos vuelven a estado disponible; herramientas y consumibles se liberan a través del flujo de acta/recepción.</li>
           </ul>
         </div>
       </div>
