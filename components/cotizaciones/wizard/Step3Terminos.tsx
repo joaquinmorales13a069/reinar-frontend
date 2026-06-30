@@ -102,24 +102,40 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
           </div>
 
           <div>
-            <label className="flex items-center gap-2 text-sm font-medium text-tx mb-1.5 cursor-pointer">
-              <input type="checkbox" className="accent-accent" {...register('exentoIva')} />
-              Exento de IVA
-            </label>
-            {!watch('exentoIva') && (
-              <>
-                <label className="block text-sm font-medium text-tx mb-1.5">% IVA</label>
+            <span className="block text-sm font-medium text-tx mb-1.5">IVA</span>
+            <div className="rounded-md border border-bd bg-bg-sunken p-3 space-y-3">
+              <label className="flex items-start gap-2.5 cursor-pointer">
                 <input
-                  type="number"
-                  step="0.01"
-                  className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
-                  {...register('porcentajeIva', { valueAsNumber: true })}
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-bd accent-accent cursor-pointer"
+                  {...register('exentoIva')}
                 />
-                {errors.porcentajeIva && (
-                  <p className="text-xs text-danger mt-1">{errors.porcentajeIva.message}</p>
-                )}
-              </>
-            )}
+                <span className="text-sm leading-tight">
+                  <span className="font-medium text-tx">Exento de IVA</span>
+                  <span className="block text-xs text-tx-3 mt-0.5">No se aplica IVA a esta cotización.</span>
+                </span>
+              </label>
+
+              {exento ? (
+                <p className="flex items-center gap-1.5 text-xs text-tx-2">
+                  <Icon name="check" size={12} className="text-accent" />
+                  IVA en 0% — venta exenta.
+                </p>
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-tx-2 mb-1">% IVA aplicado</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
+                    {...register('porcentajeIva', { valueAsNumber: true })}
+                  />
+                  {errors.porcentajeIva && (
+                    <p className="text-xs text-danger mt-1">{errors.porcentajeIva.message}</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
         <p className="text-xs text-tx-3 mt-3">
