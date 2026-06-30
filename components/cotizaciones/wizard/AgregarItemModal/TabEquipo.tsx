@@ -24,8 +24,9 @@ export function TabEquipo({ cotizacionId, onAdded }: TabChildProps) {
   const [periodo, setPeriodo] = useState<Exclude<PeriodoItem, 'CUSTOM' | 'QUINCENA'>>('DIA');
   const [cantidadDias, setCantidadDias] = useState(1);
 
-  // Solo equipos DISPONIBLES — el backend rechaza con 409 si se intenta uno rentado.
-  const equiposQ = useEquipos({ search: search || undefined, estado: 'DISPONIBLE', limit: 20 });
+  // Sin apartado: cualquier equipo puede agregarse a varias cotizaciones; la
+  // disponibilidad real se valida al aprobar. Mostramos su estado como indicador.
+  const equiposQ = useEquipos({ search: search || undefined, limit: 20 });
   const agregar = useAgregarItemCotizacion();
 
   const isMutating = agregar.isPending;
@@ -72,13 +73,13 @@ export function TabEquipo({ cotizacionId, onAdded }: TabChildProps) {
                       {e.codigo} · {formatCurrency(e.tarifaDia)}/día
                     </div>
                   </div>
-                  <Badge status="Disponible" kind="ok" />
+                  <Badge status={e.estado === 'DISPONIBLE' ? 'Disponible' : e.estado} />
                 </div>
               </button>
             );
           })}
           {equiposQ.data?.data.length === 0 && (
-            <div className="px-3 py-4 text-sm text-tx-3 text-center">Sin equipos disponibles.</div>
+            <div className="px-3 py-4 text-sm text-tx-3 text-center">Sin equipos encontrados.</div>
           )}
         </div>
       )}
