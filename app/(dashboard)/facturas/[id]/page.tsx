@@ -9,6 +9,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FacturaEstadoBadge } from '@/components/facturas/FacturaEstadoBadge';
 import { ClienteFechasCard } from '@/components/facturas/detalle/ClienteFechasCard';
+import { ObservacionesCard } from '@/components/facturas/detalle/ObservacionesCard';
 import { EntregaQuedanCard } from '@/components/facturas/detalle/EntregaQuedanCard';
 import { ItemsFacturadosCard } from '@/components/facturas/detalle/ItemsFacturadosCard';
 import { PagosCard } from '@/components/facturas/detalle/PagosCard';
@@ -141,6 +142,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             <AjustarEstadoCard factura={factura} onClose={() => setAjusteOpen(false)} />
           )}
           <ClienteFechasCard factura={factura} />
+          <ObservacionesCard factura={factura} puedeEscribir={!!puedeEscribir} />
           {factura.esQuedan && (
             <EntregaQuedanCard factura={factura} puedeEscribir={!!puedeEscribir} />
           )}
