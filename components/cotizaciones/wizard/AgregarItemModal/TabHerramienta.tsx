@@ -29,10 +29,8 @@ export function TabHerramienta({ cotizacionId, onAdded }: TabChildProps) {
   const herrQ = useHerramientaTipos({ search: search || undefined, activo: true });
   const agregar = useAgregarItemCotizacion();
 
-  const max = selected?.unidadesDisponibles ?? 0;
-
   async function confirmar() {
-    if (!selected || cantidadUnidades > max) return;
+    if (!selected || cantidadUnidades < 1) return;
     await agregar.mutateAsync({
       id: cotizacionId,
       data: {
@@ -112,14 +110,13 @@ export function TabHerramienta({ cotizacionId, onAdded }: TabChildProps) {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-tx-2 mb-1">Cant. (máx {max})</label>
+              <label className="block text-xs font-medium text-tx-2 mb-1">Cant.</label>
               <input
                 type="number"
                 min={1}
-                max={max}
                 className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
                 value={cantidadUnidades}
-                onChange={(e) => setCantidadUnidades(Math.max(1, Math.min(max, parseInt(e.target.value, 10) || 1)))}
+                onChange={(e) => setCantidadUnidades(Math.max(1, parseInt(e.target.value, 10) || 1))}
               />
             </div>
             <div>
@@ -158,7 +155,7 @@ export function TabHerramienta({ cotizacionId, onAdded }: TabChildProps) {
         <button
           type="button"
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim transition-colors disabled:opacity-50"
-          disabled={!selected || agregar.isPending || cantidadUnidades > max}
+          disabled={!selected || agregar.isPending || cantidadUnidades < 1}
           onClick={confirmar}
         >
           <Icon name="plus" size={14} /> Agregar
