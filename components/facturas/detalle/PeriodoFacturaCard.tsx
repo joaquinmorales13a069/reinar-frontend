@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
 import { useActualizarFactura } from '@/hooks/use-facturas';
 import { useActa, useActasDeFactura } from '@/hooks/use-actas';
@@ -15,7 +15,7 @@ function toDateInput(iso: string | null | undefined): string {
 
 export function PeriodoFacturaCard({ factura }: { factura: Factura }) {
   const rol = useAuthStore((s) => s.user?.rol);
-  const puedeEscribir = rol === 'ADMIN' || rol === 'GERENTE' || rol === 'OPERADOR';
+  const puedeEscribir = rol !== undefined && rol !== 'VISUALIZADOR';
   const anulada = factura.estado === 'ANULADA';
   const soloLectura = !puedeEscribir || anulada;
 
@@ -30,15 +30,19 @@ export function PeriodoFacturaCard({ factura }: { factura: Factura }) {
   const [fin, setFin] = useState(toDateInput(factura.periodoRentaFin));
   const [error, setError] = useState<string | null>(null);
 
-  // Pre-carga best-effort: si la factura no tiene periodo, semillar desde el
-  // acta cuando sus datos lleguen (la carga es asíncrona).
+  const hasSeeded = useRef(false);
+
+  // Pre-carga del periodo del acta: solo una vez (un refetch de React Query no debe
+  // pisar lo que el usuario ya tipeó).
   useEffect(() => {
-    if (!factura.periodoRentaInicio && primeraActa.data?.periodoRentaInicio) {
+    if (hasSeeded.current || !primeraActa.data) return;
+    if (!factura.periodoRentaInicio && primeraActa.data.periodoRentaInicio) {
       setInicio(toDateInput(primeraActa.data.periodoRentaInicio));
     }
-    if (!factura.periodoRentaFin && primeraActa.data?.periodoRentaFin) {
+    if (!factura.periodoRentaFin && primeraActa.data.periodoRentaFin) {
       setFin(toDateInput(primeraActa.data.periodoRentaFin));
     }
+    hasSeeded.current = true;
   }, [primeraActa.data, factura.periodoRentaInicio, factura.periodoRentaFin]);
 
   const actualizar = useActualizarFactura();
