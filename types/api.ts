@@ -806,6 +806,7 @@ export type Cotizacion = {
   condicionesPago: CondicionesPago | null;
   tipoDocumentoFiscal: TipoDocumentoFiscal | null;
   porcentajeIva: number;
+  exentoIva: boolean;
   depositoPorcentaje: string | null;
   depositoMonto: string | null;
   subtotal: string;
@@ -849,6 +850,7 @@ export type CrearCotizacionDto = {
   notas?: string;
   notasInternas?: string;
   porcentajeIva?: number;
+  exentoIva?: boolean;
   fechaVencimiento?: string;
   // Mutuamente excluyentes — validado por Zod y por el backend.
   depositoPorcentaje?: number;
@@ -1076,6 +1078,7 @@ export type Factura = {
   // Decimales serializados como string — usar decimal.js para operar.
   subtotal: string;
   porcentajeIva: string;
+  exentoIva: boolean;
   montoIva: string;
   total: string;
   montoPagado: string;
