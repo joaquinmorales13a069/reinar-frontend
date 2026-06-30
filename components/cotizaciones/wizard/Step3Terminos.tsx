@@ -37,6 +37,7 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
     defaultValues: {
       condicionesPago: cotizacion.condicionesPago ?? null,
       porcentajeIva: cotizacion.porcentajeIva,
+      exentoIva: cotizacion.exentoIva,
       depositoModo: depositoModoInicial,
       depositoMonto: cotizacion.depositoMonto ? Number(cotizacion.depositoMonto) : null,
       notas: cotizacion.notas,
@@ -47,14 +48,17 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
   const modo = watch('depositoModo');
   const depMonto = watch('depositoMonto');
   const iva = watch('porcentajeIva');
+  const exento = watch('exentoIva');
 
   // Calculos en vivo para que el vendedor vea el contexto del deposito.
   // Recalculamos a partir del subtotal + el IVA del form (no del persistido)
   // para que el total y el porcentaje equivalente reflejen lo que se ve.
   const subtotalDecimal = new Decimal(cotizacion.subtotal);
   const ivaPct = new Decimal(typeof iva === 'number' && !isNaN(iva) ? iva : cotizacion.porcentajeIva);
+  // Si está exento, el preview no suma IVA; el backend también lo zeroa al guardar.
+  const ivaEfectivo = exento ? new Decimal(0) : ivaPct;
   const totalDecimal = subtotalDecimal
-    .mul(new Decimal(100).plus(ivaPct))
+    .mul(new Decimal(100).plus(ivaEfectivo))
     .div(100)
     .toDecimalPlaces(2);
 
@@ -71,6 +75,7 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
         // valida cuid()/enum y rechaza string vacio como invalido.
         condicionesPago: values.condicionesPago || undefined,
         porcentajeIva: values.porcentajeIva,
+        exentoIva: values.exentoIva,
         notas: values.notas || undefined,
         notasInternas: values.notasInternas || undefined,
         depositoMonto: values.depositoModo === 'MONTO' ? (values.depositoMonto ?? undefined) : undefined,
@@ -97,15 +102,23 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-tx mb-1.5">% IVA</label>
-            <input
-              type="number"
-              step="0.01"
-              className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
-              {...register('porcentajeIva', { valueAsNumber: true })}
-            />
-            {errors.porcentajeIva && (
-              <p className="text-xs text-danger mt-1">{errors.porcentajeIva.message}</p>
+            <label className="flex items-center gap-2 text-sm font-medium text-tx mb-1.5 cursor-pointer">
+              <input type="checkbox" className="accent-accent" {...register('exentoIva')} />
+              Exento de IVA
+            </label>
+            {!watch('exentoIva') && (
+              <>
+                <label className="block text-sm font-medium text-tx mb-1.5">% IVA</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
+                  {...register('porcentajeIva', { valueAsNumber: true })}
+                />
+                {errors.porcentajeIva && (
+                  <p className="text-xs text-danger mt-1">{errors.porcentajeIva.message}</p>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -119,9 +132,12 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
         <div className="flex items-baseline justify-between mb-3 p-3 bg-bg-sunken rounded-md">
           <span className="text-sm text-tx-2">
             Total de la cotización
-            {ivaPct.toString() !== String(cotizacion.porcentajeIva) && (
-              <span className="ml-2 text-xs text-tx-3">(con IVA {ivaPct.toString()}% sin guardar)</span>
-            )}
+            {exento
+              ? <span className="ml-2 text-xs text-tx-3">(exento de IVA, sin guardar)</span>
+              : ivaPct.toString() !== String(cotizacion.porcentajeIva) && (
+                  <span className="ml-2 text-xs text-tx-3">(con IVA {ivaPct.toString()}% sin guardar)</span>
+                )
+            }
           </span>
           <span className="font-mono text-base font-semibold text-tx">
             {formatCurrency(totalDecimal.toFixed(2))}
