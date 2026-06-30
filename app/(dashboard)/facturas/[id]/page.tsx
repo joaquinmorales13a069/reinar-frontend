@@ -15,6 +15,7 @@ import { ItemsFacturadosCard } from '@/components/facturas/detalle/ItemsFacturad
 import { PagosCard } from '@/components/facturas/detalle/PagosCard';
 import { ProgresoCobroCard } from '@/components/facturas/detalle/ProgresoCobroCard';
 import { ActasVinculadasCard } from '@/components/facturas/detalle/ActasVinculadasCard';
+import { PeriodoFacturaCard } from '@/components/facturas/detalle/PeriodoFacturaCard';
 import { AjustarEstadoCard } from '@/components/facturas/detalle/AjustarEstadoCard';
 import { HeaderAcciones } from '@/components/facturas/detalle/HeaderAcciones';
 import { DteSection } from '@/components/dte/DteSection';
@@ -166,6 +167,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             isEnviandoEmail={enviarDTE.isPending}
           />
           <ItemsFacturadosCard factura={factura} />
+          <PeriodoFacturaCard factura={factura} />
           <PagosCard factura={factura} isOperador={isOperador} isAdminOGerente={isAdminOGerente} />
           <ActasVinculadasCard factura={factura} puedeEscribir={!!puedeEscribir} />
         </div>
