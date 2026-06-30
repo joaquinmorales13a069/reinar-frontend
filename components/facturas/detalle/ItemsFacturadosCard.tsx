@@ -87,7 +87,7 @@ export function ItemsFacturadosCard({ factura }: { factura: Factura }) {
           </tr>
           <tr>
             <td colSpan={4} className="text-right text-tx-2 px-4 py-1.5">
-              IVA ({factura.porcentajeIva}%)
+              {factura.exentoIva ? 'Exento de IVA' : `IVA (${factura.porcentajeIva}%)`}
             </td>
             <td className="text-right tabular-nums px-4 py-1.5">
               {formatCurrency(factura.montoIva)}

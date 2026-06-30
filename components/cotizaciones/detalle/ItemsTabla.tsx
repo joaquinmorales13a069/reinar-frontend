@@ -1,3 +1,4 @@
+import Decimal from 'decimal.js';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrency } from '@/lib/utils';
 import type { Cotizacion, PeriodoItem, TipoItemCotizacion } from '@/types/api';
@@ -15,7 +16,7 @@ const TIPO_LABEL: Record<TipoItemCotizacion, string> = {
 };
 
 export function ItemsTabla({ cotizacion }: { cotizacion: Cotizacion }) {
-  const { items, subtotal, montoIva, total, porcentajeIva } = cotizacion;
+  const { items, subtotal, montoIva, total, porcentajeIva, exentoIva, depositoMonto } = cotizacion;
   return (
     <div className="border border-bd rounded-md overflow-x-auto bg-bg">
       <div className="px-4 py-2.5 border-b border-bd flex items-center justify-between">
@@ -80,13 +81,25 @@ export function ItemsTabla({ cotizacion }: { cotizacion: Cotizacion }) {
             <td className="text-right px-3 py-2 font-mono">{formatCurrency(subtotal)}</td>
           </tr>
           <tr>
-            <td colSpan={4} className="text-right px-3 py-2 text-tx-2">IVA ({porcentajeIva}%)</td>
+            <td colSpan={4} className="text-right px-3 py-2 text-tx-2">{exentoIva ? 'Exento de IVA' : `IVA (${porcentajeIva}%)`}</td>
             <td className="text-right px-3 py-2 font-mono">{formatCurrency(montoIva)}</td>
           </tr>
           <tr>
-            <td colSpan={4} className="text-right px-3 py-2 font-semibold">Total</td>
+            <td colSpan={4} className="text-right px-3 py-2 font-semibold">{depositoMonto ? 'Total (sin depósito)' : 'Total'}</td>
             <td className="text-right px-3 py-2 font-mono font-bold text-base">{formatCurrency(total)}</td>
           </tr>
+          {depositoMonto && (
+            <>
+              <tr>
+                <td colSpan={4} className="text-right px-3 py-2 text-tx-2">Depósito</td>
+                <td className="text-right px-3 py-2 font-mono">{formatCurrency(depositoMonto)}</td>
+              </tr>
+              <tr>
+                <td colSpan={4} className="text-right px-3 py-2 font-semibold">Total con depósito</td>
+                <td className="text-right px-3 py-2 font-mono font-bold text-base">{formatCurrency(new Decimal(total).add(depositoMonto).toFixed(2))}</td>
+              </tr>
+            </>
+          )}
         </tfoot>
       </table>
     </div>
