@@ -40,10 +40,11 @@ export function FacturaDescargasMenu({ factura }: { factura: FacturaListItem }) 
         title="Descargas"
         aria-haspopup="menu"
         aria-expanded={open}
-        className="inline-flex items-center justify-center w-8 h-8 rounded text-tx-3 hover:bg-bg hover:text-tx transition-colors"
+        className={`inline-flex items-center gap-1 h-8 pl-2 pr-1.5 rounded-md border border-bd text-tx-2 hover:bg-bg-sunken hover:text-tx transition-colors ${open ? 'bg-bg-sunken text-tx' : ''}`}
         onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
       >
-        <Icon name="moreV" size={14} />
+        <Icon name="download" size={14} />
+        <Icon name="chevronDown" size={12} />
       </button>
 
       {open && (
