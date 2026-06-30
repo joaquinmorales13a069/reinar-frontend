@@ -768,9 +768,6 @@ export type CotizacionItem = {
   servicioId: string | null;
   consumibleId: string | null;
   piezaTipoId: string | null;
-  // Período de renta por línea — se precarga desde la BD si ya se capturó.
-  periodoRentaInicio?: string | null;
-  periodoRentaFin?: string | null;
 };
 
 // Forma reducida devuelta por GET /cotizaciones (lista).
@@ -1095,6 +1092,8 @@ export type Factura = {
   esQuedan: boolean;
   fechaEntregaFactura: string | null;
   fechaEntregaReal: string | null;
+  periodoRentaInicio: string | null;
+  periodoRentaFin: string | null;
   createdAt: string;
   updatedAt: string;
   cliente: Cliente;
@@ -1125,10 +1124,8 @@ export type FiltrosFacturas = {
 export type ActualizarFacturaDto = {
   notas?: string;
   fechaVencimiento?: string;
-};
-
-export type PeriodosRentaDto = {
-  items: { cotizacionItemId: string; inicio: string; fin: string }[];
+  periodoRentaInicio?: string | null;
+  periodoRentaFin?: string | null;
 };
 
 export type CambiarEstadoFacturaDto = {
