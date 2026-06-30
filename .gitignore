@@ -47,3 +47,5 @@ next-env.d.ts
 
 CLAUDE.md
 .agents/
+# SDD controller scratch (subagent-driven-development ledger/briefs/diffs)
+.superpowers/
