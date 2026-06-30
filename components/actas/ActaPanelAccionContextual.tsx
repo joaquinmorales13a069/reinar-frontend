@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { useDescargarPickingPdf } from '@/hooks/use-actas';
 import { useAuthStore } from '@/stores/auth.store';
+import { RenovarRentaModal } from './RenovarRentaModal';
 import type { Acta } from '@/types/api';
 
 // Panel de acción contextual que cambia según el estado del acta.
@@ -13,6 +15,7 @@ export function ActaPanelAccionContextual({ acta, onIrRecepcion }: { acta: Acta;
   const user = useAuthStore((s) => s.user);
   const puedeEscribir = user && user.rol !== 'VISUALIZADOR';
   const picking = useDescargarPickingPdf();
+  const [renovarOpen, setRenovarOpen] = useState(false);
 
   // Inspección incompleta si algún ítem no tiene condicionSalida. El backend
   // bloquea el despacho en ese caso; reflejamos la misma regla en la UI para
@@ -127,8 +130,16 @@ export function ActaPanelAccionContextual({ acta, onIrRecepcion }: { acta: Acta;
                 >
                   <Icon name="package" size={14} /> Registrar devolución
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => setRenovarOpen(true)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-bd text-tx-2 text-xs font-semibold hover:bg-bg-sunken transition-colors"
+                >
+                  <Icon name="refresh" size={14} /> Renovar renta
+                </button>
               </div>
             )}
+            {renovarOpen && <RenovarRentaModal acta={acta} onClose={() => setRenovarOpen(false)} />}
           </div>
         </div>
       </div>
