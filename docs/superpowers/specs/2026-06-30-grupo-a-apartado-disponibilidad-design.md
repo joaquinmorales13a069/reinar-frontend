@@ -95,6 +95,24 @@ Criterio de "cerrado por recepción": un item de cotización aprobada deja de co
   4. Registrar acta de recepción de la primera → el equipo vuelve a estar `DISPONIBLE` y la segunda ya se puede aprobar.
   5. Repetir (1)–(3) con una pieza de andamio (stock) verificando el conteo por cantidad.
 
+## Refinamientos técnicos (post-exploración del código)
+
+Al recolectar el código exacto para el plan, se confirmó cómo encaja el modelo en la arquitectura existente. El compromiso físico de inventario **ya ocurre** así hoy y no se toca:
+
+- **Equipos:** se marcan `RENTADO` en la **aprobación** (`cambiarEstado` paso 5) y vuelven a `DISPONIBLE` en la recepción. → El gate de aprobación para equipos es simplemente `equipo.estado === 'DISPONIBLE'` (se elimina solo la parte de reserva de la condición actual). Esto ya implementa "el primero aprobado gana" y la liberación en recepción.
+- **Unidades de herramienta:** se auto-eligen `DISPONIBLE` en el **despacho** del acta (`actas.service.ts:366`) y vuelven a `DISPONIBLE` en recepción. Se elimina el marcado `RENTADA`-al-aprobar (paso 6), que hoy es inconsistente con ese auto-pick.
+- **Piezas/consumibles:** su stock se decrementa en el **despacho** y se restaura en recepción.
+
+Para honrar "el primero aprobado gana" en herramientas y piezas (cuyo compromiso físico es en despacho), el **gate de aprobación** usa disponibilidad **derivada**, sin tocar el flujo de despacho:
+
+- `disponibleHerramientaTipo = count(HerramientaUnidad estado=DISPONIBLE del tipo) − comprometidoPorAprobadasNoDespachadas(tipo)`
+- `disponiblePieza = piezaTipo.stockActual − comprometidoPorAprobadasNoDespachadas(piezaTipo)`
+- donde `comprometidoPorAprobadasNoDespachadas(X) = Σ cantidadUnidades` de `CotizacionItem` con ese tipo/pieza, cuya `cotizacion.estado = 'APROBADA'` y cuyo `id` **no** aparece en ningún `ActaEntregaItem.cotizacionItemId` (aún no despachado). Los ya despachados no se cuentan porque ya están reflejados en el stock/estado físico (evita doble conteo).
+
+La cotización que se está aprobando aún está en `ENVIADA` durante el chequeo (se pasa a `APROBADA` al final de la transacción), por lo que sus propios ítems no se cuentan como comprometidos — se compara contra lo comprometido por **otras** aprobadas.
+
+El **badge de disponibilidad del selector** usa directamente `equipo.estado` (Disponible/Rentado/Mantenimiento/…), que ya refleja el compromiso. No requiere endpoint nuevo.
+
 ## Fuera de alcance (otros grupos)
 - IVA / exención / depósito / total de cotización (Grupo B).
 - Facturas: fechas QUEDAN, periodo, columnas PDF, observaciones (Grupo C).
