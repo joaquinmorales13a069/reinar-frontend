@@ -835,6 +835,8 @@ export type Cotizacion = {
   contactoFacturacion: { id: string; nombre: string; apellido: string | null; cargo: string | null } | null;
   items: CotizacionItem[];
   factura: { id: string; numeroFactura: string; estado: string } | null;
+  actaEntregaOrigenId: string | null;
+  actaEntregaOrigen?: { id: string; numeroActa: string } | null;
 };
 
 export type CrearCotizacionDto = {
@@ -1265,6 +1267,7 @@ export type Acta = {
   receptorDocumento: string | null;
   factura: { id: string; numeroFactura: string; clienteId: string };
   items: ActaItem[];
+  renovaciones?: { id: string; numeroCotizacion: string; estado: EstadoCotizacion; factura: { id: string; numeroFactura: string } | null }[];
   createdAt: string;
 };
 
