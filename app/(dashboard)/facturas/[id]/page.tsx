@@ -9,14 +9,15 @@ import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FacturaEstadoBadge } from '@/components/facturas/FacturaEstadoBadge';
 import { ClienteFechasCard } from '@/components/facturas/detalle/ClienteFechasCard';
+import { ObservacionesCard } from '@/components/facturas/detalle/ObservacionesCard';
 import { EntregaQuedanCard } from '@/components/facturas/detalle/EntregaQuedanCard';
 import { ItemsFacturadosCard } from '@/components/facturas/detalle/ItemsFacturadosCard';
 import { PagosCard } from '@/components/facturas/detalle/PagosCard';
 import { ProgresoCobroCard } from '@/components/facturas/detalle/ProgresoCobroCard';
 import { ActasVinculadasCard } from '@/components/facturas/detalle/ActasVinculadasCard';
+import { PeriodoFacturaCard } from '@/components/facturas/detalle/PeriodoFacturaCard';
 import { AjustarEstadoCard } from '@/components/facturas/detalle/AjustarEstadoCard';
 import { HeaderAcciones } from '@/components/facturas/detalle/HeaderAcciones';
-import { PeriodosRentaCard } from '@/components/facturas/detalle/PeriodosRentaCard';
 import { DteSection } from '@/components/dte/DteSection';
 import {
   useFactura,
@@ -142,6 +143,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             <AjustarEstadoCard factura={factura} onClose={() => setAjusteOpen(false)} />
           )}
           <ClienteFechasCard factura={factura} />
+          <ObservacionesCard factura={factura} puedeEscribir={!!puedeEscribir} />
           {factura.esQuedan && (
             <EntregaQuedanCard factura={factura} puedeEscribir={!!puedeEscribir} />
           )}
@@ -165,7 +167,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             isEnviandoEmail={enviarDTE.isPending}
           />
           <ItemsFacturadosCard factura={factura} />
-          <PeriodosRentaCard key={factura.updatedAt ?? factura.id} factura={factura} />
+          <PeriodoFacturaCard factura={factura} />
           <PagosCard factura={factura} isOperador={isOperador} isAdminOGerente={isAdminOGerente} />
           <ActasVinculadasCard factura={factura} puedeEscribir={!!puedeEscribir} />
         </div>

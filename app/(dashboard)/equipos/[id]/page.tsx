@@ -14,7 +14,6 @@ import { EquipoCategoriaBadge } from '@/components/equipos/EquipoCategoriaBadge'
 import { EquipoImagenUpload } from '@/components/equipos/EquipoImagenUpload';
 import { EquipoMantenimientosResumen } from '@/components/equipos/EquipoMantenimientosResumen';
 import { HistorialRentasCard } from '@/components/inventario/HistorialRentasCard';
-import { EquipoReservaPlaceholder } from '@/components/equipos/EquipoReservaPlaceholder';
 import {
   useEquipo,
   useEquipoFichaTecnica,
@@ -178,8 +177,6 @@ function EquipoDetalleClient({ id }: { id: string }) {
           variant="primary"
         />
       )}
-
-      {equipo.estado === 'DISPONIBLE' && <EquipoReservaPlaceholder />}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         <div className="flex flex-col gap-4">

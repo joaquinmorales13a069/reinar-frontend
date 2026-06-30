@@ -111,6 +111,15 @@ export function ResumenLateral({ cotizacion }: { cotizacion: Cotizacion }) {
           <div className="text-xs text-tx-3 mt-1">Estado: {cotizacion.factura.estado}</div>
         </div>
       )}
+      {cotizacion.actaEntregaOrigen && (
+        <div className={CARD_CLS}>
+          <h3 className="text-sm font-medium text-tx mb-2">Renovación de renta</h3>
+          <Link href={`/actas/${cotizacion.actaEntregaOrigen.id}`} className="inline-flex items-center gap-2 text-sm font-mono text-info hover:underline">
+            Acta {cotizacion.actaEntregaOrigen.numeroActa}
+            <Icon name="arrowRight" size={12} />
+          </Link>
+        </div>
+      )}
     </aside>
   );
 }

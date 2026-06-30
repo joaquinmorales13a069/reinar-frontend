@@ -12,7 +12,6 @@ import type {
   ActualizarFacturaDto,
   CambiarEstadoFacturaDto,
   EmitirDTEDto,
-  PeriodosRentaDto,
 } from '@/types/api';
 
 // Helper duplicado intencionalmente — mismo patron que use-cotizaciones.ts.
@@ -87,25 +86,6 @@ export function useCambiarEstadoFactura() {
       // Propagamos el mensaje legible al usuario.
       toast.error(extractErrorMessage(err, 'No se pudo cambiar el estado.'));
     },
-  });
-}
-
-export function useActualizarPeriodosRenta(facturaId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: PeriodosRentaDto) =>
-      api
-        .patch<ApiResponse<Factura>>(`/facturas/${facturaId}/periodos-renta`, data)
-        .then((r) => {
-          if (!r.data.success) throw new Error(r.data.error?.message ?? 'Error');
-          return r.data.data;
-        }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['factura', facturaId] });
-      qc.invalidateQueries({ queryKey: ['facturas'] });
-      toast.success('Períodos de renta actualizados');
-    },
-    onError: (err) => toast.error(extractErrorMessage(err, 'No se pudieron guardar los períodos')),
   });
 }
 

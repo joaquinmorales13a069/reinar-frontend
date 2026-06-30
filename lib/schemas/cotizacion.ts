@@ -23,6 +23,7 @@ export const step3Schema = z
       .min(0)
       .max(100)
       .default(13),
+    exentoIva: z.boolean().default(false),
     depositoModo: z.enum(['NINGUNO', 'MONTO']).default('NINGUNO'),
     depositoMonto: z.number().positive().optional().nullable(),
     notas: z.string().optional().nullable(),

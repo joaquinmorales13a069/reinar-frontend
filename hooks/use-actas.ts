@@ -10,6 +10,7 @@ import type {
   PaginatedResponse,
   Acta,
   ActaListItem,
+  Cotizacion,
   ItemDisponibleDespacho,
   FiltrosActas,
   CrearActaDto,
@@ -196,6 +197,24 @@ export function useCambiarEstadoActa() {
     },
     onError: (err) => {
       toast.error(extractErrorMessage(err, 'No se pudo cambiar el estado del acta.'));
+    },
+  });
+}
+
+export function useRenovarRenta(actaId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (cotizacionItemIds: string[]) =>
+      api.post<ApiResponse<Cotizacion>>(`/actas/${actaId}/renovar`, { cotizacionItemIds }).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['acta', actaId] });
+      qc.invalidateQueries({ queryKey: ['cotizaciones'] });
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo crear la renovación.'));
     },
   });
 }

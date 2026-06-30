@@ -19,6 +19,7 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
   const router = useRouter();
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [showGenerar, setShowGenerar] = useState(false);
+  const [conflicto, setConflicto] = useState<string | null>(null);
   const cambiar = useCambiarEstadoCotizacion();
   const eliminar = useEliminarCotizacion();
 
@@ -26,11 +27,18 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
     'inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors';
 
   async function aplicar(estado: 'ENVIADA' | 'APROBADA' | 'RECHAZADA') {
+    setConflicto(null);
     try {
       await cambiar.mutateAsync({ id: cotizacion.id, estado });
       setConfirm(null);
-    } catch {
-      // El toast lo maneja el hook. Dejamos el ConfirmRow abierto para reintentar.
+    } catch (err) {
+      // El toast lo maneja el hook. Para conflictos de disponibilidad al aprobar
+      // mostramos además un detalle inline accionable (qué ítems faltan).
+      const e = err as { response?: { data?: { error?: { code?: string; message?: string } } } };
+      if (e?.response?.data?.error?.code === 'CONFLICTO_DISPONIBILIDAD') {
+        setConflicto(e.response.data.error.message ?? 'Inventario no disponible para aprobar.');
+      }
+      // Dejamos el ConfirmRow abierto para reintentar.
     }
   }
 
@@ -106,13 +114,28 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
       </button>
       {botones}
 
+      {conflicto && (
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-50 rounded-lg border border-danger-soft bg-danger-soft p-3 shadow-xl">
+          <div className="flex items-start gap-2">
+            <span className="text-danger mt-0.5 shrink-0"><Icon name="x" size={16} /></span>
+            <div className="text-sm text-tx">
+              <p className="font-medium">No se pudo aprobar</p>
+              <p className="text-xs mt-0.5 text-tx-2">{conflicto}</p>
+            </div>
+            <button type="button" className="ml-auto text-tx-3 hover:text-tx" onClick={() => setConflicto(null)}>
+              <Icon name="x" size={14} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ConfirmRow flotante en la esquina inferior — fuera del flujo del header
           para no romper el layout del PageHeader.actions. */}
       {confirm && (
         <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-40 shadow-xl">
           {confirm === 'eliminar' && (
             <ConfirmRow
-              message={`Eliminar el borrador ${cotizacion.numeroCotizacion}? Las reservas de equipos se liberan.`}
+              message={`Eliminar el borrador ${cotizacion.numeroCotizacion}?`}
               confirmLabel="Eliminar"
               onCancel={() => setConfirm(null)}
               onConfirm={quitar}
@@ -129,7 +152,7 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
           )}
           {confirm === 'aprobar' && (
             <ConfirmRow
-              message="Aprobar la cotización? Se generará la factura y se rentean los equipos."
+              message="Aprobar la cotización? Se rentean los equipos disponibles."
               confirmLabel="Aprobar"
               variant="primary"
               onCancel={() => setConfirm(null)}
@@ -138,7 +161,7 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
           )}
           {confirm === 'rechazar' && (
             <ConfirmRow
-              message="Rechazar la cotización? Las reservas se liberan y no se podrá reabrir."
+              message="Rechazar la cotización? No se podrá reabrir."
               confirmLabel="Rechazar"
               onCancel={() => setConfirm(null)}
               onConfirm={() => aplicar('RECHAZADA')}

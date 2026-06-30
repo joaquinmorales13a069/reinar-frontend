@@ -1,5 +1,6 @@
 'use client';
 
+import Decimal from 'decimal.js';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { FormSection } from '@/components/ui/FormSection';
@@ -97,18 +98,24 @@ export function Step4Resumen({ cotizacion, onBack }: Props) {
               <td className="text-right px-3 py-2 font-mono">{formatCurrency(cotizacion.subtotal)}</td>
             </tr>
             <tr>
-              <td colSpan={3} className="text-right px-3 py-2 text-tx-2">IVA ({cotizacion.porcentajeIva}%)</td>
+              <td colSpan={3} className="text-right px-3 py-2 text-tx-2">{cotizacion.exentoIva ? 'Exento de IVA' : `IVA (${cotizacion.porcentajeIva}%)`}</td>
               <td className="text-right px-3 py-2 font-mono">{formatCurrency(cotizacion.montoIva)}</td>
             </tr>
             <tr>
-              <td colSpan={3} className="text-right px-3 py-2 font-semibold">Total</td>
+              <td colSpan={3} className="text-right px-3 py-2 font-semibold">{cotizacion.depositoMonto ? 'Total (sin depósito)' : 'Total'}</td>
               <td className="text-right px-3 py-2 font-mono font-bold text-base">{formatCurrency(cotizacion.total)}</td>
             </tr>
             {cotizacion.depositoMonto && (
-              <tr>
-                <td colSpan={3} className="text-right px-3 py-2 text-tx-2">Depósito</td>
-                <td className="text-right px-3 py-2 font-mono">{formatCurrency(cotizacion.depositoMonto)}</td>
-              </tr>
+              <>
+                <tr>
+                  <td colSpan={3} className="text-right px-3 py-2 text-tx-2">Depósito</td>
+                  <td className="text-right px-3 py-2 font-mono">{formatCurrency(cotizacion.depositoMonto)}</td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="text-right px-3 py-2 font-semibold">Total con depósito</td>
+                  <td className="text-right px-3 py-2 font-mono font-bold text-base">{formatCurrency(new Decimal(cotizacion.total).add(cotizacion.depositoMonto).toFixed(2))}</td>
+                </tr>
+              </>
             )}
           </tfoot>
         </table>

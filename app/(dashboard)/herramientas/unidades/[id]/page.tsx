@@ -163,7 +163,7 @@ function UnidadDetalleClient({ unidadId }: { unidadId: string }) {
           <div className="rounded-lg border border-bd bg-surface p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-tx">Ubicación física</h3>
-              {puedeCambiar && unidad.estado !== 'RENTADA' && unidad.estado !== 'RESERVADA' && !moverAbierto && (
+              {puedeCambiar && unidad.estado !== 'RENTADA' && !moverAbierto && (
                 <button type="button" className={btnSec} onClick={() => setMoverAbierto(true)}>
                   <Icon name="refresh" size={12} /> Mover
                 </button>
@@ -173,9 +173,9 @@ function UnidadDetalleClient({ unidadId }: { unidadId: string }) {
               <div className="text-xs text-tx-3">Bodega actual</div>
               <div className="font-medium">{unidad.bodega?.nombre ?? '—'}</div>
             </div>
-            {(unidad.estado === 'RENTADA' || unidad.estado === 'RESERVADA') && (
+            {unidad.estado === 'RENTADA' && (
               <p className="text-xs text-tx-3 mt-2">
-                No se puede mover mientras la unidad está {unidad.estado === 'RENTADA' ? 'rentada' : 'reservada'}.
+                No se puede mover mientras la unidad está rentada.
               </p>
             )}
           </div>

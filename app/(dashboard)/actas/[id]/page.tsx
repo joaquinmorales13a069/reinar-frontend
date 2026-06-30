@@ -106,6 +106,19 @@ export default function ActaDetallePage({ params }: { params: Promise<{ id: stri
               <p className="text-sm text-tx-2 whitespace-pre-line">{acta.notas}</p>
             </div>
           )}
+          {acta.renovaciones && acta.renovaciones.length > 0 && (
+            <div className="rounded-lg border border-bd bg-surface p-4">
+              <h3 className="text-sm font-semibold text-tx mb-3">Renovaciones</h3>
+              <ul className="space-y-2">
+                {acta.renovaciones.map((r) => (
+                  <li key={r.id} className="flex items-center justify-between gap-2 text-sm">
+                    <Link href={`/cotizaciones/${r.id}`} className="font-mono text-accent hover:underline">{r.numeroCotizacion}</Link>
+                    <span className="text-xs text-tx-3">{r.estado}{r.factura ? ` · ${r.factura.numeroFactura}` : ''}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
 

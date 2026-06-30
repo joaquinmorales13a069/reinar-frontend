@@ -324,14 +324,13 @@ export type HistorialRentaItem = {
 
 export type EstadoHerramienta =
   | 'DISPONIBLE'
-  | 'RESERVADA'     // gestionado por reservas/cotizaciones
   | 'RENTADA'       // gestionado por actas
   | 'MANTENIMIENTO' // gestionado por el módulo de mantenimientos
   | 'USO_INTERNO'
   | 'INACTIVO';
 
 // Subconjunto de estados que el backend acepta vía PATCH /unidades/:id/estado.
-// Los otros (RESERVADA, RENTADA) los maneja el sistema y el UI no debe ofrecerlos.
+// El otro (RENTADA) lo maneja el sistema y el UI no debe ofrecerlo.
 export type EstadoUnidadEditable =
   | 'DISPONIBLE'
   | 'MANTENIMIENTO'
@@ -769,9 +768,6 @@ export type CotizacionItem = {
   servicioId: string | null;
   consumibleId: string | null;
   piezaTipoId: string | null;
-  // Período de renta por línea — se precarga desde la BD si ya se capturó.
-  periodoRentaInicio?: string | null;
-  periodoRentaFin?: string | null;
 };
 
 // Forma reducida devuelta por GET /cotizaciones (lista).
@@ -807,6 +803,7 @@ export type Cotizacion = {
   condicionesPago: CondicionesPago | null;
   tipoDocumentoFiscal: TipoDocumentoFiscal | null;
   porcentajeIva: number;
+  exentoIva: boolean;
   depositoPorcentaje: string | null;
   depositoMonto: string | null;
   subtotal: string;
@@ -838,6 +835,8 @@ export type Cotizacion = {
   contactoFacturacion: { id: string; nombre: string; apellido: string | null; cargo: string | null } | null;
   items: CotizacionItem[];
   factura: { id: string; numeroFactura: string; estado: string } | null;
+  actaEntregaOrigenId: string | null;
+  actaEntregaOrigen?: { id: string; numeroActa: string } | null;
 };
 
 export type CrearCotizacionDto = {
@@ -850,6 +849,7 @@ export type CrearCotizacionDto = {
   notas?: string;
   notasInternas?: string;
   porcentajeIva?: number;
+  exentoIva?: boolean;
   fechaVencimiento?: string;
   // Mutuamente excluyentes — validado por Zod y por el backend.
   depositoPorcentaje?: number;
@@ -1077,6 +1077,7 @@ export type Factura = {
   // Decimales serializados como string — usar decimal.js para operar.
   subtotal: string;
   porcentajeIva: string;
+  exentoIva: boolean;
   montoIva: string;
   total: string;
   montoPagado: string;
@@ -1093,6 +1094,8 @@ export type Factura = {
   esQuedan: boolean;
   fechaEntregaFactura: string | null;
   fechaEntregaReal: string | null;
+  periodoRentaInicio: string | null;
+  periodoRentaFin: string | null;
   createdAt: string;
   updatedAt: string;
   cliente: Cliente;
@@ -1123,10 +1126,8 @@ export type FiltrosFacturas = {
 export type ActualizarFacturaDto = {
   notas?: string;
   fechaVencimiento?: string;
-};
-
-export type PeriodosRentaDto = {
-  items: { cotizacionItemId: string; inicio: string; fin: string }[];
+  periodoRentaInicio?: string | null;
+  periodoRentaFin?: string | null;
 };
 
 export type CambiarEstadoFacturaDto = {
@@ -1266,6 +1267,7 @@ export type Acta = {
   receptorDocumento: string | null;
   factura: { id: string; numeroFactura: string; clienteId: string };
   items: ActaItem[];
+  renovaciones?: { id: string; numeroCotizacion: string; estado: EstadoCotizacion; factura: { id: string; numeroFactura: string } | null }[];
   createdAt: string;
 };
 
