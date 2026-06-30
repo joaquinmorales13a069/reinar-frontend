@@ -296,3 +296,20 @@ export async function descargarFacturaPdfOficialDTE(id: string, numero: string) 
     toast.error(extractErrorMessage(err, 'No se pudo descargar el PDF oficial.'));
   }
 }
+
+export async function descargarFacturaJsonDTE(id: string, numero: string) {
+  const toastId = toast.loading('Obteniendo JSON del DTE…');
+  try {
+    const res = await api.get(`/facturas/${id}/dte/json`, { responseType: 'blob' });
+    const url = URL.createObjectURL(res.data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${numero}-DTE.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.dismiss(toastId);
+  } catch (err) {
+    toast.dismiss(toastId);
+    toast.error(extractErrorMessage(err, 'No se pudo descargar el JSON del DTE.'));
+  }
+}

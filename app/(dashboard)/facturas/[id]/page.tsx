@@ -25,6 +25,7 @@ import {
   useSincronizarDTE,
   useEnviarDTEPorEmail,
   descargarFacturaPdfOficialDTE,
+  descargarFacturaPdfBranded,
 } from '@/hooks/use-facturas';
 import { useAuthStore } from '@/stores/auth.store';
 import type { TipoDTE } from '@/types/api';
@@ -107,6 +108,18 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
         onBack={() => router.push('/facturas')}
         actions={
           <>
+            {/* Descarga del PDF de sistema (branded), que sí incluye el período de
+                renta — a diferencia del PDF oficial del DTE. Vía /facturas/:id/pdf
+                (no permitido a VISUALIZADOR). */}
+            {puedeEscribir && (
+              <button
+                type="button"
+                onClick={() => { void descargarFacturaPdfBranded(factura.id, factura.numeroFactura); }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md border border-bd text-tx-2 hover:bg-bg-sunken"
+              >
+                <Icon name="download" size={14} /> Descargar factura
+              </button>
+            )}
             {/* Crear NC requiere factura PAGADA/PARCIAL con DTE APROBADO — backend rechaza lo contrario */}
             {puedeEscribir &&
               factura.estadoDTE === 'APROBADO' &&
