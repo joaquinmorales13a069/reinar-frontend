@@ -55,7 +55,13 @@ export function useActualizarFactura() {
         return r.data.data;
       }),
     onSuccess: (factura) => {
-      qc.setQueryData(['factura', factura.id], factura);
+      // PATCH /facturas/:id devuelve la factura sin relaciones (cliente,
+      // cotizacion, pagos…). Mergeamos sobre lo cacheado para no pisar esas
+      // relaciones — sin esto el detalle re-renderiza con factura.cliente
+      // undefined y crashea. Mismo patrón que las demás mutations de este hook.
+      qc.setQueryData(['factura', factura.id], (old: Factura | undefined) =>
+        old ? { ...old, ...factura } : old,
+      );
       qc.invalidateQueries({ queryKey: ['facturas'] });
       toast.success('Cambios guardados.');
     },
