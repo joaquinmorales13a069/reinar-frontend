@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Icon } from '@/components/ui/Icon';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Spinner } from '@/components/ui/Spinner';
@@ -11,7 +10,7 @@ import { FacturaEstadoBadge } from './FacturaEstadoBadge';
 import { EstadoDteBadge } from './EstadoDteBadge';
 import { TipoDteBadge } from './TipoDteBadge';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { descargarFacturaPdfBranded } from '@/hooks/use-facturas';
+import { FacturaDescargasMenu } from './FacturaDescargasMenu';
 import type { FacturaListItem } from '@/types/api';
 
 // EMPRESA usa razonSocial; PARTICULAR arma con nombre + apellido. Fallback a
@@ -132,17 +131,7 @@ export function FacturasTabla({ data, loading, page, pageSize, total, onPage, mo
                   <td className="px-4 py-2.5">{celdaEntrega(f)}</td>
                 )}
                 <td className="px-4 py-2.5">
-                  <button
-                    type="button"
-                    title="Descargar PDF"
-                    className="inline-flex items-center justify-center w-8 h-8 rounded text-tx-3 hover:bg-bg hover:text-tx transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void descargarFacturaPdfBranded(f.id, f.numeroFactura);
-                    }}
-                  >
-                    <Icon name="download" size={14} />
-                  </button>
+                  <FacturaDescargasMenu factura={f} />
                 </td>
               </tr>
             );
