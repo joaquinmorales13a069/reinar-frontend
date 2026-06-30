@@ -36,10 +36,12 @@ export function PeriodoFacturaCard({ factura }: { factura: Factura }) {
   // pisar lo que el usuario ya tipeó).
   useEffect(() => {
     if (hasSeeded.current || !primeraActa.data) return;
-    if (!factura.periodoRentaInicio && primeraActa.data.periodoRentaInicio) {
+    // !inicio / !fin evita pisar lo que el usuario ya tipeó si el detalle del
+    // acta llega en un segundo round-trip mientras el campo ya tiene contenido.
+    if (!factura.periodoRentaInicio && !inicio && primeraActa.data.periodoRentaInicio) {
       setInicio(toDateInput(primeraActa.data.periodoRentaInicio));
     }
-    if (!factura.periodoRentaFin && primeraActa.data.periodoRentaFin) {
+    if (!factura.periodoRentaFin && !fin && primeraActa.data.periodoRentaFin) {
       setFin(toDateInput(primeraActa.data.periodoRentaFin));
     }
     hasSeeded.current = true;
