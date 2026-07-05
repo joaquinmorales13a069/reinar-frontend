@@ -1238,20 +1238,25 @@ export type ActaListItem = {
   id: string;
   numeroActa: string;
   estado: EstadoActa;
+  // Flujo cotización-first: cotizacionId siempre existe; facturaId queda
+  // null hasta que la cotización origen se facture (o nunca si no se factura).
+  cotizacionId: string;
+  facturaId: string | null;
   fechaDespacho: string | null;
   fechaEntrega: string | null;
   fechaDevolucion: string | null;
   createdAt: string;
   bodegaOrigen: { id: string; nombre: string };
   usuarioDespacho: { id: string; nombre: string; apellido: string } | null;
-  factura: {
+  cotizacion: { id: string; numeroCotizacion: string };
+  factura?: {
     id: string;
     numeroFactura: string;
     clienteId: string;
     // razonSocial es null para clientes PARTICULAR; el frontend hace fallback
     // a nombre+apellido para renderizar el nombre legible.
     cliente: { id: string; razonSocial: string | null; nombre: string | null; apellido: string | null };
-  };
+  } | null;
   _count: { items: number };
 };
 
@@ -1259,7 +1264,8 @@ export type Acta = {
   id: string;
   numeroActa: string;
   estado: EstadoActa;
-  facturaId: string;
+  cotizacionId: string;
+  facturaId: string | null;
   bodegaOrigenId: string;
   bodegaOrigen: { id: string; nombre: string };
   direccionEntrega: string | null;
@@ -1277,7 +1283,8 @@ export type Acta = {
   contactoReceptor: { id: string; nombre: string } | null;
   receptorNombre: string | null;
   receptorDocumento: string | null;
-  factura: { id: string; numeroFactura: string; clienteId: string };
+  cotizacion: { id: string; numeroCotizacion: string };
+  factura?: { id: string; numeroFactura: string; clienteId: string } | null;
   items: ActaItem[];
   renovaciones?: { id: string; numeroCotizacion: string; estado: EstadoCotizacion; factura: { id: string; numeroFactura: string } | null }[];
   createdAt: string;

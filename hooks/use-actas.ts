@@ -115,7 +115,68 @@ export function useBodegasConItemsDisponibles(facturaId: string | null | undefin
   });
 }
 
+// Flujo cotización-first (Task 7): la cotización aprobada es el origen del
+// acta; la factura queda opcional y se vincula después (o nunca).
+
+export function useItemsDisponiblesDespachoCotizacion(
+  cotizacionId: string | null | undefined,
+  bodegaId?: string | null,
+) {
+  return useQuery({
+    queryKey: ['items-disponibles-despacho-cotizacion', cotizacionId, bodegaId ?? null],
+    queryFn: () => {
+      const qs = bodegaId ? `?bodegaId=${encodeURIComponent(bodegaId)}` : '';
+      return api
+        .get<ApiResponse<ItemDisponibleDespacho[]>>(`/cotizaciones/${cotizacionId}/actas/items-disponibles-despacho${qs}`)
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        });
+    },
+    enabled: !!cotizacionId,
+  });
+}
+
+// Devuelve solo las bodegas principales que tienen al menos un item
+// despachable para la cotización — usado por el selector de bodegaOrigen.
+export function useBodegasConItemsDisponiblesCotizacion(cotizacionId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['bodegas-con-items-cotizacion', cotizacionId],
+    queryFn: () =>
+      api
+        .get<ApiResponse<Array<{ id: string; nombre: string }>>>(
+          `/cotizaciones/${cotizacionId}/actas/bodegas-con-items-disponibles`,
+        )
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    enabled: !!cotizacionId,
+  });
+}
+
 // ─── Mutations ───────────────────────────────────────────────────────
+
+export function useCrearActaDesdeCotizacion(cotizacionId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CrearActaDto) =>
+      api.post<ApiResponse<Acta>>(`/cotizaciones/${cotizacionId}/actas`, data).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
+    onSuccess: (acta) => {
+      qc.invalidateQueries({ queryKey: ['actas'] });
+      qc.invalidateQueries({ queryKey: ['items-disponibles-despacho-cotizacion', cotizacionId] });
+      qc.invalidateQueries({ queryKey: ['cotizacion', cotizacionId] });
+      qc.invalidateQueries({ queryKey: ['cotizaciones'] });
+      toast.success(`Acta ${acta.numeroActa} creada.`);
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo crear el acta.'));
+    },
+  });
+}
 
 export function useCrearActa() {
   const qc = useQueryClient();
