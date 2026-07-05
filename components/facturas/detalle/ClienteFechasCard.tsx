@@ -1,27 +1,40 @@
 'use client';
 
 import Link from 'next/link';
-import { formatDate } from '@/lib/utils';
+import { formatDate, nombreCliente } from '@/lib/utils';
 import { LABEL_TIPO_DOCUMENTO } from '@/lib/format-documentos';
 import { Badge } from '@/components/ui/Badge';
 import type { Factura } from '@/types/api';
 
 export function ClienteFechasCard({ factura }: { factura: Factura }) {
   const c = factura.cliente;
-  // Nombre del cliente: EMPRESA usa razonSocial, PARTICULAR arma con nombre+apellido.
-  const nombre =
-    c.tipo === 'EMPRESA'
-      ? c.razonSocial ?? '—'
-      : [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
+  const nombre = nombreCliente(c);
+
+  // La factura pudo emitirse a un tercero (receptorClienteId) distinto del
+  // cliente que solicitó la cotización original — mostramos a ese solicitante
+  // solo cuando difiere del receptor fiscal.
+  const solicitante = factura.cotizacion.cliente;
+  const esTercero = factura.clienteId !== solicitante.id;
+  const nombreSolicitante = esTercero ? nombreCliente(solicitante) : null;
 
   return (
     <div className="bg-bg border border-bd rounded-md p-4">
       <h3 className="text-sm font-medium text-tx mb-3">Cliente y fechas</h3>
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-sm">
-        <dt className="text-tx-3">Cliente</dt>
+        {/* Cuando se facturó a un tercero, "Cliente" pasa a "Facturado a" para
+            distinguir al receptor fiscal de quien solicitó la cotización. */}
+        <dt className="text-tx-3">{esTercero ? 'Facturado a' : 'Cliente'}</dt>
         <dd className="text-tx">
           <Link href={`/clientes/${c.id}`} className="hover:underline">{nombre}</Link>
         </dd>
+        {esTercero && (
+          <>
+            <dt className="text-tx-3">Cotización solicitada por</dt>
+            <dd className="text-tx">
+              <Link href={`/clientes/${solicitante.id}`} className="hover:underline">{nombreSolicitante}</Link>
+            </dd>
+          </>
+        )}
         {c.tipoDocumento && c.numeroDocumento && (
           <><dt className="text-tx-3">{LABEL_TIPO_DOCUMENTO[c.tipoDocumento]}</dt><dd className="font-mono text-xs">{c.numeroDocumento}</dd></>
         )}

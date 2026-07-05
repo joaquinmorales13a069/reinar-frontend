@@ -1115,6 +1115,15 @@ export type Factura = {
     'id' | 'numeroCotizacion' | 'items'
   > & {
     items: CotizacionItem[];
+    // Cliente original de la cotización — puede diferir de `factura.cliente`
+    // cuando la factura se emitió a un tercero (receptorClienteId).
+    cliente: {
+      id: string;
+      tipo: 'EMPRESA' | 'PARTICULAR';
+      razonSocial: string | null;
+      nombre: string | null;
+      apellido: string | null;
+    };
   };
   contactoFacturacion: Contacto | null;
   pagos: Pago[];

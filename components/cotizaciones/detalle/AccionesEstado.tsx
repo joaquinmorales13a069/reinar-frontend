@@ -191,6 +191,9 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
           cliente={{
             id: cotizacion.cliente.id,
             tipo: cotizacion.cliente.tipo,
+            razonSocial: cotizacion.cliente.razonSocial,
+            nombre: cotizacion.cliente.nombre,
+            apellido: cotizacion.cliente.apellido,
             manejaQuedan: cotizacion.cliente.manejaQuedan,
             diasRecepcionQuedan: cotizacion.cliente.diasRecepcionQuedan,
           }}

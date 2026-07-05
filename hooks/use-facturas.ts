@@ -186,6 +186,9 @@ export type GenerarFacturaInput = {
   // Requerida cuando esQuedan = true; el backend valida la combinacion.
   fechaEntregaFactura?: string;
   plazoCredito?: number;
+  // Receptor fiscal de la factura; se envía solo cuando difiere del cliente
+  // de la cotización (facturación a un tercero).
+  receptorClienteId?: string;
 };
 
 export function useGenerarFactura(cotizacionId: string) {

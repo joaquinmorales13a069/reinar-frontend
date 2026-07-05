@@ -71,16 +71,19 @@ export function getInitials(nombre: string): string {
     .join('');
 }
 
-// Resuelve el nombre del cliente para mostrar — razonSocial para EMPRESA,
-// nombre + apellido para PARTICULAR. Devuelve '—' si ningún campo está poblado.
-// Patrón usado en cualquier tabla/chip que muestre nombre de cliente desde
-// una factura/cotización (donde el shape es { razonSocial, nombre, apellido }).
+// Resuelve el nombre del cliente para mostrar — EMPRESA usa razonSocial,
+// PARTICULAR arma nombre + apellido. Devuelve '—' si ningún campo está poblado.
+// Fuente única para no divergir entre selectores, tablas y tarjetas de detalle.
+// Cuando el shape no trae `tipo` (algunos listados solo devuelven los 3 campos
+// planos) usamos la presencia de razonSocial como proxy, ya que en la práctica
+// solo los clientes EMPRESA lo tienen poblado.
 export function nombreCliente(cliente: {
-  razonSocial: string | null;
-  nombre: string | null;
-  apellido: string | null;
+  tipo?: 'EMPRESA' | 'PARTICULAR' | null;
+  razonSocial?: string | null;
+  nombre?: string | null;
+  apellido?: string | null;
 }): string {
-  if (cliente.razonSocial) return cliente.razonSocial;
-  const completo = [cliente.nombre, cliente.apellido].filter(Boolean).join(' ');
-  return completo || '—';
+  const esEmpresa = cliente.tipo != null ? cliente.tipo === 'EMPRESA' : !!cliente.razonSocial;
+  if (esEmpresa) return cliente.razonSocial ?? '—';
+  return [cliente.nombre, cliente.apellido].filter(Boolean).join(' ') || '—';
 }

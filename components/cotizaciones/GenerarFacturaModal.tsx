@@ -4,14 +4,22 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGenerarFactura } from '@/hooks/use-facturas';
 import { ContactoSolicitanteSelect } from '@/components/cotizaciones/ContactoSolicitanteSelect';
+import { SelectorClienteReceptor } from '@/components/facturas/SelectorClienteReceptor';
 import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { DIAS_UTC, LABEL_DIA } from '@/lib/dias-semana';
+import { nombreCliente } from '@/lib/utils';
 import type { Cliente } from '@/types/api';
 
 interface Props {
   cotizacionId: string;
-  cliente: Pick<Cliente, 'id' | 'tipo' | 'manejaQuedan' | 'diasRecepcionQuedan'>;
+  cliente: Pick<Cliente, 'id' | 'tipo' | 'manejaQuedan' | 'diasRecepcionQuedan'> & {
+    // Mismo shape que cotizacion.cliente (razonSocial/nombre/apellido nulleables) —
+    // se usan para el texto "Se factura a: <cliente>" del bloque de tercero.
+    razonSocial: string | null;
+    nombre: string | null;
+    apellido: string | null;
+  };
   // Informativo: si las actas relacionadas a la cotizacion ya devolvieron todo
   // el inventario, no mostramos el banner recomendando esperar.
   actasTodasDevueltas: boolean;
@@ -52,6 +60,10 @@ export function GenerarFacturaModal({
   const [esQuedan, setEsQuedan] = useState(cliente.manejaQuedan);
   const [plazoCredito, setPlazoCredito] = useState('');
   const [fechaEntregaFactura, setFechaEntregaFactura] = useState('');
+  // null = facturar al cliente de la cotización (default). Un valor distinto
+  // al de `cliente.id` activa la facturación a un tercero.
+  const [receptorClienteId, setReceptorClienteId] = useState<string | null>(null);
+  const [mostrarSelectorReceptor, setMostrarSelectorReceptor] = useState(false);
 
   // Cerrar con Escape para consistencia con otros modales del modulo.
   useEffect(() => {
@@ -89,6 +101,10 @@ export function GenerarFacturaModal({
     }
   }
 
+  // Solo se envía cuando el operador eligió explícitamente un cliente distinto
+  // al de la cotización — evita mandar el mismo id como "tercero" sin necesidad.
+  const esTercero = !!receptorClienteId && receptorClienteId !== cliente.id;
+
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!puedeSubmit || !condicionPago) return;
@@ -102,6 +118,7 @@ export function GenerarFacturaModal({
         ...(quedanActivo
           ? { plazoCredito: Number(plazoCredito), fechaEntregaFactura }
           : {}),
+        ...(esTercero ? { receptorClienteId: receptorClienteId! } : {}),
       },
       {
         onSuccess: ({ factura }) => {
@@ -173,6 +190,59 @@ export function GenerarFacturaModal({
             <p className="text-xs text-tx-3 mt-0.5">
               Contacto de facturación del cliente.
             </p>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-tx-2">
+              Facturar a un tercero <span className="text-tx-3 text-2xs">(opcional)</span>
+            </label>
+            {!mostrarSelectorReceptor ? (
+              <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-md border border-bd bg-bg-sunken">
+                <span className="text-sm text-tx">
+                  Se factura a: <span className="font-medium">{nombreCliente(cliente)}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setMostrarSelectorReceptor(true)}
+                  className="text-xs font-medium text-accent hover:underline shrink-0"
+                >
+                  Cambiar receptor
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1.5">
+                <SelectorClienteReceptor
+                  value={receptorClienteId}
+                  onChange={(clienteId, tipo) => {
+                    setReceptorClienteId(clienteId);
+                    // El tercero puede tener un tipo distinto al cliente de la
+                    // cotización (ej. PARTICULAR facturado a una EMPRESA) — se
+                    // re-sugiere el DTE según el tercero. Sigue siendo editable.
+                    setTipoDTE(tipo === 'EMPRESA' ? 'CCF' : 'FC');
+                  }}
+                  filter={(c) => c.id !== cliente.id}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMostrarSelectorReceptor(false);
+                    setReceptorClienteId(null);
+                    // Al volver al cliente de la cotización, re-sugerir el DTE
+                    // según su tipo original.
+                    setTipoDTE(cliente.tipo === 'EMPRESA' ? 'CCF' : 'FC');
+                  }}
+                  className="self-start text-xs text-tx-3 hover:text-tx transition-colors"
+                >
+                  Cancelar y facturar al cliente de la cotización
+                </button>
+              </div>
+            )}
+            {esTercero && (
+              <p className="flex items-start gap-1.5 text-xs text-warn mt-0.5">
+                <Icon name="alertTriangle" size={12} className="mt-0.5 shrink-0" />
+                El DTE y las cuentas por cobrar se emitirán a nombre de este tercero.
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1">
