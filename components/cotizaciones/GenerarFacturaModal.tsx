@@ -61,7 +61,8 @@ export function GenerarFacturaModal({
   // QUEDAN solo aplica con crédito: el plazo corre desde la entrega física.
   const quedanActivo = esCredito && esQuedan;
 
-  const plazoValido = Number(plazoCredito) >= 1 && Number(plazoCredito) <= 365;
+  const plazoNum = Number(plazoCredito);
+  const plazoValido = Number.isInteger(plazoNum) && plazoNum >= 1 && plazoNum <= 365;
   const puedeSubmit =
     !!condicionPago &&
     (esContado ||
@@ -251,6 +252,7 @@ export function GenerarFacturaModal({
                   type="number"
                   min={1}
                   max={365}
+                  step={1}
                   value={plazoCredito}
                   onChange={(e) => setPlazoCredito(e.target.value)}
                   className={inputBase}
