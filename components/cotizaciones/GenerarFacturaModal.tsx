@@ -21,6 +21,12 @@ interface Props {
 const inputBase =
   'w-full px-3 py-2 text-sm rounded-md border bg-surface text-tx placeholder:text-tx-3 focus:outline-none focus:border-accent transition-colors border-bd';
 
+// Hoy en YYYY-MM-DD (UTC) para el min del input de vencimiento — coincide con
+// el guard del backend, que rechaza vencimientos de crédito anteriores a hoy.
+function hoyISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export function GenerarFacturaModal({
   cotizacionId,
   cliente,
@@ -236,6 +242,7 @@ export function GenerarFacturaModal({
               <input
                 type="date"
                 value={fechaVencimiento}
+                min={hoyISO()}
                 onChange={(e) => setFechaVencimiento(e.target.value)}
                 className={inputBase}
               />
