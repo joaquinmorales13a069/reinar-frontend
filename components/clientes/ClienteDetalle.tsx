@@ -17,6 +17,7 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import Decimal from 'decimal.js';
 import { resolverDepartamento, resolverMunicipio, resolverDistrito } from '@/lib/sv-geo';
 import { LABEL_TIPO_DOCUMENTO } from '@/lib/format-documentos';
+import { LABEL_DIA } from '@/lib/dias-semana';
 
 const btnSec = 'inline-flex items-center gap-2 px-4 py-2 rounded-md border border-bd text-tx-2 bg-surface text-sm font-medium hover:bg-bg-sunken transition-colors';
 const btnPri = 'inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent text-navy text-sm font-semibold hover:bg-accent-dim transition-colors';
@@ -138,6 +139,21 @@ export function ClienteDetalle({ id }: { id: string }) {
               <DetailRow label="Municipio" value={resolverMunicipio(cliente.municipio, cliente.departamento)} />
               <DetailRow label="Distrito" value={resolverDistrito(cliente.distrito, cliente.municipio, cliente.departamento)} />
               <DetailRow label="Complemento" value={cliente.complemento ?? <span className="text-tx-muted">—</span>} />
+            </dl>
+          </Card>
+          <Card title="Facturación">
+            <dl className="m-0">
+              <DetailRow label="Factura QUEDAN" value={cliente.manejaQuedan ? 'Sí' : 'No'} />
+              {cliente.manejaQuedan && (
+                <DetailRow
+                  label="Días de recepción"
+                  value={
+                    (cliente.diasRecepcionQuedan ?? []).length > 0
+                      ? cliente.diasRecepcionQuedan.map((d) => LABEL_DIA[d]).join(', ')
+                      : <span className="text-tx-muted">—</span>
+                  }
+                />
+              )}
             </dl>
           </Card>
           <Card title="Contacto">
