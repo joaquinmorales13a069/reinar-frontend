@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/lib/api';
+import { formatDate } from '@/lib/utils';
 import type {
   ApiResponse,
   PaginatedResponse,
@@ -176,10 +177,14 @@ export function useAnularDTESoloDTE() {
 export type GenerarFacturaInput = {
   tipoDTE: 'FC' | 'CCF' | 'SUJETO_EXCLUIDO';
   contactoFacturacionId?: string;
-  fechaVencimiento: string;
+  condicionPago: 'CONTADO' | 'CREDITO';
+  // Requerida solo para CREDITO sin QUEDAN; CONTADO vence solo (+24h) y en
+  // QUEDAN el vencimiento se calcula al entregar. El backend valida.
+  fechaVencimiento?: string;
   esQuedan: boolean;
   // Requerida cuando esQuedan = true; el backend valida la combinacion.
   fechaEntregaFactura?: string;
+  plazoCredito?: number;
 };
 
 export function useGenerarFactura(cotizacionId: string) {
@@ -227,7 +232,12 @@ export function useMarcarFacturaEntregada(facturaId: string) {
         old ? { ...old, ...factura } : old,
       );
       qc.invalidateQueries({ queryKey: ['facturas'] });
-      toast.success('Factura marcada como entregada.');
+      // En QUEDAN el backend acaba de materializar el vencimiento — lo confirmamos.
+      toast.success(
+        factura.fechaVencimiento
+          ? `Factura entregada. Vence el ${formatDate(factura.fechaVencimiento)}.`
+          : 'Factura marcada como entregada.',
+      );
     },
     onError: (err) => {
       toast.error(extractErrorMessage(err, 'No se pudo marcar como entregada.'));

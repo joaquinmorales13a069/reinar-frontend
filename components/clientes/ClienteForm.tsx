@@ -27,6 +27,7 @@ import {
   formatNCR,
   type TipoDocumentoCliente,
 } from '@/lib/format-documentos';
+import { DIAS_SEMANA, LABEL_DIA_CORTO, type DiaSemana } from '@/lib/dias-semana';
 
 const schema = z.object({
   tipo: z.enum(['EMPRESA', 'PARTICULAR']),
@@ -49,6 +50,7 @@ const schema = z.object({
   notas: z.string().optional(),
   estado: z.enum(['ACTIVO', 'INACTIVO', 'PROSPECTO']),
   manejaQuedan: z.boolean(),
+  diasRecepcionQuedan: z.array(z.enum(DIAS_SEMANA)),
 }).superRefine((d, ctx) => {
   if (d.tipo === 'EMPRESA') {
     if (!d.razonSocial?.trim())
@@ -89,6 +91,7 @@ const DEFAULTS: FormData = {
   complemento: '', telefono: '', email: '', notas: '',
   estado: 'ACTIVO',
   manejaQuedan: false,
+  diasRecepcionQuedan: [],
 };
 
 // Clases reutilizables para inputs/selects/textareas
@@ -114,6 +117,17 @@ export function ClienteForm({ id }: { id?: string }) {
   const departamento = watch('departamento');
   const municipio = watch('municipio');
   const sector = watch('sector');
+  const manejaQuedan = watch('manejaQuedan');
+  const diasSeleccionados = watch('diasRecepcionQuedan');
+
+  function toggleDia(dia: DiaSemana) {
+    const actual = diasSeleccionados ?? [];
+    setValue(
+      'diasRecepcionQuedan',
+      actual.includes(dia) ? actual.filter((d) => d !== dia) : [...actual, dia],
+      { shouldDirty: true },
+    );
+  }
   const munis = getMunicipiosByDept(departamento);
   // Sin dept+muni → muestra los 262 distritos; solo dept → filtra por dept; ambos → filtra por ambos.
   const distritos = !departamento
@@ -431,6 +445,37 @@ export function ClienteForm({ id }: { id?: string }) {
               (?)
             </span>
           </label>
+
+          {manejaQuedan && (
+            <div className="mt-3">
+              <span className="block text-xs font-medium text-tx-2 mb-1.5">
+                Días en que recibe facturas
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {DIAS_SEMANA.map((dia) => {
+                  const activo = (diasSeleccionados ?? []).includes(dia);
+                  return (
+                    <button
+                      key={dia}
+                      type="button"
+                      onClick={() => toggleDia(dia)}
+                      aria-pressed={activo}
+                      className={
+                        activo
+                          ? 'px-3 py-1.5 rounded-full text-xs font-semibold bg-accent text-navy transition-colors'
+                          : 'px-3 py-1.5 rounded-full text-xs font-medium border border-bd text-tx-2 hover:bg-bg-sunken transition-colors'
+                      }
+                    >
+                      {LABEL_DIA_CORTO[dia]}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-tx-3 mt-1.5">
+                Se usa para advertir al programar la entrega de facturas QUEDAN.
+              </p>
+            </div>
+          )}
         </FormSection>
 
         <FormSection title="Dirección">

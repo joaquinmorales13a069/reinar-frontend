@@ -46,6 +46,18 @@ export function EntregaQuedanCard({ factura, puedeEscribir }: Props) {
             </dd>
           </>
         )}
+        {factura.plazoCredito != null && (
+          <>
+            <dt className="text-tx-3">Plazo de crédito</dt>
+            <dd className="font-mono text-xs text-tx">{factura.plazoCredito} días</dd>
+          </>
+        )}
+        <dt className="text-tx-3">Vencimiento</dt>
+        <dd className="font-mono text-xs text-tx">
+          {factura.fechaVencimiento
+            ? formatDate(factura.fechaVencimiento)
+            : 'Se define al entregar'}
+        </dd>
         {yaEntregada && (
           <>
             <dt className="text-tx-3">Entregada</dt>

@@ -59,6 +59,8 @@ export type Notificacion = {
   createdAt: string;
 };
 
+import type { DiaSemana } from '@/lib/dias-semana';
+
 export type Cliente = {
   id: string;
   tipo: 'EMPRESA' | 'PARTICULAR';
@@ -89,6 +91,8 @@ export type Cliente = {
   // Indica si el cliente opera bajo el regimen de QUEDAN — afecta la generacion
   // de facturas (fecha de entrega de factura requerida) y los reportes.
   manejaQuedan: boolean;
+  // Días en que recibe facturas físicas (QUEDAN). Vacío si manejaQuedan = false.
+  diasRecepcionQuedan: DiaSemana[];
 };
 
 export type Contacto = {
@@ -743,6 +747,10 @@ export type TipoDocumentoFiscal = 'CF' | 'CCF' | 'SUJETO_EXCLUIDO';
 
 export type CondicionesPago = 'CONTADO' | 'CREDITO' | 'OTRO';
 
+// Condición de pago de FACTURA — facturas nuevas solo aceptan estos dos;
+// OTRO puede aparecer en históricas backfilleadas desde la cotización.
+export type CondicionPagoFactura = 'CONTADO' | 'CREDITO' | 'OTRO';
+
 export type CotizacionItem = {
   id: string;
   cotizacionId: string;
@@ -829,6 +837,7 @@ export type Cotizacion = {
     // El backend incluye el cliente completo en el GET de cotizacion; manejaQuedan
     // lo necesita el modal "Generar factura" para inicializar el toggle QUEDAN.
     manejaQuedan: boolean;
+    diasRecepcionQuedan: DiaSemana[];
   };
   proyecto: { id: string; nombre: string } | null;
   contactoSolicitante: { id: string; nombre: string; apellido: string | null; email: string | null } | null;
@@ -843,7 +852,6 @@ export type CrearCotizacionDto = {
   clienteId: string;
   proyectoId?: string;
   contactoSolicitanteId?: string;
-  condicionesPago?: CondicionesPago;
   tipoDocumentoFiscal?: TipoDocumentoFiscal;
   contactoFacturacionId?: string;
   notas?: string;
@@ -1028,7 +1036,7 @@ export type FacturaListItem = {
   montoPagado: string;
   saldoPendiente: string;
   fechaEmision: string;
-  fechaVencimiento: string;
+  fechaVencimiento: string | null;
   // Campos QUEDAN — la tabla los usa para badge en columna Tipo y para la
   // columna Entrega condicional (visible solo con filtro QUEDAN activo).
   esQuedan: boolean;
@@ -1072,8 +1080,11 @@ export type Factura = {
   clienteId: string;
   contactoFacturacionId: string | null;
   estado: EstadoFactura;
+  condicionPago: CondicionPagoFactura | null;
+  // Días de plazo QUEDAN; el vencimiento corre desde la entrega física.
+  plazoCredito: number | null;
   fechaEmision: string;
-  fechaVencimiento: string;
+  fechaVencimiento: string | null;
   // Decimales serializados como string — usar decimal.js para operar.
   subtotal: string;
   porcentajeIva: string;
@@ -1128,6 +1139,7 @@ export type ActualizarFacturaDto = {
   fechaVencimiento?: string;
   periodoRentaInicio?: string | null;
   periodoRentaFin?: string | null;
+  plazoCredito?: number;
 };
 
 export type CambiarEstadoFacturaDto = {

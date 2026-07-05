@@ -17,7 +17,6 @@ export type Step1Form = z.infer<typeof step1Schema>;
 // quedan los datos comerciales del borrador (IVA, depósito en monto, notas).
 export const step3Schema = z
   .object({
-    condicionesPago: z.enum(['CONTADO', 'CREDITO', 'OTRO']).optional().nullable(),
     porcentajeIva: z
       .number({ message: 'IVA debe ser numérico' })
       .min(0)

@@ -72,13 +72,6 @@ export default function CotizacionDetallePage({ params }: { params: Promise<{ id
             depositoMontoCotizacion={cot.depositoMonto}
           />
 
-          {cot.condicionesPago && (
-            <div className="bg-bg border border-bd rounded-md p-4">
-              <h3 className="text-sm font-medium text-tx mb-2">Condiciones de pago</h3>
-              <p className="text-sm text-tx-2">{cot.condicionesPago}</p>
-            </div>
-          )}
-
           {(cot.notas || cot.notasInternas) && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {cot.notas && (

@@ -177,6 +177,7 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
             id: cotizacion.cliente.id,
             tipo: cotizacion.cliente.tipo,
             manejaQuedan: cotizacion.cliente.manejaQuedan,
+            diasRecepcionQuedan: cotizacion.cliente.diasRecepcionQuedan,
           }}
           // No tenemos info de actas en el detalle de cotizacion (la relacion
           // vive a traves de la factura, que aun no existe). Pasamos true para
