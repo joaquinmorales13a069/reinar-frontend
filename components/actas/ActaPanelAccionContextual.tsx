@@ -124,7 +124,11 @@ export function ActaPanelAccionContextual({ acta, onIrRecepcion }: { acta: Acta;
             {puedeEscribir && (
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link
-                  href={`/recepciones/nueva?facturaId=${acta.facturaId}&actaId=${acta.id}`}
+                  href={
+                    acta.facturaId
+                      ? `/recepciones/nueva?facturaId=${acta.facturaId}&actaId=${acta.id}`
+                      : `/recepciones/nueva?cotizacionId=${acta.cotizacionId}&actaId=${acta.id}`
+                  }
                   className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-accent text-navy text-xs font-semibold hover:bg-accent-dim transition-colors"
                   onClick={onIrRecepcion}
                 >

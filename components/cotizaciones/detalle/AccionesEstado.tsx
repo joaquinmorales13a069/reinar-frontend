@@ -11,6 +11,7 @@ import {
   useCambiarEstadoCotizacion,
   useEliminarCotizacion,
 } from '@/hooks/use-cotizaciones';
+import { useAuthStore } from '@/stores/auth.store';
 import type { Cotizacion } from '@/types/api';
 
 type Confirm = null | 'eliminar' | 'enviar' | 'aprobar' | 'rechazar';
@@ -22,6 +23,8 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
   const [conflicto, setConflicto] = useState<string | null>(null);
   const cambiar = useCambiarEstadoCotizacion();
   const eliminar = useEliminarCotizacion();
+  const user = useAuthStore((s) => s.user);
+  const puedeEscribir = !!user && user.rol !== 'VISUALIZADOR';
 
   const btnBase =
     'inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors';
@@ -112,6 +115,18 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
       >
         <Icon name="download" size={14} /> PDF
       </button>
+      {/* Cotización aprobada: el despacho puede arrancar aunque aún no exista
+          factura (flujo cotización-first) — se ofrece junto al link/botón de
+          factura, no en su lugar. */}
+      {cotizacion.estado === 'APROBADA' && puedeEscribir && (
+        <button
+          type="button"
+          className={`${btnBase} border border-bd text-tx-2 hover:bg-bg-sunken`}
+          onClick={() => router.push(`/actas/nueva?cotizacionId=${cotizacion.id}`)}
+        >
+          <Icon name="package" size={14} /> Crear acta de entrega
+        </button>
+      )}
       {botones}
 
       {conflicto && (

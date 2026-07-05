@@ -10,14 +10,19 @@ import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SelectorFactura } from '@/components/actas-recepciones/SelectorFactura';
+import { SelectorCotizacion } from '@/components/actas-recepciones/SelectorCotizacion';
 import { DireccionCompleta } from '@/components/actas-recepciones/DireccionCompleta';
 import { ItemRow } from '@/components/actas-recepciones/ItemRow';
 import { useBodegas } from '@/hooks/use-bodegas';
 import { useFactura } from '@/hooks/use-facturas';
+import { useCotizacion } from '@/hooks/use-cotizaciones';
 import {
   useItemsDisponiblesDespacho,
+  useItemsDisponiblesDespachoCotizacion,
   useCrearActa,
+  useCrearActaDesdeCotizacion,
   useBodegasConItemsDisponibles,
+  useBodegasConItemsDisponiblesCotizacion,
 } from '@/hooks/use-actas';
 import { crearActaFormSchema, type CrearActaForm } from '@/lib/schemas/acta';
 import type {
@@ -69,6 +74,12 @@ type FacturaRef = {
   razonSocial: string;
 };
 
+type CotizacionRef = {
+  id: string;
+  numeroCotizacion: string;
+  razonSocial: string;
+};
+
 export default function NuevaActaPageWrapper() {
   // useSearchParams requiere Suspense para que Next.js pueda prerenderizar
   // estáticamente la página sin esperar a los query params del cliente.
@@ -83,6 +94,13 @@ function NuevaActaPage() {
   const router = useRouter();
   const sp = useSearchParams();
   const facturaIdInicial = sp.get('facturaId') ?? '';
+  const cotizacionIdInicial = sp.get('cotizacionId') ?? '';
+
+  // Flujo cotización-first (Task 7/8): si viene ?facturaId= usamos el flujo
+  // clásico (factura ya emitida). En cualquier otro caso — venga o no
+  // ?cotizacionId=, o el usuario entre sin parámetros — el origen es una
+  // cotización aprobada (con o sin factura todavía).
+  const modo: 'factura' | 'cotizacion' = facturaIdInicial ? 'factura' : 'cotizacion';
 
   // useBodegas devuelve el array directamente en .data (el queryFn ya extrae .data.data).
   const { data: bodegasArr } = useBodegas();
@@ -98,13 +116,30 @@ function NuevaActaPage() {
   );
 
   const [facturaSeleccionada, setFacturaSeleccionada] = useState<FacturaRef | null>(null);
-  const { data: bodegasConItems } = useBodegasConItemsDisponibles(facturaSeleccionada?.id ?? null);
+  const [cotizacionSeleccionada, setCotizacionSeleccionada] = useState<CotizacionRef | null>(null);
+  // Id "activo" de cotización: se fija al entrar con ?cotizacionId= o al
+  // elegir una en <SelectorCotizacion>. Separado de cotizacionSeleccionada
+  // porque esta última se deriva de la respuesta completa (necesitamos
+  // numeroCotizacion + cliente, que el selector no expone).
+  const [cotizacionIdActivo, setCotizacionIdActivo] = useState<string | null>(
+    cotizacionIdInicial || null,
+  );
+
+  const { data: bodegasConItemsFactura } = useBodegasConItemsDisponibles(
+    modo === 'factura' ? facturaSeleccionada?.id ?? null : null,
+  );
+  const { data: bodegasConItemsCotizacion } = useBodegasConItemsDisponiblesCotizacion(
+    modo === 'cotizacion' ? cotizacionSeleccionada?.id ?? null : null,
+  );
+  const bodegasConItems = modo === 'factura' ? bodegasConItemsFactura : bodegasConItemsCotizacion;
+
   const [rows, setRows] = useState<RowState[]>([]);
 
   const form = useForm<CrearActaForm>({
     resolver: zodResolver(crearActaFormSchema),
     defaultValues: {
       facturaId: facturaIdInicial,
+      cotizacionId: modo === 'cotizacion' ? cotizacionIdInicial : '',
       bodegaOrigenId: '',
       direccionEntrega: '',
       notas: '',
@@ -116,18 +151,26 @@ function NuevaActaPage() {
   // Items se filtran por bodegaOrigenId del form — al cambiar la bodega, los
   // items mostrados cambian a los que están físicamente en esa bodega.
   const bodegaOrigenId = form.watch('bodegaOrigenId');
-  const { data: itemsDisp, isLoading: itemsLoading } = useItemsDisponiblesDespacho(
-    facturaSeleccionada?.id ?? null,
+  const { data: itemsDispFactura, isLoading: itemsLoadingFactura } = useItemsDisponiblesDespacho(
+    modo === 'factura' ? facturaSeleccionada?.id ?? null : null,
     bodegaOrigenId || null,
   );
+  const { data: itemsDispCotizacion, isLoading: itemsLoadingCotizacion } =
+    useItemsDisponiblesDespachoCotizacion(
+      modo === 'cotizacion' ? cotizacionSeleccionada?.id ?? null : null,
+      bodegaOrigenId || null,
+    );
+  const itemsDisp = modo === 'factura' ? itemsDispFactura : itemsDispCotizacion;
+  const itemsLoading = modo === 'factura' ? itemsLoadingFactura : itemsLoadingCotizacion;
 
   // Cuando entramos con ?facturaId=X (desde el detalle de una factura),
   // resolvemos la factura completa para poblar facturaSeleccionada y disparar
   // la carga de items. Sin esto, el usuario tendría que buscar y elegir
   // manualmente la misma factura que ya seleccionó al venir de su detalle.
-  const { data: facturaInicial } = useFactura(facturaIdInicial || null);
+  const { data: facturaInicial } = useFactura(modo === 'factura' ? facturaIdInicial || null : null);
 
   useEffect(() => {
+    if (modo !== 'factura') return;
     if (!facturaIdInicial) return;
     if (facturaSeleccionada) return;
     form.setValue('facturaId', facturaIdInicial);
@@ -137,13 +180,32 @@ function NuevaActaPage() {
     // antes el código tomaba solo nombre y se perdía el apellido.
     const nombreCompleto = [c?.nombre, c?.apellido].filter(Boolean).join(' ');
     const razonSocial = c?.razonSocial ?? (nombreCompleto || '—');
-     
+
     setFacturaSeleccionada({
       id: facturaInicial.id,
       numeroFactura: facturaInicial.numeroFactura,
       razonSocial,
     });
-  }, [facturaIdInicial, facturaInicial, facturaSeleccionada, form]);
+  }, [modo, facturaIdInicial, facturaInicial, facturaSeleccionada, form]);
+
+  // Análogo al efecto de factura: resuelve la cotización completa (para
+  // numeroCotizacion + cliente) tanto si viene por ?cotizacionId= como si el
+  // usuario la elige en <SelectorCotizacion> (que solo entrega el id).
+  const { data: cotizacionActiva } = useCotizacion(modo === 'cotizacion' ? cotizacionIdActivo : null);
+
+  useEffect(() => {
+    if (modo !== 'cotizacion') return;
+    if (!cotizacionActiva) return;
+    const c = cotizacionActiva.cliente;
+    const nombreCompleto = [c?.nombre, c?.apellido].filter(Boolean).join(' ');
+    const razonSocial = c?.razonSocial ?? (nombreCompleto || '—');
+    setCotizacionSeleccionada({
+      id: cotizacionActiva.id,
+      numeroCotizacion: cotizacionActiva.numeroCotizacion,
+      razonSocial,
+    });
+    form.setValue('cotizacionId', cotizacionActiva.id);
+  }, [modo, cotizacionActiva, form]);
 
   useEffect(() => {
     if (!itemsDisp) return;
@@ -163,7 +225,7 @@ function NuevaActaPage() {
     // El usuario edita cada row (toggle incluido, condición salida, observaciones),
     // así que necesitamos una copia mutable derivada del query data. setState desde
     // useEffect es la forma estándar de sincronizar con datos externos en RHF + React Query.
-     
+
     setRows(inicial);
   }, [itemsDisp]);
 
@@ -171,7 +233,9 @@ function NuevaActaPage() {
   // devuelve el backend, así que dejamos esos campos en blanco para que el
   // usuario los rellene manualmente.
 
-  const crear = useCrearActa();
+  const crearFactura = useCrearActa();
+  const crearCotizacion = useCrearActaDesdeCotizacion(cotizacionSeleccionada?.id ?? '');
+  const crear = modo === 'factura' ? crearFactura : crearCotizacion;
 
   // Crear acta = solo SELECCIONA qué ítems van. Los datos de inspección
   // (horómetro, combustible, condición, observaciones por ítem) se capturan
@@ -205,10 +269,16 @@ function NuevaActaPage() {
   // Errores de items se manejan manualmente fuera de Zod (ver schema).
   const [itemsError, setItemsError] = useState<string | null>(null);
 
+  const origenSeleccionado = modo === 'factura' ? facturaSeleccionada : cotizacionSeleccionada;
+
   const onSubmit = form.handleSubmit(
     async (data) => {
-      if (!facturaSeleccionada) {
-        toast.error('Seleccioná una factura antes de crear el acta.');
+      if (!origenSeleccionado) {
+        toast.error(
+          modo === 'factura'
+            ? 'Seleccioná una factura antes de crear el acta.'
+            : 'Seleccioná una cotización antes de crear el acta.',
+        );
         return;
       }
 
@@ -233,10 +303,13 @@ function NuevaActaPage() {
       };
 
       try {
-        const acta = await crear.mutateAsync({ facturaId: facturaSeleccionada.id, data: dto });
+        const acta =
+          modo === 'factura'
+            ? await crearFactura.mutateAsync({ facturaId: facturaSeleccionada!.id, data: dto })
+            : await crearCotizacion.mutateAsync(dto);
         router.push(`/actas/${acta.id}`);
       } catch {
-        // el hook useCrearActa ya muestra toast.error internamente
+        // el hook useCrearActa/useCrearActaDesdeCotizacion ya muestra toast.error internamente
       }
     },
     // Si el submit falla por validación Zod, surface el primer error con un
@@ -267,52 +340,110 @@ function NuevaActaPage() {
     form.setValue('bodegaOrigenId', '');
   }
 
+  function handleSeleccionarCotizacion(cotizacionId: string) {
+    setCotizacionIdActivo(cotizacionId);
+  }
+
+  function handleCambiarCotizacion() {
+    setCotizacionIdActivo(null);
+    setCotizacionSeleccionada(null);
+    setRows([]);
+    form.setValue('cotizacionId', '');
+    // Reseteamos la bodega elegida: las bodegas disponibles dependen de la
+    // cotización, así que la selección previa puede ya no ser válida.
+    form.setValue('bodegaOrigenId', '');
+  }
+
   return (
     <form onSubmit={onSubmit}>
       <PageHeader
         title="Nueva acta de entrega"
-        subtitle="Generá un acta para despachar equipos a una factura."
+        subtitle={
+          modo === 'factura'
+            ? 'Generá un acta para despachar equipos a una factura.'
+            : 'Generá un acta desde cotización (sin factura aún).'
+        }
         back
         backLabel="Actas"
       />
 
-      {/* ── Factura origen ──────────────────────────────────────────── */}
-      <div className="rounded-lg border border-bd bg-surface p-4 mb-4">
-        <h3 className="text-sm font-semibold text-tx mb-3">Factura origen</h3>
-        {!facturaSeleccionada ? (
-          <div>
-            <label className={labelCls}>
-              Buscar factura aprobada <span className="text-danger">*</span>
-            </label>
-            <SelectorFactura
-              placeholder="Buscar por número o cliente…"
-              emptyMessage="Sin facturas elegibles."
-              onSelect={handleSeleccionarFactura}
-            />
-            {form.formState.errors.facturaId && (
-              <div className="text-xs text-danger mt-1">
-                {form.formState.errors.facturaId.message}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex justify-between items-start gap-3 p-3 bg-bg-sunken rounded">
+      {/* ── Origen (factura o cotización) ──────────────────────────── */}
+      {modo === 'factura' ? (
+        <div className="rounded-lg border border-bd bg-surface p-4 mb-4">
+          <h3 className="text-sm font-semibold text-tx mb-3">Factura origen</h3>
+          {!facturaSeleccionada ? (
             <div>
-              <div className="text-sm font-mono font-semibold">
-                {facturaSeleccionada.numeroFactura}
-              </div>
-              <div className="text-xs text-tx-2">{facturaSeleccionada.razonSocial}</div>
+              <label className={labelCls}>
+                Buscar factura aprobada <span className="text-danger">*</span>
+              </label>
+              <SelectorFactura
+                placeholder="Buscar por número o cliente…"
+                emptyMessage="Sin facturas elegibles."
+                onSelect={handleSeleccionarFactura}
+              />
+              {form.formState.errors.facturaId && (
+                <div className="text-xs text-danger mt-1">
+                  {form.formState.errors.facturaId.message}
+                </div>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={handleCambiarFactura}
-              className="flex items-center gap-1 text-xs text-tx-3 hover:text-tx transition-colors"
-            >
-              <Icon name="x" size={12} /> Cambiar
-            </button>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="flex justify-between items-start gap-3 p-3 bg-bg-sunken rounded">
+              <div>
+                <div className="text-sm font-mono font-semibold">
+                  {facturaSeleccionada.numeroFactura}
+                </div>
+                <div className="text-xs text-tx-2">{facturaSeleccionada.razonSocial}</div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCambiarFactura}
+                className="flex items-center gap-1 text-xs text-tx-3 hover:text-tx transition-colors"
+              >
+                <Icon name="x" size={12} /> Cambiar
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-bd bg-surface p-4 mb-4">
+          <h3 className="text-sm font-semibold text-tx mb-3">Cotización origen</h3>
+          {!cotizacionSeleccionada ? (
+            <div>
+              <label className={labelCls}>
+                Buscar cotización aprobada <span className="text-danger">*</span>
+              </label>
+              <SelectorCotizacion
+                value={cotizacionIdActivo}
+                onChange={handleSeleccionarCotizacion}
+                placeholder="Buscar por número o cliente…"
+                emptyMessage="Sin cotizaciones elegibles."
+              />
+              {form.formState.errors.cotizacionId && (
+                <div className="text-xs text-danger mt-1">
+                  {form.formState.errors.cotizacionId.message}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex justify-between items-start gap-3 p-3 bg-bg-sunken rounded">
+              <div>
+                <div className="text-sm font-mono font-semibold">
+                  {cotizacionSeleccionada.numeroCotizacion}
+                </div>
+                <div className="text-xs text-tx-2">{cotizacionSeleccionada.razonSocial}</div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCambiarCotizacion}
+                className="flex items-center gap-1 text-xs text-tx-3 hover:text-tx transition-colors"
+              >
+                <Icon name="x" size={12} /> Cambiar
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Logística ───────────────────────────────────────────────── */}
       <div className="rounded-lg border border-bd bg-surface p-4 mb-4">
@@ -327,18 +458,18 @@ function NuevaActaPage() {
               name="bodegaOrigenId"
               render={({ field }) => {
                 // Mostramos solo las bodegas que tienen al menos un item
-                // despachable para esta factura. Cae al listado general si la
-                // factura aún no está seleccionada.
+                // despachable para este origen. Cae al listado general si aún
+                // no se seleccionó factura/cotización.
                 const idsPermitidos = bodegasConItems
                   ? new Set(bodegasConItems.map((b) => b.id))
                   : null;
-                const opciones = facturaSeleccionada && idsPermitidos
+                const opciones = origenSeleccionado && idsPermitidos
                   ? bodegasPrincipales.filter((b) => idsPermitidos.has(b.id))
                   : bodegasPrincipales;
                 return (
                   <select {...field} className={inputBase}>
                     <option value="">
-                      {facturaSeleccionada && opciones.length === 0
+                      {origenSeleccionado && opciones.length === 0
                         ? 'Sin bodegas con items disponibles'
                         : '— Seleccioná —'}
                     </option>
@@ -409,11 +540,15 @@ function NuevaActaPage() {
             {itemsIncluidos} de {rows.length} seleccionados
           </span>
         </div>
-        {!facturaSeleccionada ? (
+        {!origenSeleccionado ? (
           <EmptyState
             icon="package"
             title="Sin ítems"
-            message="Seleccioná una factura para cargar sus ítems."
+            message={
+              modo === 'factura'
+                ? 'Seleccioná una factura para cargar sus ítems.'
+                : 'Seleccioná una cotización para cargar sus ítems.'
+            }
           />
         ) : itemsLoading ? (
           <div className="flex justify-center py-6">
@@ -424,15 +559,15 @@ function NuevaActaPage() {
             <EmptyState
               icon="package"
               title="Sin ítems disponibles"
-              message="Todos los ítems físicos de esta factura ya fueron asignados a otra acta (en campo o ya devueltos). No hay nada nuevo que despachar."
+              message="Todos los ítems físicos de este origen ya fueron asignados a otra acta (en campo o ya devueltos). No hay nada nuevo que despachar."
             />
             <div className="text-center mt-3">
               <button
                 type="button"
-                onClick={handleCambiarFactura}
+                onClick={modo === 'factura' ? handleCambiarFactura : handleCambiarCotizacion}
                 className="text-xs text-accent hover:underline"
               >
-                Elegir otra factura
+                {modo === 'factura' ? 'Elegir otra factura' : 'Elegir otra cotización'}
               </button>
             </div>
           </div>
@@ -492,7 +627,7 @@ function NuevaActaPage() {
         </button>
         <button
           type="submit"
-          disabled={crear.isPending || itemsIncluidos === 0 || !facturaSeleccionada}
+          disabled={crear.isPending || itemsIncluidos === 0 || !origenSeleccionado}
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-accent text-navy text-xs font-semibold hover:bg-accent-dim transition-colors disabled:opacity-60"
         >
           <Icon name="check" size={14} />

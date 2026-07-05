@@ -10,16 +10,25 @@ import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SelectorFactura } from '@/components/actas-recepciones/SelectorFactura';
+import { SelectorCotizacion } from '@/components/actas-recepciones/SelectorCotizacion';
 import { CondicionSelect } from '@/components/actas-recepciones/CondicionSelect';
 import { CondicionBadge } from '@/components/actas-recepciones/CondicionBadge';
 import { ItemRow, describirItem } from '@/components/actas-recepciones/ItemRow';
 import { useItemsPendientesDevolucion, useCrearRecepcion } from '@/hooks/use-recepciones';
+import {
+  useItemsPendientesDevolucionCotizacion,
+  useCrearRecepcionDesdeCotizacion,
+} from '@/hooks/use-actas';
+import { useCotizacion } from '@/hooks/use-cotizaciones';
 import { crearRecepcionFormSchema, type CrearRecepcionForm } from '@/lib/schemas/recepcion';
 import type { ActaItem, CondicionItem, CrearRecepcionDto, FacturaListItem } from '@/types/api';
 
 const COND_RANK: Record<CondicionItem, number> = { BUENO: 1, REGULAR: 2, MALO: 3 };
 const inputBase = 'w-full px-3 py-2 text-sm rounded-md border border-bd bg-surface text-tx focus:outline-none focus:border-accent transition-colors';
 const labelCls = 'block text-xs font-medium text-tx-2 mb-1';
+
+type FacturaRef = { id: string; numeroFactura: string; razonSocial: string };
+type CotizacionRef = { id: string; numeroCotizacion: string; razonSocial: string };
 
 type RowState = {
   actaEntregaItemId: string;
@@ -51,23 +60,70 @@ function NuevaRecepcionPage() {
   const router = useRouter();
   const sp = useSearchParams();
   const facturaIdInicial = sp.get('facturaId') ?? '';
+  const cotizacionIdInicial = sp.get('cotizacionId') ?? '';
   const actaIdInicial = sp.get('actaId') ?? '';
 
+  // Flujo cotización-first (Fix 1): un acta sin factura solo puede resolver su
+  // devolución vía la cotización origen. El botón "Nueva recepción" (sin
+  // parámetros) preserva el comportamiento clásico factura-first.
+  const modo: 'factura' | 'cotizacion' = cotizacionIdInicial ? 'cotizacion' : 'factura';
+
   const [step, setStep] = useState<0 | 1>(actaIdInicial ? 1 : 0);
-  const [facturaSeleccionada, setFacturaSeleccionada] = useState<{ id: string; numeroFactura: string; razonSocial: string } | null>(null);
+  const [facturaSeleccionada, setFacturaSeleccionada] = useState<FacturaRef | null>(null);
+  const [cotizacionSeleccionada, setCotizacionSeleccionada] = useState<CotizacionRef | null>(null);
+  // Id "activo" de cotización: se fija al entrar con ?cotizacionId= o al
+  // elegir una en <SelectorCotizacion>. Separado de cotizacionSeleccionada
+  // porque esta última se deriva de la respuesta completa (necesitamos
+  // numeroCotizacion + cliente, que el selector no expone).
+  const [cotizacionIdActivo, setCotizacionIdActivo] = useState<string | null>(
+    cotizacionIdInicial || null,
+  );
   const [rows, setRows] = useState<RowState[]>([]);
 
-  const { data: grupos, isLoading: gruposLoading } = useItemsPendientesDevolucion(facturaSeleccionada?.id ?? null);
+  const { data: gruposFactura, isLoading: gruposLoadingFactura } = useItemsPendientesDevolucion(
+    modo === 'factura' ? facturaSeleccionada?.id ?? null : null,
+  );
+  const { data: gruposCotizacion, isLoading: gruposLoadingCotizacion } =
+    useItemsPendientesDevolucionCotizacion(
+      modo === 'cotizacion' ? cotizacionSeleccionada?.id ?? null : null,
+    );
+  const grupos = modo === 'factura' ? gruposFactura : gruposCotizacion;
+  const gruposLoading = modo === 'factura' ? gruposLoadingFactura : gruposLoadingCotizacion;
 
   const form = useForm<CrearRecepcionForm>({
     resolver: zodResolver(crearRecepcionFormSchema),
     defaultValues: {
       facturaId: facturaIdInicial,
+      cotizacionId: modo === 'cotizacion' ? cotizacionIdInicial : '',
       numeroActaFisico: '',
       horaRecepcion: '',
       observaciones: '',
     },
   });
+
+  // Análogo al efecto de factura: resuelve la cotización completa (para
+  // numeroCotizacion + cliente) tanto si viene por ?cotizacionId= como si el
+  // usuario la elige en <SelectorCotizacion> (que solo entrega el id).
+  const { data: cotizacionActiva } = useCotizacion(modo === 'cotizacion' ? cotizacionIdActivo : null);
+
+  useEffect(() => {
+    if (modo !== 'cotizacion') return;
+    if (!cotizacionActiva) return;
+    const c = cotizacionActiva.cliente;
+    const nombreCompleto = [c?.nombre, c?.apellido].filter(Boolean).join(' ');
+    const razonSocial = c?.razonSocial ?? (nombreCompleto || '—');
+    // cotizacionSeleccionada se deriva de la respuesta completa de la cotización
+    // (necesitamos numeroCotizacion + cliente, que <SelectorCotizacion> no expone).
+    // setState desde useEffect es la forma estándar de sincronizar con datos
+    // externos en RHF + React Query — mismo patrón que la población de rows más abajo.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCotizacionSeleccionada({
+      id: cotizacionActiva.id,
+      numeroCotizacion: cotizacionActiva.numeroCotizacion,
+      razonSocial,
+    });
+    form.setValue('cotizacionId', cotizacionActiva.id);
+  }, [modo, cotizacionActiva, form]);
 
   // Errores de items se manejan manualmente fuera de Zod (ver schema).
   const [itemsError, setItemsError] = useState<string | null>(null);
@@ -100,12 +156,20 @@ function NuevaRecepcionPage() {
     setRows(initial);
   }, [grupos, actaIdInicial]);
 
-  const crear = useCrearRecepcion();
+  const crearFactura = useCrearRecepcion();
+  const crearCotizacion = useCrearRecepcionDesdeCotizacion(cotizacionSeleccionada?.id ?? '');
+  const crear = modo === 'factura' ? crearFactura : crearCotizacion;
+
+  const origenSeleccionado = modo === 'factura' ? facturaSeleccionada : cotizacionSeleccionada;
 
   const onSubmit = form.handleSubmit(
     async (data) => {
-      if (!facturaSeleccionada) {
-        toast.error('Seleccioná una factura antes de registrar la recepción.');
+      if (!origenSeleccionado) {
+        toast.error(
+          modo === 'factura'
+            ? 'Seleccioná una factura antes de registrar la recepción.'
+            : 'Seleccioná una cotización antes de registrar la recepción.',
+        );
         return;
       }
 
@@ -158,7 +222,10 @@ function NuevaRecepcionPage() {
       };
 
       try {
-        const recepcion = await crear.mutateAsync({ facturaId: facturaSeleccionada.id, data: dto });
+        const recepcion =
+          modo === 'factura'
+            ? await crearFactura.mutateAsync({ facturaId: facturaSeleccionada!.id, data: dto })
+            : await crearCotizacion.mutateAsync(dto);
         router.push(`/recepciones/${recepcion.id}`);
       } catch (err: unknown) {
         // El hook ya toasteó el error genérico; adicionalmente mostrar el mensaje inline
@@ -179,7 +246,31 @@ function NuevaRecepcionPage() {
   );
 
   const itemsIncluidos = rows.filter((r) => r.incluido).length;
-  const canAdvance = !!facturaSeleccionada && rows.length > 0 && itemsIncluidos > 0;
+  const canAdvance = !!origenSeleccionado && rows.length > 0 && itemsIncluidos > 0;
+
+  function handleSeleccionarFactura(f: FacturaListItem) {
+    const nombre = [f.cliente.nombre, f.cliente.apellido].filter(Boolean).join(' ');
+    const razonSocial = f.cliente.razonSocial ?? (nombre || '—');
+    setFacturaSeleccionada({ id: f.id, numeroFactura: f.numeroFactura, razonSocial });
+    form.setValue('facturaId', f.id);
+  }
+
+  function handleCambiarFactura() {
+    setFacturaSeleccionada(null);
+    setRows([]);
+    form.setValue('facturaId', '');
+  }
+
+  function handleSeleccionarCotizacion(cotizacionId: string) {
+    setCotizacionIdActivo(cotizacionId);
+  }
+
+  function handleCambiarCotizacion() {
+    setCotizacionIdActivo(null);
+    setCotizacionSeleccionada(null);
+    setRows([]);
+    form.setValue('cotizacionId', '');
+  }
 
   // Bloquear submit si algún consumible tiene cantidad inválida (evita llamada al backend).
   const hayExceso = rows.some((r) => {
@@ -226,30 +317,51 @@ function NuevaRecepcionPage() {
       {step === 0 && (
         <>
           <div className="rounded-lg border border-bd bg-surface p-4 mb-4">
-            <h3 className="text-sm font-semibold text-tx mb-3">Factura</h3>
-            {!facturaSeleccionada ? (
+            <h3 className="text-sm font-semibold text-tx mb-3">{modo === 'factura' ? 'Factura' : 'Cotización'}</h3>
+            {modo === 'factura' ? (
+              !facturaSeleccionada ? (
+                <div>
+                  <label className={labelCls}>Buscar factura con actas entregadas <span className="text-danger">*</span></label>
+                  <SelectorFactura
+                    placeholder="Buscar por número o cliente…"
+                    emptyMessage="Sin facturas con devoluciones pendientes."
+                    onSelect={handleSeleccionarFactura}
+                  />
+                </div>
+              ) : (
+                <div className="flex justify-between items-start gap-3 p-3 bg-bg-sunken rounded">
+                  <div>
+                    <div className="text-sm font-mono font-semibold">{facturaSeleccionada.numeroFactura}</div>
+                    <div className="text-xs text-tx-2">{facturaSeleccionada.razonSocial}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCambiarFactura}
+                    className="text-xs text-tx-3 hover:text-tx flex items-center gap-1"
+                  >
+                    <Icon name="x" size={12} /> Cambiar
+                  </button>
+                </div>
+              )
+            ) : !cotizacionSeleccionada ? (
               <div>
-                <label className={labelCls}>Buscar factura con actas entregadas <span className="text-danger">*</span></label>
-                <SelectorFactura
+                <label className={labelCls}>Buscar cotización con actas entregadas <span className="text-danger">*</span></label>
+                <SelectorCotizacion
+                  value={cotizacionIdActivo}
+                  onChange={handleSeleccionarCotizacion}
                   placeholder="Buscar por número o cliente…"
-                  emptyMessage="Sin facturas con devoluciones pendientes."
-                  onSelect={(f: FacturaListItem) => {
-                    const nombre = [f.cliente.nombre, f.cliente.apellido].filter(Boolean).join(' ');
-                    const razonSocial = f.cliente.razonSocial ?? (nombre || '—');
-                    setFacturaSeleccionada({ id: f.id, numeroFactura: f.numeroFactura, razonSocial });
-                    form.setValue('facturaId', f.id);
-                  }}
+                  emptyMessage="Sin cotizaciones con devoluciones pendientes."
                 />
               </div>
             ) : (
               <div className="flex justify-between items-start gap-3 p-3 bg-bg-sunken rounded">
                 <div>
-                  <div className="text-sm font-mono font-semibold">{facturaSeleccionada.numeroFactura}</div>
-                  <div className="text-xs text-tx-2">{facturaSeleccionada.razonSocial}</div>
+                  <div className="text-sm font-mono font-semibold">{cotizacionSeleccionada.numeroCotizacion}</div>
+                  <div className="text-xs text-tx-2">{cotizacionSeleccionada.razonSocial}</div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => { setFacturaSeleccionada(null); setRows([]); form.setValue('facturaId', ''); }}
+                  onClick={handleCambiarCotizacion}
                   className="text-xs text-tx-3 hover:text-tx flex items-center gap-1"
                 >
                   <Icon name="x" size={12} /> Cambiar
@@ -258,13 +370,13 @@ function NuevaRecepcionPage() {
             )}
           </div>
 
-          {facturaSeleccionada && (
+          {origenSeleccionado && (
             <div className="rounded-lg border border-bd bg-surface p-4 mb-4">
               <h3 className="text-sm font-semibold text-tx mb-3">Ítems pendientes de devolución</h3>
               {gruposLoading ? (
                 <div className="flex justify-center py-6"><Spinner /></div>
               ) : rows.length === 0 ? (
-                <EmptyState icon="package" title="Sin ítems" message="No hay ítems pendientes de devolución para esta factura." />
+                <EmptyState icon="package" title="Sin ítems" message={`No hay ítems pendientes de devolución para esta ${modo === 'factura' ? 'factura' : 'cotización'}.`} />
               ) : (
                 <div className="space-y-3">
                   {gruposVisuales.map(([actaId, items]) => (
@@ -304,7 +416,7 @@ function NuevaRecepcionPage() {
             </div>
           )}
 
-          {facturaSeleccionada && (
+          {origenSeleccionado && (
             <div className="rounded-lg border border-bd bg-surface p-4 mb-4">
               <h3 className="text-sm font-semibold text-tx mb-3">Datos de recepción</h3>
               <div className="grid sm:grid-cols-2 gap-3">

@@ -14,13 +14,30 @@ export const condicionSchema = z.enum(['BUENO', 'REGULAR', 'MALO']);
 // seguridad por validarlos en cliente con código simple.
 // Crear acta no captura datos de inspección ni folio físico — esos viven
 // en /actas/[id]/inspeccion y /actas/[id]/despacho respectivamente.
+// Flujo cotización-first (Task 8): el acta se crea desde una factura O desde
+// una cotización aprobada (sin factura todavía) — nunca ambas ni ninguna. El
+// refine exige exactamente una de las dos, en vez de forzar facturaId.
 export const crearActaFormSchema = z.object({
-  facturaId: z.string().min(1, 'Seleccioná una factura'),
+  facturaId: z.string().optional(),
+  cotizacionId: z.string().optional(),
   bodegaOrigenId: z.string().min(1, 'Seleccioná bodega de origen'),
   direccionEntrega: z.string().optional(),
   notas: z.string().optional(),
   periodoRentaInicio: z.string().optional(),
   periodoRentaFin: z.string().optional(),
+}).superRefine((d, ctx) => {
+  // XOR: exactamente un origen. addIssue en ambos paths para que el campo
+  // visible en cualquiera de los dos modos (factura o cotización) muestre el
+  // error inline — el refine con un solo `path` solo lo mostraría en uno.
+  const hasFactura = !!d.facturaId;
+  const hasCotizacion = !!d.cotizacionId;
+  if (hasFactura === hasCotizacion) {
+    const message = hasFactura
+      ? 'El acta debe originarse en una factura o una cotización, no ambas'
+      : 'Seleccioná una factura o una cotización de origen';
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message, path: ['facturaId'] });
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message, path: ['cotizacionId'] });
+  }
 }).refine(
   (d) => !d.periodoRentaFin || !d.periodoRentaInicio || d.periodoRentaFin >= d.periodoRentaInicio,
   { message: 'La fecha fin no puede ser anterior al inicio', path: ['periodoRentaFin'] },

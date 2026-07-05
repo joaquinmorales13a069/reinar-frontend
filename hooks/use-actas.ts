@@ -18,6 +18,9 @@ import type {
   DespacharActaDto,
   EntregarActaDto,
   ActualizarInspeccionDto,
+  Recepcion,
+  GrupoPendienteDevolucion,
+  CrearRecepcionDto,
 } from '@/types/api';
 
 // Backend devuelve { error: { code, message, details?: Array<{field, message}> } }
@@ -115,7 +118,68 @@ export function useBodegasConItemsDisponibles(facturaId: string | null | undefin
   });
 }
 
+// Flujo cotización-first (Task 7): la cotización aprobada es el origen del
+// acta; la factura queda opcional y se vincula después (o nunca).
+
+export function useItemsDisponiblesDespachoCotizacion(
+  cotizacionId: string | null | undefined,
+  bodegaId?: string | null,
+) {
+  return useQuery({
+    queryKey: ['items-disponibles-despacho-cotizacion', cotizacionId, bodegaId ?? null],
+    queryFn: () => {
+      const qs = bodegaId ? `?bodegaId=${encodeURIComponent(bodegaId)}` : '';
+      return api
+        .get<ApiResponse<ItemDisponibleDespacho[]>>(`/cotizaciones/${cotizacionId}/actas/items-disponibles-despacho${qs}`)
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        });
+    },
+    enabled: !!cotizacionId,
+  });
+}
+
+// Devuelve solo las bodegas principales que tienen al menos un item
+// despachable para la cotización — usado por el selector de bodegaOrigen.
+export function useBodegasConItemsDisponiblesCotizacion(cotizacionId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['bodegas-con-items-cotizacion', cotizacionId],
+    queryFn: () =>
+      api
+        .get<ApiResponse<Array<{ id: string; nombre: string }>>>(
+          `/cotizaciones/${cotizacionId}/actas/bodegas-con-items-disponibles`,
+        )
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    enabled: !!cotizacionId,
+  });
+}
+
 // ─── Mutations ───────────────────────────────────────────────────────
+
+export function useCrearActaDesdeCotizacion(cotizacionId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CrearActaDto) =>
+      api.post<ApiResponse<Acta>>(`/cotizaciones/${cotizacionId}/actas`, data).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
+    onSuccess: (acta) => {
+      qc.invalidateQueries({ queryKey: ['actas'] });
+      qc.invalidateQueries({ queryKey: ['items-disponibles-despacho-cotizacion', cotizacionId] });
+      qc.invalidateQueries({ queryKey: ['cotizacion', cotizacionId] });
+      qc.invalidateQueries({ queryKey: ['cotizaciones'] });
+      toast.success(`Acta ${acta.numeroActa} creada.`);
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo crear el acta.'));
+    },
+  });
+}
 
 export function useCrearActa() {
   const qc = useQueryClient();
@@ -197,6 +261,52 @@ export function useCambiarEstadoActa() {
     },
     onError: (err) => {
       toast.error(extractErrorMessage(err, 'No se pudo cambiar el estado del acta.'));
+    },
+  });
+}
+
+// Flujo cotización-first para devoluciones (Fix 1): cuando el acta todavía no
+// tiene factura, la recepción también ancla en la cotización origen. Mismo
+// endpoint-shape que las devoluciones factura-first en hooks/use-recepciones.ts.
+
+export function useItemsPendientesDevolucionCotizacion(cotizacionId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['items-pendientes-devolucion-cotizacion', cotizacionId],
+    queryFn: () =>
+      api
+        .get<ApiResponse<GrupoPendienteDevolucion[]>>(
+          `/cotizaciones/${cotizacionId}/actas/items-pendientes-devolucion`,
+        )
+        .then((r) => {
+          if (!r.data.success) throw new Error(r.data.error.message);
+          return r.data.data;
+        }),
+    enabled: !!cotizacionId,
+  });
+}
+
+export function useCrearRecepcionDesdeCotizacion(cotizacionId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CrearRecepcionDto) =>
+      api.post<ApiResponse<Recepcion>>(`/cotizaciones/${cotizacionId}/recepciones`, data).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
+    onSuccess: (recepcion) => {
+      qc.invalidateQueries({ queryKey: ['recepciones'] });
+      qc.invalidateQueries({ queryKey: ['items-pendientes-devolucion-cotizacion', cotizacionId] });
+      qc.invalidateQueries({ queryKey: ['cotizacion', cotizacionId] });
+      qc.invalidateQueries({ queryKey: ['cotizaciones'] });
+      // 'acta' sin id invalida todas las queries con prefix ['acta', ...] — necesario
+      // porque la recepción puede haber cerrado ítems de varias actas distintas.
+      qc.invalidateQueries({ queryKey: ['acta'] });
+      qc.invalidateQueries({ queryKey: ['actas'] });
+      qc.invalidateQueries({ queryKey: ['equipos'] });
+      toast.success(`Recepción ${recepcion.numeroActa} registrada.`);
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo registrar la recepción.'));
     },
   });
 }
