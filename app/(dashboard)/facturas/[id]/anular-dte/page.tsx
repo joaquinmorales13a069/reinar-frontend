@@ -57,7 +57,7 @@ export default function AnularDtePage({ params }: { params: Promise<{ id: string
     return (
       <div>
         <PageHeader
-          title="Anular DTE"
+          title="Anular factura"
           back
           backLabel="Detalle"
           onBack={() => router.push(`/facturas/${id}`)}
@@ -65,7 +65,7 @@ export default function AnularDtePage({ params }: { params: Promise<{ id: string
         <EmptyState
           icon="shield"
           title="Solo administradores"
-          message="Solo los administradores pueden anular un DTE."
+          message="Solo los administradores pueden anular una factura."
         />
       </div>
     );
@@ -110,7 +110,7 @@ export default function AnularDtePage({ params }: { params: Promise<{ id: string
   return (
     <div>
       <PageHeader
-        title={`Anular DTE — ${factura.numeroFactura}`}
+        title={`Anular factura — ${factura.numeroFactura}`}
         subtitle="Acción restringida a usuarios con rol ADMIN."
         back
         backLabel="Detalle"

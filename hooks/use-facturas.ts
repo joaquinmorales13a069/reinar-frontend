@@ -149,20 +149,21 @@ export function useSincronizarDTE() {
   });
 }
 
-// Anular SOLO el DTE (sin cambiar estado de factura). El backend lo soporta
-// pero la UI de MVP no lo expone — el flujo de anulacion del prototipo
-// anula la factura entera. Se deja definido por completitud.
-export function useAnularDTESoloDTE() {
+// Anular SOLO el DTE (sin cambiar estado de factura) para poder emitir un
+// nuevo tipo de DTE sobre la misma factura. Requiere motivo (min 10) porque
+// el backend invalida el DTE ante el MH.
+export function useAnularDTESoloDTE(id: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      api.delete<ApiResponse<unknown>>(`/facturas/${id}/dte`).then((r) => {
+    // axios manda el body de un DELETE bajo `data`.
+    mutationFn: ({ motivo }: { motivo: string }) =>
+      api.delete<ApiResponse<unknown>>(`/facturas/${id}/dte`, { data: { motivo } }).then((r) => {
         if (!r.data.success) throw new Error(r.data.error.message);
       }),
-    onSuccess: (_d, id) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['factura', id] });
       qc.invalidateQueries({ queryKey: ['facturas'] });
-      toast.success('DTE anulado.');
+      toast.success('DTE anulado. Asigná un nuevo tipo y emití.');
     },
     onError: (err) => {
       toast.error(extractErrorMessage(err, 'No se pudo anular el DTE.'));
