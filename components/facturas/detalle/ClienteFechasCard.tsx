@@ -14,6 +14,17 @@ export function ClienteFechasCard({ factura }: { factura: Factura }) {
       ? c.razonSocial ?? '—'
       : [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
 
+  // La factura pudo emitirse a un tercero (receptorClienteId) distinto del
+  // cliente que solicitó la cotización original — mostramos a ese solicitante
+  // solo cuando difiere del receptor fiscal.
+  const solicitante = factura.cotizacion.cliente;
+  const esTercero = factura.clienteId !== solicitante.id;
+  const nombreSolicitante = esTercero
+    ? solicitante.tipo === 'EMPRESA'
+      ? solicitante.razonSocial ?? '—'
+      : [solicitante.nombre, solicitante.apellido].filter(Boolean).join(' ') || '—'
+    : null;
+
   return (
     <div className="bg-bg border border-bd rounded-md p-4">
       <h3 className="text-sm font-medium text-tx mb-3">Cliente y fechas</h3>
@@ -22,6 +33,14 @@ export function ClienteFechasCard({ factura }: { factura: Factura }) {
         <dd className="text-tx">
           <Link href={`/clientes/${c.id}`} className="hover:underline">{nombre}</Link>
         </dd>
+        {esTercero && (
+          <>
+            <dt className="text-tx-3">Cotización solicitada por</dt>
+            <dd className="text-tx">
+              <Link href={`/clientes/${solicitante.id}`} className="hover:underline">{nombreSolicitante}</Link>
+            </dd>
+          </>
+        )}
         {c.tipoDocumento && c.numeroDocumento && (
           <><dt className="text-tx-3">{LABEL_TIPO_DOCUMENTO[c.tipoDocumento]}</dt><dd className="font-mono text-xs">{c.numeroDocumento}</dd></>
         )}
