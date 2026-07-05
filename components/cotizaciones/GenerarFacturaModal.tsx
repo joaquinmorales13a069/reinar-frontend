@@ -177,25 +177,11 @@ export function GenerarFacturaModal({
             </select>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-tx-2">
-              Facturar a <span className="text-tx-3 text-2xs">(opcional)</span>
-            </label>
-            <ContactoSolicitanteSelect
-              clienteId={cliente.id}
-              value={contactoFacturacionId}
-              onChange={setContactoFacturacionId}
-              defaultTipo="FACTURACION"
-            />
-            <p className="text-xs text-tx-3 mt-0.5">
-              Contacto de facturación del cliente.
-            </p>
-          </div>
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-medium text-tx-2">Facturar a</span>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-tx-2">
-              Facturar a un tercero <span className="text-tx-3 text-2xs">(opcional)</span>
-            </label>
+            {/* Receptor (principal): a qué cliente se factura. Por defecto el de la
+                cotización; se puede cambiar a un tercero (otro Cliente registrado). */}
             {!mostrarSelectorReceptor ? (
               <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-md border border-bd bg-bg-sunken">
                 <span className="text-sm text-tx">
@@ -215,6 +201,8 @@ export function GenerarFacturaModal({
                   value={receptorClienteId}
                   onChange={(clienteId, tipo) => {
                     setReceptorClienteId(clienteId);
+                    // El contacto del cliente anterior no aplica al nuevo receptor.
+                    setContactoFacturacionId(null);
                     // El tercero puede tener un tipo distinto al cliente de la
                     // cotización (ej. PARTICULAR facturado a una EMPRESA) — se
                     // re-sugiere el DTE según el tercero. Sigue siendo editable.
@@ -227,13 +215,13 @@ export function GenerarFacturaModal({
                   onClick={() => {
                     setMostrarSelectorReceptor(false);
                     setReceptorClienteId(null);
-                    // Al volver al cliente de la cotización, re-sugerir el DTE
-                    // según su tipo original.
+                    // Volver al cliente de la cotización: resetear contacto y re-sugerir DTE.
+                    setContactoFacturacionId(null);
                     setTipoDTE(cliente.tipo === 'EMPRESA' ? 'CCF' : 'FC');
                   }}
                   className="self-start text-xs text-tx-3 hover:text-tx transition-colors"
                 >
-                  Cancelar y facturar al cliente de la cotización
+                  Volver al cliente de la cotización
                 </button>
               </div>
             )}
@@ -243,6 +231,23 @@ export function GenerarFacturaModal({
                 El DTE y las cuentas por cobrar se emitirán a nombre de este tercero.
               </p>
             )}
+
+            {/* Atención / contacto (secundario, opcional): persona de la empresa a la
+                que se dirige el documento — NO cambia a quién se factura. */}
+            <div className="flex flex-col gap-1 mt-1">
+              <label className="text-xs font-medium text-tx-2">
+                Atención (contacto) <span className="text-tx-3 text-2xs">(opcional)</span>
+              </label>
+              <ContactoSolicitanteSelect
+                clienteId={receptorClienteId ?? cliente.id}
+                value={contactoFacturacionId}
+                onChange={setContactoFacturacionId}
+                defaultTipo="FACTURACION"
+              />
+              <p className="text-xs text-tx-3 mt-0.5">
+                Persona de la empresa a la que se dirige el documento. No cambia a quién se factura.
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-col gap-1">
