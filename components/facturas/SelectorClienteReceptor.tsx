@@ -12,7 +12,10 @@ import type { Cliente } from '@/types/api';
 // fuente de verdad del form.
 type Props = {
   value: string | null;
-  onChange: (clienteId: string) => void;
+  // Se expone también el `tipo` del cliente elegido (EMPRESA/PARTICULAR) para
+  // que el caller pueda re-sugerir el tipo de DTE (CCF vs FC) sin tener que
+  // volver a buscar el cliente en su propia lista.
+  onChange: (clienteId: string, tipo: Cliente['tipo']) => void;
   // Filtro post-fetch sobre los clientes devueltos por la API (ej. excluir
   // al cliente de la cotización de la lista de terceros).
   filter?: (c: Cliente) => boolean;
@@ -77,7 +80,7 @@ export function SelectorClienteReceptor({ value, onChange, filter, emptyMessage,
                 key={c.id}
                 type="button"
                 className="w-full text-left px-3 py-2 hover:bg-bg-sunken transition-colors border-b border-bd last:border-b-0"
-                onMouseDown={() => { onChange(c.id); setBusqueda(''); setOpen(false); }}
+                onMouseDown={() => { onChange(c.id, c.tipo); setBusqueda(''); setOpen(false); }}
               >
                 <div className="flex justify-between gap-3">
                   <span className="text-sm font-medium truncate">{nombreCliente(c)}</span>

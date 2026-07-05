@@ -216,12 +216,25 @@ export function GenerarFacturaModal({
               </div>
             ) : (
               <div className="flex flex-col gap-1.5">
-                <SelectorClienteReceptor value={receptorClienteId} onChange={setReceptorClienteId} />
+                <SelectorClienteReceptor
+                  value={receptorClienteId}
+                  onChange={(clienteId, tipo) => {
+                    setReceptorClienteId(clienteId);
+                    // El tercero puede tener un tipo distinto al cliente de la
+                    // cotización (ej. PARTICULAR facturado a una EMPRESA) — se
+                    // re-sugiere el DTE según el tercero. Sigue siendo editable.
+                    setTipoDTE(tipo === 'EMPRESA' ? 'CCF' : 'FC');
+                  }}
+                  filter={(c) => c.id !== cliente.id}
+                />
                 <button
                   type="button"
                   onClick={() => {
                     setMostrarSelectorReceptor(false);
                     setReceptorClienteId(null);
+                    // Al volver al cliente de la cotización, re-sugerir el DTE
+                    // según su tipo original.
+                    setTipoDTE(cliente.tipo === 'EMPRESA' ? 'CCF' : 'FC');
                   }}
                   className="self-start text-xs text-tx-3 hover:text-tx transition-colors"
                 >

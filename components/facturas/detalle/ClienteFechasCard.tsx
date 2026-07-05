@@ -29,7 +29,9 @@ export function ClienteFechasCard({ factura }: { factura: Factura }) {
     <div className="bg-bg border border-bd rounded-md p-4">
       <h3 className="text-sm font-medium text-tx mb-3">Cliente y fechas</h3>
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 text-sm">
-        <dt className="text-tx-3">Cliente</dt>
+        {/* Cuando se facturó a un tercero, "Cliente" pasa a "Facturado a" para
+            distinguir al receptor fiscal de quien solicitó la cotización. */}
+        <dt className="text-tx-3">{esTercero ? 'Facturado a' : 'Cliente'}</dt>
         <dd className="text-tx">
           <Link href={`/clientes/${c.id}`} className="hover:underline">{nombre}</Link>
         </dd>
