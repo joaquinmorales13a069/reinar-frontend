@@ -9,19 +9,13 @@ import { useActualizarCotizacion } from '@/hooks/use-cotizaciones';
 import { step3Schema } from '@/lib/schemas/cotizacion';
 import { formatCurrency } from '@/lib/utils';
 import type { z } from 'zod';
-import type { Cotizacion, CondicionesPago } from '@/types/api';
+import type { Cotizacion } from '@/types/api';
 
 // Usar el tipo de INPUT del schema (antes de defaults) para que useForm
 // no colisione con los campos que tienen .default() en el schema de salida.
 type Step3Form = z.input<typeof step3Schema>;
 
 type Props = { cotizacion: Cotizacion; onBack: () => void; onNext: () => void };
-
-const CONDICIONES: { value: CondicionesPago; label: string }[] = [
-  { value: 'CONTADO', label: 'Contado' },
-  { value: 'CREDITO', label: 'Crédito' },
-  { value: 'OTRO',    label: 'Otro' },
-];
 
 export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
   const actualizar = useActualizarCotizacion();
@@ -35,7 +29,6 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
   const { register, handleSubmit, control, watch, formState: { errors, isSubmitting } } = useForm<Step3Form>({
     resolver: zodResolver(step3Schema),
     defaultValues: {
-      condicionesPago: cotizacion.condicionesPago ?? null,
       porcentajeIva: cotizacion.porcentajeIva,
       exentoIva: cotizacion.exentoIva,
       depositoModo: depositoModoInicial,
@@ -71,9 +64,6 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
     await actualizar.mutateAsync({
       id: cotizacion.id,
       data: {
-        // || en vez de ?? para convertir "" del <select> a undefined; el backend
-        // valida cuid()/enum y rechaza string vacio como invalido.
-        condicionesPago: values.condicionesPago || undefined,
         porcentajeIva: values.porcentajeIva,
         exentoIva: values.exentoIva,
         notas: values.notas || undefined,
@@ -87,20 +77,7 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <FormSection title="Términos comerciales">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-tx mb-1.5">Condiciones de pago</label>
-            <select
-              className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx"
-              {...register('condicionesPago')}
-            >
-              <option value="">— No especificar —</option>
-              {CONDICIONES.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </select>
-          </div>
-
+        <div className="grid grid-cols-1 gap-4 md:max-w-md">
           <div>
             <span className="block text-sm font-medium text-tx mb-1.5">IVA</span>
             <div className="rounded-md border border-bd bg-bg-sunken p-3 space-y-3">
