@@ -448,12 +448,21 @@ Y reemplazar el bloque de sellado QUEDAN (líneas ~736-753) por: solo si `acta.f
 
 Asegurate de que la carga del `acta` que alimenta `_entregar` incluya `cotizacion: { select: { clienteId: true } }` y `facturaId`.
 
+- [ ] **Step 5b: Null-guardar los sitios de lectura de `acta.factura` (fallout de Task 1)**
+
+Al hacerse `ActaEntrega.facturaId` nullable (Task 1), varios sitios que **leen** `acta.factura` dejaron de compilar. Null-guardar cada uno (mostrar la factura/número cuando exista, un fallback razonable cuando no), sin cambiar comportamiento cuando la factura existe:
+- `src/modules/pdf/pdf.service.ts:596,597,689` (PDF del acta — usar `acta.factura?.…` con fallback "Sin factura"/"—").
+- `src/modules/reportes/reportes.service.ts:475,1128` (reportes que agrupan por factura del acta — usar `?.` + fallback).
+- `src/modules/herramientas/herramientas.service.ts:351` (`a.actaEntrega.factura` — `?.`).
+- `src/modules/actas/actas.service.ts:1100` (`renovarRenta` lee `acta.factura` — guardá con `?.`; si la renovación requiere la factura, lanzá un error legible cuando sea null).
+Corré `npx tsc --noEmit` y confirmá que estos sitios ya no aparecen (los que resten deben ser de Task 5 — `recepcion.factura` y el create de `ActaRecepcion`).
+
 - [ ] **Step 6: GREEN + typecheck**
 
 ```bash
 pnpm test tests/modules/facturas/ tests/modules/actas/ && npx tsc --noEmit
 ```
-Expected: PASS; tsc limpio.
+Expected: PASS; los únicos errores tsc restantes son los de Task 5 (recepción). Si querés, corré `npx tsc --noEmit 2>&1 | grep -v "recepcion\|ActaRecepcion"` para confirmar que lo tuyo quedó limpio.
 
 - [ ] **Step 7: Commit**
 
@@ -496,11 +505,18 @@ Controller: `crearRecepcion` (factura-first) resuelve `cotizacionId` vía `resol
 
 Rutas: nuevo `recepcionesCotizacionSubRouter` con `POST /` → `ctrl.crearRecepcionDesdeCotizacion`; montar en `cotizaciones.routes.ts` como `/:cotizacionId/recepciones`.
 
+- [ ] **Step 3b: Null-guardar los sitios de lectura de `recepcion.factura` (fallout de Task 1)**
+
+Al hacerse `ActaRecepcion.facturaId` nullable (Task 1), el PDF de recepción dejó de compilar. Null-guardar:
+- `src/modules/pdf/pdf.service.ts:892-894` (`recepcion.factura?.…` con fallback "Sin factura"/"—").
+Corré `npx tsc --noEmit`: tras Task 4 (lecturas de acta) + esta task (create de recepción + lecturas de recepción), el typecheck del backend debe quedar **completamente limpio**.
+
 - [ ] **Step 4: GREEN + typecheck**
 
 ```bash
 pnpm test tests/modules/actas/ && npx tsc --noEmit
 ```
+Expected: PASS; **tsc 0 errores** (todo el fallout de la migración quedó resuelto entre Tasks 2/4/5).
 
 - [ ] **Step 5: Commit**
 
