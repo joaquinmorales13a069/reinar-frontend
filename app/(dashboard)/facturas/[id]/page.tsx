@@ -24,8 +24,10 @@ import {
   useEmitirDTE,
   useSincronizarDTE,
   useEnviarDTEPorEmail,
+  useAnularDTESoloDTE,
   descargarFacturaPdfOficialDTE,
   descargarFacturaPdfBranded,
+  descargarFacturaJsonDTE,
 } from '@/hooks/use-facturas';
 import { useAuthStore } from '@/stores/auth.store';
 import type { TipoDTE } from '@/types/api';
@@ -43,6 +45,9 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
   // toast como respaldo.
   const [emitirError, setEmitirError] = useState<string | null>(null);
   const [descargandoPdfDte, setDescargandoPdfDte] = useState(false);
+  const [descargandoJsonDte, setDescargandoJsonDte] = useState(false);
+  const [anularError, setAnularError] = useState<string | null>(null);
+  const anularSoloDTE = useAnularDTESoloDTE(id);
   const [ajusteOpen, setAjusteOpen] = useState(false);
 
   if (isLoading) return <div className="flex justify-center py-12"><Spinner /></div>;
@@ -89,6 +94,25 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
       await descargarFacturaPdfOficialDTE(id, factura!.numeroFactura);
     } finally {
       setDescargandoPdfDte(false);
+    }
+  }
+
+  async function descargarJsonOficial() {
+    setDescargandoJsonDte(true);
+    try {
+      await descargarFacturaJsonDTE(id, factura!.numeroFactura);
+    } finally {
+      setDescargandoJsonDte(false);
+    }
+  }
+
+  async function anularParaCambiarTipo(motivo: string) {
+    setAnularError(null);
+    try {
+      await anularSoloDTE.mutateAsync({ motivo });
+    } catch (err) {
+      const anyErr = err as { response?: { data?: { error?: { message?: string } } } };
+      setAnularError(anyErr?.response?.data?.error?.message ?? 'No se pudo anular el DTE.');
     }
   }
 
@@ -175,7 +199,12 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             onReemitir={() => { if (factura.tipoDTE) void emitirCon(factura.tipoDTE); }}
             onSincronizar={() => { void sincronizarDTE.mutateAsync(id); }}
             onAnular={() => router.push(`/facturas/${id}/anular-dte`)}
+            onAnularSoloDTE={(motivo) => { void anularParaCambiarTipo(motivo); }}
+            isAnulandoSoloDTE={anularSoloDTE.isPending}
+            anularError={anularError}
             onDescargarPdf={() => { void descargarPdfOficial(); }}
+            onDescargarJson={() => { void descargarJsonOficial(); }}
+            isDescargandoJson={descargandoJsonDte}
             onEnviarEmail={async (email) => { await enviarDTE.mutateAsync({ email }); }}
             isEnviandoEmail={enviarDTE.isPending}
           />

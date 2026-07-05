@@ -29,6 +29,11 @@ type Props = {
   onSincronizar?: () => void;
   onReemitir?: () => void;
   onAnular?: () => void;
+  onAnularSoloDTE?: (motivo: string) => void;
+  isAnulandoSoloDTE?: boolean;
+  anularError?: string | null;
+  onDescargarJson?: () => void;
+  isDescargandoJson?: boolean;
   onDescargarPdf?: () => void;
   // Si se provee, se renderiza un input de correo + boton "Enviar por correo"
   // bajo la fila de botones cuando el DTE esta APROBADO. La funcion recibe el
@@ -66,6 +71,57 @@ export function DteSection(props: Props) {
   const { doc, kind, cliente, isAdmin, isOperador, emitirError, isEmitiendo, isSincronizando, isDescargandoPdf } = props;
   const [confirmEmit, setConfirmEmit] = useState(false);
   const [confirmTipo, setConfirmTipo] = useState<TipoDTE | null>(null);
+
+  // Confirmación inline de "anular DTE y cambiar tipo": pide un motivo (mín. 10)
+  // que se manda al MH. Valor por defecto editable.
+  const MOTIVO_ANULAR_DEFAULT = 'Cambio de tipo de documento tributario a solicitud del cliente';
+  const [confirmAnularTipo, setConfirmAnularTipo] = useState(false);
+  const [motivoAnular, setMotivoAnular] = useState(MOTIVO_ANULAR_DEFAULT);
+  const motivoAnularValido = motivoAnular.trim().length >= 10;
+
+  const anularErrorBlock = props.anularError ? (
+    <div className="mt-2 flex items-start gap-2 bg-danger-soft text-danger rounded-md px-3 py-2 text-sm">
+      <Icon name="alertTriangle" size={14} />
+      <span>{props.anularError}</span>
+    </div>
+  ) : null;
+
+  const confirmAnularTipoBlock = confirmAnularTipo ? (
+    <div className="mt-3 rounded-md border border-bd bg-bg-sunken p-3 space-y-2">
+      <div className="text-sm font-medium text-tx">Anular el DTE para cambiar de tipo</div>
+      <p className="text-xs text-tx-3">
+        El DTE se anulará ante el Ministerio de Hacienda y la factura volverá a quedar sin tipo, lista para
+        emitir de nuevo. El MH solo permite anular DTEs de hasta 3 días.
+      </p>
+      <textarea
+        rows={3}
+        value={motivoAnular}
+        onChange={(e) => setMotivoAnular(e.target.value)}
+        placeholder="Motivo de la anulación (mín. 10 caracteres)…"
+        className="w-full px-2 py-1.5 rounded border border-bd bg-bg text-sm"
+      />
+      <div className="flex items-center justify-end gap-2">
+        <button
+          type="button"
+          className="inline-flex items-center px-3 py-1.5 rounded-md text-sm border border-bd text-tx-2 hover:bg-bg-sunken"
+          onClick={() => {
+            setConfirmAnularTipo(false);
+            setMotivoAnular(MOTIVO_ANULAR_DEFAULT);
+          }}
+        >
+          Cancelar
+        </button>
+        <button
+          type="button"
+          disabled={!motivoAnularValido || props.isAnulandoSoloDTE}
+          onClick={() => { props.onAnularSoloDTE?.(motivoAnular.trim()); }}
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim disabled:opacity-50"
+        >
+          <Icon name="refresh" size={14} /> {props.isAnulandoSoloDTE ? 'Anulando…' : 'Anular y cambiar tipo'}
+        </button>
+      </div>
+    </div>
+  ) : null;
 
   const tipoActual: TipoDTE | 'NC' | null = kind === 'nota' ? 'NC' : doc.tipoDTE;
 
@@ -251,16 +307,37 @@ export function DteSection(props: Props) {
             >
               <Icon name="download" size={14} /> {isDescargandoPdf ? 'Generando…' : 'Descargar PDF oficial'}
             </button>
+            {props.onDescargarJson && (
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium border border-bd text-tx-2 hover:bg-bg-sunken disabled:opacity-50"
+                onClick={() => props.onDescargarJson?.()}
+                disabled={props.isDescargandoJson}
+              >
+                <Icon name="download" size={14} /> {props.isDescargandoJson ? 'Obteniendo…' : 'Descargar JSON'}
+              </button>
+            )}
+            {isAdmin && props.onAnularSoloDTE && (
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium border border-bd text-tx-2 hover:bg-bg-sunken"
+                onClick={() => setConfirmAnularTipo(true)}
+              >
+                <Icon name="refresh" size={14} /> Anular DTE y cambiar tipo
+              </button>
+            )}
             {isAdmin && (
               <button
                 type="button"
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium border border-danger text-danger hover:bg-danger-soft"
                 onClick={() => props.onAnular?.()}
               >
-                <Icon name="trash" size={14} /> Anular DTE
+                <Icon name="trash" size={14} /> {kind === 'nota' ? 'Anular nota' : 'Anular factura'}
               </button>
             )}
           </div>
+          {anularErrorBlock}
+          {confirmAnularTipoBlock}
           {props.onEnviarEmail && <EnviarPorCorreoForm onEnviar={props.onEnviarEmail} isEnviando={!!props.isEnviandoEmail} />}
         </>
       )}
