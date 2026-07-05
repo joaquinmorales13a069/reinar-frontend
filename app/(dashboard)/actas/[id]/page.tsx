@@ -76,7 +76,8 @@ export default function ActaDetallePage({ params }: { params: Promise<{ id: stri
           <div className="rounded-lg border border-bd bg-surface p-4">
             <h3 className="text-sm font-semibold text-tx mb-3">Datos generales</h3>
             <dl className="text-sm space-y-1.5">
-              <div className="flex justify-between gap-2"><dt className="text-tx-3">Factura</dt><dd><Link href={`/facturas/${acta.factura.id}`} className="font-mono text-accent hover:underline">{acta.factura.numeroFactura}</Link></dd></div>
+              <div className="flex justify-between gap-2"><dt className="text-tx-3">Cotización</dt><dd><Link href={`/cotizaciones/${acta.cotizacion.id}`} className="font-mono text-accent hover:underline">{acta.cotizacion.numeroCotizacion}</Link></dd></div>
+              <div className="flex justify-between gap-2"><dt className="text-tx-3">Factura</dt><dd>{acta.factura ? (<Link href={`/facturas/${acta.factura.id}`} className="font-mono text-accent hover:underline">{acta.factura.numeroFactura}</Link>) : (<span className="text-tx-3">Aún sin factura</span>)}</dd></div>
               <div className="flex justify-between gap-2"><dt className="text-tx-3">Bodega origen</dt><dd>{acta.bodegaOrigen.nombre}</dd></div>
               <div className="flex justify-between gap-2"><dt className="text-tx-3">Dirección entrega</dt><dd className="truncate max-w-xs text-right">{acta.direccionEntrega || '—'}</dd></div>
               {(acta.periodoRentaInicio || acta.periodoRentaFin) && (
