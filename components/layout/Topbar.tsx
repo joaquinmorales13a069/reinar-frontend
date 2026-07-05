@@ -21,6 +21,7 @@ const ICONO_POR_TIPO: Record<string, string> = {
   COTIZACION_RECHAZADA:  'x',
   COTIZACION_ENVIADA:    'send',
   FACTURA_EMITIDA:       'fileText',
+  FACTURA_CREADA:        'receipt',
   FACTURAS_VENCIDAS:     'alertTriangle',
   PAGO_REGISTRADO:       'dollar',
   ACTA_DESPACHADA:       'package',
@@ -28,6 +29,7 @@ const ICONO_POR_TIPO: Record<string, string> = {
   ACTA_DEVUELTA:         'package',
   DTE_APROBADO:          'check',
   DTE_ENVIADO_MANUAL:    'send',
+  DTE_RECHAZADO:         'x',
   QUEDAN_POR_ENTREGAR:   'alertTriangle',
 };
 
