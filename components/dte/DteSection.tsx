@@ -74,8 +74,9 @@ export function DteSection(props: Props) {
 
   // Confirmación inline de "anular DTE y cambiar tipo": pide un motivo (mín. 10)
   // que se manda al MH. Valor por defecto editable.
+  const MOTIVO_ANULAR_DEFAULT = 'Cambio de tipo de documento tributario a solicitud del cliente';
   const [confirmAnularTipo, setConfirmAnularTipo] = useState(false);
-  const [motivoAnular, setMotivoAnular] = useState('Cambio de tipo de documento tributario a solicitud del cliente');
+  const [motivoAnular, setMotivoAnular] = useState(MOTIVO_ANULAR_DEFAULT);
   const motivoAnularValido = motivoAnular.trim().length >= 10;
 
   const anularErrorBlock = props.anularError ? (
@@ -103,7 +104,10 @@ export function DteSection(props: Props) {
         <button
           type="button"
           className="inline-flex items-center px-3 py-1.5 rounded-md text-sm border border-bd text-tx-2 hover:bg-bg-sunken"
-          onClick={() => setConfirmAnularTipo(false)}
+          onClick={() => {
+            setConfirmAnularTipo(false);
+            setMotivoAnular(MOTIVO_ANULAR_DEFAULT);
+          }}
         >
           Cancelar
         </button>
@@ -328,7 +332,7 @@ export function DteSection(props: Props) {
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium border border-danger text-danger hover:bg-danger-soft"
                 onClick={() => props.onAnular?.()}
               >
-                <Icon name="trash" size={14} /> Anular factura
+                <Icon name="trash" size={14} /> {kind === 'nota' ? 'Anular nota' : 'Anular factura'}
               </button>
             )}
           </div>

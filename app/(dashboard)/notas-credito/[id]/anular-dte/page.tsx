@@ -35,7 +35,7 @@ export default function AnularDteNotaCreditoPage({
     return (
       <div>
         <PageHeader
-          title="Anular DTE"
+          title="Anular nota de crédito"
           back
           backLabel="Detalle"
           onBack={() => router.push(`/notas-credito/${id}`)}
@@ -68,7 +68,7 @@ export default function AnularDteNotaCreditoPage({
   return (
     <div>
       <PageHeader
-        title={`Anular DTE — ${nc.numero}`}
+        title={`Anular nota de crédito — ${nc.numero}`}
         subtitle="Acción restringida a usuarios ADMIN."
         back
         onBack={() => router.push(`/notas-credito/${id}`)}
