@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { formatDate } from '@/lib/utils';
 import { LABEL_TIPO_DOCUMENTO } from '@/lib/format-documentos';
+import { Badge } from '@/components/ui/Badge';
 import type { Factura } from '@/types/api';
 
 export function ClienteFechasCard({ factura }: { factura: Factura }) {
@@ -27,8 +28,23 @@ export function ClienteFechasCard({ factura }: { factura: Factura }) {
         {c.ncr && (<><dt className="text-tx-3">NCR</dt><dd className="font-mono text-xs">{c.ncr}</dd></>)}
         <dt className="text-tx-3">Emisión</dt>
         <dd className="font-mono text-xs">{formatDate(factura.fechaEmision)}</dd>
+        <dt className="text-tx-3">Condición de pago</dt>
+        <dd>
+          {factura.condicionPago ? (
+            <Badge
+              status={factura.condicionPago === 'CONTADO' ? 'Contado' : factura.condicionPago === 'CREDITO' ? 'Crédito' : 'Otro'}
+              kind={factura.condicionPago === 'CONTADO' ? 'info' : 'accent'}
+            />
+          ) : (
+            '—'
+          )}
+        </dd>
         <dt className="text-tx-3">Vencimiento</dt>
-        <dd className="font-mono text-xs">{formatDate(factura.fechaVencimiento)}</dd>
+        <dd className="font-mono text-xs">
+          {factura.fechaVencimiento
+            ? formatDate(factura.fechaVencimiento)
+            : 'Se define al entregar'}
+        </dd>
         <dt className="text-tx-3">Cotización origen</dt>
         <dd>
           <Link href={`/cotizaciones/${factura.cotizacionId}`} className="font-mono text-xs hover:underline">
