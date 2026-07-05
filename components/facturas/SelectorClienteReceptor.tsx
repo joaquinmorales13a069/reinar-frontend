@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { useClientes } from '@/hooks/use-clientes';
+import { nombreCliente } from '@/lib/utils';
 import type { Cliente } from '@/types/api';
 
 // Typeahead minimalista sin dropdown library, espejando SelectorCotizacion:
@@ -25,13 +26,6 @@ type Props = {
 
 const inputBase =
   'w-full pl-10 pr-3 py-2 text-sm rounded-md border border-bd bg-surface text-tx placeholder:text-tx-3 focus:outline-none focus:border-accent transition-colors';
-
-// razonSocial es null para clientes PARTICULARES — mostramos nombre completo como fallback.
-function nombreCliente(c: Cliente): string {
-  if (c.tipo === 'EMPRESA') return c.razonSocial ?? '—';
-  const partes = [c.nombre, c.apellido].filter(Boolean);
-  return partes.join(' ') || '—';
-}
 
 export function SelectorClienteReceptor({ value, onChange, filter, emptyMessage, placeholder }: Props) {
   const [busqueda, setBusqueda] = useState('');

@@ -8,6 +8,7 @@ import { SelectorClienteReceptor } from '@/components/facturas/SelectorClienteRe
 import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { DIAS_UTC, LABEL_DIA } from '@/lib/dias-semana';
+import { nombreCliente } from '@/lib/utils';
 import type { Cliente } from '@/types/api';
 
 interface Props {
@@ -32,12 +33,6 @@ const inputBase =
 // el guard del backend, que rechaza vencimientos de crédito anteriores a hoy.
 function hoyISO(): string {
   return new Date().toISOString().slice(0, 10);
-}
-
-// razonSocial es null para clientes PARTICULARES — mostramos nombre completo como fallback.
-function nombreCliente(c: { tipo: 'EMPRESA' | 'PARTICULAR'; razonSocial: string | null; nombre: string | null; apellido: string | null }): string {
-  if (c.tipo === 'EMPRESA') return c.razonSocial ?? '—';
-  return [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
 }
 
 export function GenerarFacturaModal({

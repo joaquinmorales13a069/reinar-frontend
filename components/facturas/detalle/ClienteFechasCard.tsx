@@ -1,29 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { formatDate } from '@/lib/utils';
+import { formatDate, nombreCliente } from '@/lib/utils';
 import { LABEL_TIPO_DOCUMENTO } from '@/lib/format-documentos';
 import { Badge } from '@/components/ui/Badge';
 import type { Factura } from '@/types/api';
 
 export function ClienteFechasCard({ factura }: { factura: Factura }) {
   const c = factura.cliente;
-  // Nombre del cliente: EMPRESA usa razonSocial, PARTICULAR arma con nombre+apellido.
-  const nombre =
-    c.tipo === 'EMPRESA'
-      ? c.razonSocial ?? '—'
-      : [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
+  const nombre = nombreCliente(c);
 
   // La factura pudo emitirse a un tercero (receptorClienteId) distinto del
   // cliente que solicitó la cotización original — mostramos a ese solicitante
   // solo cuando difiere del receptor fiscal.
   const solicitante = factura.cotizacion.cliente;
   const esTercero = factura.clienteId !== solicitante.id;
-  const nombreSolicitante = esTercero
-    ? solicitante.tipo === 'EMPRESA'
-      ? solicitante.razonSocial ?? '—'
-      : [solicitante.nombre, solicitante.apellido].filter(Boolean).join(' ') || '—'
-    : null;
+  const nombreSolicitante = esTercero ? nombreCliente(solicitante) : null;
 
   return (
     <div className="bg-bg border border-bd rounded-md p-4">
