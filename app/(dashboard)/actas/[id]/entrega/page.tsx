@@ -37,10 +37,10 @@ export default function EntregaPage({ params }: { params: Promise<{ id: string }
     },
   });
 
-  // Sin factura (acta creada directo desde cotización), no tenemos clienteId
-  // hoy — el backend no expone el cliente vía la relación cotización del
-  // acta. El buscador de contactos simplemente queda vacío en ese caso.
-  const clienteId = acta?.factura?.clienteId ?? null;
+  // Sin factura (acta creada directo desde cotización), el clienteId se
+  // resuelve vía la cotización origen — el backend ahora la incluye en el
+  // detalle del acta.
+  const clienteId = acta?.factura?.clienteId ?? acta?.cotizacion.clienteId ?? null;
 
   // Solo buscar contactos cuando ya sabemos el clienteId del acta.
   const { data: contactosResp } = useContactos(

@@ -1248,7 +1248,14 @@ export type ActaListItem = {
   createdAt: string;
   bodegaOrigen: { id: string; nombre: string };
   usuarioDespacho: { id: string; nombre: string; apellido: string } | null;
-  cotizacion: { id: string; numeroCotizacion: string };
+  // clienteId + cliente ahora vienen también vía cotización — necesario para
+  // mostrar el cliente de actas cotización-first (sin factura todavía).
+  cotizacion: {
+    id: string;
+    numeroCotizacion: string;
+    clienteId: string;
+    cliente: { id: string; razonSocial: string | null; nombre: string | null; apellido: string | null };
+  };
   factura?: {
     id: string;
     numeroFactura: string;
@@ -1283,7 +1290,14 @@ export type Acta = {
   contactoReceptor: { id: string; nombre: string } | null;
   receptorNombre: string | null;
   receptorDocumento: string | null;
-  cotizacion: { id: string; numeroCotizacion: string };
+  // El backend ahora incluye el cliente vía la cotización — es la única forma
+  // de resolver el cliente cuando el acta todavía no tiene factura (facturaId null).
+  cotizacion: {
+    id: string;
+    numeroCotizacion: string;
+    clienteId: string;
+    cliente: { id: string; razonSocial: string | null; nombre: string | null; apellido: string | null };
+  };
   factura?: { id: string; numeroFactura: string; clienteId: string } | null;
   items: ActaItem[];
   renovaciones?: { id: string; numeroCotizacion: string; estado: EstadoCotizacion; factura: { id: string; numeroFactura: string } | null }[];

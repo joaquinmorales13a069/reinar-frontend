@@ -6,11 +6,28 @@ import { z } from 'zod';
 // un refine en zodResolver bloqueaba el submit silenciosamente cuando el
 // error caía en items.<n> en lugar de items.message. El backend revalida
 // con el mismo refine, así que no perdemos seguridad.
-export const crearRecepcionFormSchema = z.object({
-  facturaId: z.string().min(1, 'Seleccioná una factura'),
-  numeroActaFisico: z.string().optional(),
-  horaRecepcion: z.string().optional(),
-  observaciones: z.string().optional(),
-});
+//
+// facturaId/cotizacionId son XOR — igual que crearActaFormSchema — porque la
+// devolución puede anclar en una factura (flujo clásico) o directo en la
+// cotización origen (acta cotización-first sin factura todavía).
+export const crearRecepcionFormSchema = z
+  .object({
+    facturaId: z.string().optional(),
+    cotizacionId: z.string().optional(),
+    numeroActaFisico: z.string().optional(),
+    horaRecepcion: z.string().optional(),
+    observaciones: z.string().optional(),
+  })
+  .superRefine((d, ctx) => {
+    const hasFactura = !!d.facturaId;
+    const hasCotizacion = !!d.cotizacionId;
+    if (hasFactura === hasCotizacion) {
+      const message = hasFactura
+        ? 'La recepción debe originarse en una factura o una cotización, no ambas'
+        : 'Seleccioná una factura o una cotización de origen';
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message, path: ['facturaId'] });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message, path: ['cotizacionId'] });
+    }
+  });
 
 export type CrearRecepcionForm = z.infer<typeof crearRecepcionFormSchema>;

@@ -41,8 +41,8 @@ export function ActaTablaListado({ actas }: { actas: ActaListItem[] }) {
               <td className="px-3 py-2 font-mono text-xs text-tx-2">
                 {a.factura ? a.factura.numeroFactura : <span className="text-tx-3">Sin factura</span>}
               </td>
-              {/* Sin factura no tenemos cliente hoy (el backend no lo expone vía cotización). */}
-              <td className="px-3 py-2 truncate max-w-xs">{a.factura ? nombreCliente(a.factura.cliente) : '—'}</td>
+              {/* Sin factura (acta cotización-first), el cliente se resuelve vía cotización. */}
+              <td className="px-3 py-2 truncate max-w-xs">{nombreCliente(a.factura?.cliente ?? a.cotizacion.cliente)}</td>
               <td className="px-3 py-2 text-xs text-tx-2">{a.bodegaOrigen.nombre}</td>
               <td className="px-3 py-2"><Badge status={a.estado} /></td>
               <td className="px-3 py-2 font-mono text-xs text-tx-2">{a.fechaDespacho ? formatDate(a.fechaDespacho) : '—'}</td>
