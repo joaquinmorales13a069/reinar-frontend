@@ -9,6 +9,7 @@ import { CotizacionStatusBadge } from '@/components/cotizaciones/CotizacionStatu
 import { ItemsTabla } from '@/components/cotizaciones/detalle/ItemsTabla';
 import { ResumenLateral } from '@/components/cotizaciones/detalle/ResumenLateral';
 import { AccionesEstado } from '@/components/cotizaciones/detalle/AccionesEstado';
+import { VariantesCard } from '@/components/cotizaciones/detalle/VariantesCard';
 import { DepositoPanel } from '@/components/cotizaciones/DepositoPanel';
 import { useCotizacion } from '@/hooks/use-cotizaciones';
 import { formatDate } from '@/lib/utils';
@@ -88,6 +89,8 @@ export default function CotizacionDetallePage({ params }: { params: Promise<{ id
               )}
             </div>
           )}
+
+          <VariantesCard cotizacion={cot} />
         </div>
 
         <ResumenLateral cotizacion={cot} />

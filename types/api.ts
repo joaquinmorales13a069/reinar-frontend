@@ -60,6 +60,7 @@ export type Notificacion = {
 };
 
 import type { DiaSemana } from '@/lib/dias-semana';
+import type { TipoDocumentoCliente } from '@/lib/format-documentos';
 
 export type Cliente = {
   id: string;
@@ -731,7 +732,7 @@ export type FiltrosProyectos = {
 // CANCELADA es estado terminal asignado automaticamente al anular la factura
 // generada por la cotizacion. Libera el inventario reservado y no permite
 // re-aprobacion — si se quiere rehacer la venta, crear una nueva cotizacion.
-export type EstadoCotizacion = 'BORRADOR' | 'ENVIADA' | 'APROBADA' | 'RECHAZADA' | 'CANCELADA';
+export type EstadoCotizacion = 'BORRADOR' | 'ENVIADA' | 'APROBADA' | 'RECHAZADA' | 'CANCELADA' | 'DESCARTADA';
 
 export type TipoItemCotizacion =
   | 'EQUIPO'
@@ -846,6 +847,9 @@ export type Cotizacion = {
   factura: { id: string; numeroFactura: string; estado: string } | null;
   actaEntregaOrigenId: string | null;
   actaEntregaOrigen?: { id: string; numeroActa: string } | null;
+  // Hermanas del mismo consecutivo (variantes con sufijo -B..-Z). El backend
+  // siempre lo devuelve ([] cuando no hay variantes).
+  variantes: { id: string; numeroCotizacion: string; estado: EstadoCotizacion; total: string }[];
 };
 
 export type CrearCotizacionDto = {
@@ -990,6 +994,11 @@ export type EstadoDTE =
 
 export type TipoDTE = 'FC' | 'CCF' | 'SUJETO_EXCLUIDO';
 
+// FSE (SUJETO_EXCLUIDO) pasó a ser documento de compras (módulo /fse) — el
+// flujo de ventas solo puede emitir FC/CCF. TipoDTE (lectura) conserva el
+// tercer valor para que facturas históricas con FSE sigan mostrando su badge.
+export type TipoDTEEmitible = 'FC' | 'CCF';
+
 // El backend tambien acepta ANTICIPO, pero solo lo asigna el servicio de
 // cotizaciones al aprobar — la UI no lo expone como opcion al registrar pago.
 export type MetodoPago =
@@ -1107,6 +1116,9 @@ export type Factura = {
   fechaEntregaReal: string | null;
   periodoRentaInicio: string | null;
   periodoRentaFin: string | null;
+  // Folio del talonario físico manual — respaldo del PDF cuando no hay actas
+  // despachadas con folio.
+  numeroActaFisicoManual: string | null;
   createdAt: string;
   updatedAt: string;
   cliente: Cliente;
@@ -1148,6 +1160,7 @@ export type ActualizarFacturaDto = {
   fechaVencimiento?: string;
   periodoRentaInicio?: string | null;
   periodoRentaFin?: string | null;
+  numeroActaFisicoManual?: string | null;
   plazoCredito?: number;
 };
 
@@ -1157,7 +1170,7 @@ export type CambiarEstadoFacturaDto = {
 };
 
 export type EmitirDTEDto = {
-  tipoDTE: TipoDTE;
+  tipoDTE: TipoDTEEmitible;
 };
 
 export type CrearPagoDto = {
@@ -1246,6 +1259,7 @@ export type ActaItem = {
 export type ActaListItem = {
   id: string;
   numeroActa: string;
+  numeroActaFisico: string | null;
   estado: EstadoActa;
   // Flujo cotización-first: cotizacionId siempre existe; facturaId queda
   // null hasta que la cotización origen se facture (o nunca si no se factura).
@@ -1798,6 +1812,81 @@ export type FiltrosAuditLog = {
   hasta?: string;
 };
 
+// ─── FSE: compras a sujetos excluidos ─────────────────────────────────
+export type TipoItemFse = 'BIENES' | 'SERVICIOS';
+export type TipoPersonaProveedor = 'NATURAL' | 'JURIDICA';
+
+export type FseItem = {
+  id: string;
+  tipoItem: TipoItemFse;
+  descripcion: string;
+  cantidad: number;
+  precioUnitario: string;
+  subtotal: string;
+  orden: number;
+};
+
+export type FseListItem = {
+  id: string;
+  numeroFse: string;
+  fechaEmision: string;
+  estadoDTE: EstadoDTE;
+  totalCompra: string;
+  reteRenta: string;
+  totalPagar: string;
+  proveedor: { id: string; nombre: string };
+  _count: { items: number };
+};
+
+export type Fse = {
+  id: string;
+  numeroFse: string;
+  proveedorId: string;
+  proveedor: Proveedor;
+  fechaEmision: string;
+  condicionPago: 'CONTADO' | 'CREDITO';
+  subtotalBienes: string;
+  subtotalServicios: string;
+  totalCompra: string;
+  reteRenta: string;
+  totalPagar: string;
+  exonerarReteRenta: boolean;
+  motivoExoneracion: string | null;
+  estadoDTE: EstadoDTE;
+  dteId: string | null;
+  dteControlNumber: string | null;
+  dteRespuestaMH: DteRespuestaMH;
+  notas: string | null;
+  creadoPor: { id: string; nombre: string; apellido: string };
+  items: FseItem[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CrearFseItemDto = { tipoItem: TipoItemFse; descripcion: string; cantidad: number; precioUnitario: number };
+export type CrearFseDto = {
+  proveedorId: string;
+  condicionPago: 'CONTADO' | 'CREDITO';
+  exonerarReteRenta: boolean;
+  motivoExoneracion?: string;
+  notas?: string;
+  items: CrearFseItemDto[];
+};
+
+export type PlantillaFse = { id: string; proveedorId: string; descripcion: string; tipoItem: TipoItemFse; precioUnitario: string | null; createdAt: string };
+
+export type CrearPlantillaFseDto = { descripcion: string; tipoItem: TipoItemFse; precioUnitario?: number };
+
+// El backend (filtrosFseSchema) no acepta `search` — solo estos filtros.
+export type FiltrosFse = {
+  page?: number;
+  limit?: number;
+  proveedorId?: string;
+  estadoDTE?: EstadoDTE;
+  fechaDesde?: string;
+  fechaHasta?: string;
+};
+
 // ─── Proveedores (E3) ────────────────────────────────────────────────
 
 export type Proveedor = {
@@ -1812,6 +1901,21 @@ export type Proveedor = {
   activo: boolean;
   createdAt: string;
   updatedAt: string;
+  // Campos fiscales agregados para FSE (compras a sujetos excluidos) — el backend
+  // los usa para armar el DTE de sujeto excluido y calcular la retención de renta.
+  tipoDocumento?: TipoDocumentoCliente | null;
+  numeroDocumento?: string | null;
+  tipoPersona?: TipoPersonaProveedor | null;
+  actividadEconomica?: string | null;
+  departamento?: string | null;
+  municipio?: string | null;
+  distrito?: string | null;
+  complemento?: string | null;
+  giroPredominante?: TipoItemFse | null;
+  // Solo viene en el detalle (GET /proveedores/:id) — el backend calcula
+  // elegibilidad FSE y el acumulado de compras de los últimos 12 meses.
+  elegibilidadFse?: { elegible: boolean; motivo: string | null };
+  acumuladoFse12m?: string;
 };
 
 export type CrearProveedorDto = {
@@ -1822,6 +1926,18 @@ export type CrearProveedorDto = {
   telefono?: string;
   email?: string;
   notas?: string;
+  // Datos fiscales opcionales para FSE (compras a sujetos excluidos) — espejo
+  // de crearProveedorFields en el backend. Se reutiliza el mismo DTO para
+  // crear y editar (useEditarProveedor manda el mismo shape en el PUT).
+  tipoDocumento?: TipoDocumentoCliente;
+  numeroDocumento?: string;
+  tipoPersona?: TipoPersonaProveedor;
+  actividadEconomica?: string;
+  departamento?: string;
+  municipio?: string;
+  distrito?: string;
+  complemento?: string;
+  giroPredominante?: TipoItemFse;
 };
 
 export type DatosCompraDto = {

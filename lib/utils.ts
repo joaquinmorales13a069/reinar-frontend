@@ -87,3 +87,19 @@ export function nombreCliente(cliente: {
   if (esEmpresa) return cliente.razonSocial ?? '—';
   return [cliente.nombre, cliente.apellido].filter(Boolean).join(' ') || '—';
 }
+
+// Número que ve el cliente: sin el sufijo interno de variante (-B..-Z) que
+// distingue cotizaciones hermanas del mismo consecutivo. Espejo del helper
+// homónimo del backend (server/src/lib/variantes.ts).
+export function numeroComercial(numero: string): string {
+  return numero.replace(/-[B-Z]$/, '');
+}
+
+// Letra de opción cuando el número tiene variantes: sufijo para variantes,
+// 'A' para la original con variantes, null sin variantes. Espejo del helper
+// del backend (server/src/lib/variantes.ts).
+export function letraOpcion(numero: string, tieneVariantes: boolean): string | null {
+  const sufijo = /-([B-Z])$/.exec(numero)?.[1];
+  if (sufijo) return sufijo;
+  return tieneVariantes ? 'A' : null;
+}

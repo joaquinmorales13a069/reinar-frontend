@@ -7,7 +7,7 @@ import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { EstadoDteBadge } from '@/components/facturas/EstadoDteBadge';
 import { TipoDteBadge } from '@/components/facturas/TipoDteBadge';
 import { formatDate } from '@/lib/utils';
-import type { Cliente, Factura, TipoDTE } from '@/types/api';
+import type { Cliente, Factura, TipoDTE, TipoDTEEmitible } from '@/types/api';
 
 type DocBase = Pick<
   Factura,
@@ -24,7 +24,7 @@ type Props = {
   isEmitiendo?: boolean;
   isSincronizando?: boolean;
   isDescargandoPdf?: boolean;
-  onAsignarTipo?: (tipo: TipoDTE) => void;
+  onAsignarTipo?: (tipo: TipoDTEEmitible) => void;
   onEmitir?: () => void;
   onSincronizar?: () => void;
   onReemitir?: () => void;
@@ -40,6 +40,10 @@ type Props = {
   // correo destino; el sub-componente padre maneja la llamada y feedback.
   onEnviarEmail?: (email: string) => Promise<void> | void;
   isEnviandoEmail?: boolean;
+  // FSE historicos (tipoDTE SUJETO_EXCLUIDO) ya no se emiten/reemiten desde
+  // ventas — el flujo se movio al modulo de Compras (Task 7). Oculta los
+  // botones de emision/reemision y muestra una nota explicativa en su lugar.
+  emisionBloqueada?: boolean;
 };
 
 const TIPO_INFO: Record<TipoDTE, { label: string; desc: string }> = {
@@ -51,17 +55,11 @@ const TIPO_INFO: Record<TipoDTE, { label: string; desc: string }> = {
 // Cada tipo de DTE exige campos distintos del cliente; el backend rechaza
 // la emision si faltan. Devolvemos el motivo legible para el tooltip cuando
 // la opcion queda deshabilitada.
-function motivoBloqueo(tipo: TipoDTE, c: Props['cliente']): string | null {
+function motivoBloqueo(tipo: TipoDTEEmitible, c: Props['cliente']): string | null {
   if (!c) return 'Falta información del cliente';
   if (tipo === 'CCF') {
     if (!c.ncr) return 'Requiere NCR en el cliente';
     if (!c.actividadEconomica) return 'Requiere actividad económica en el cliente';
-    return null;
-  }
-  if (tipo === 'SUJETO_EXCLUIDO') {
-    if (!c.numeroDocumento) return 'Requiere documento de identidad en el cliente';
-    if (!c.actividadEconomica) return 'Requiere actividad económica en el cliente';
-    if (!c.departamento || !c.municipio || !c.complemento) return 'Requiere dirección completa (departamento, municipio, complemento)';
     return null;
   }
   return null;
@@ -70,7 +68,7 @@ function motivoBloqueo(tipo: TipoDTE, c: Props['cliente']): string | null {
 export function DteSection(props: Props) {
   const { doc, kind, cliente, isAdmin, isOperador, emitirError, isEmitiendo, isSincronizando, isDescargandoPdf } = props;
   const [confirmEmit, setConfirmEmit] = useState(false);
-  const [confirmTipo, setConfirmTipo] = useState<TipoDTE | null>(null);
+  const [confirmTipo, setConfirmTipo] = useState<TipoDTEEmitible | null>(null);
 
   // Confirmación inline de "anular DTE y cambiar tipo": pide un motivo (mín. 10)
   // que se manda al MH. Valor por defecto editable.
@@ -136,8 +134,8 @@ export function DteSection(props: Props) {
         <p className="text-sm text-tx-2 mb-4">
           Esta factura no tiene tipo de documento tributario asignado. Seleccioná uno antes de emitir al Ministerio de Hacienda.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {(['FC', 'CCF', 'SUJETO_EXCLUIDO'] as const).map((t) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {(['FC', 'CCF'] as const).map((t) => {
             const bloqueo = motivoBloqueo(t, cliente);
             const deshabilitado = !!bloqueo;
             return (
@@ -235,7 +233,12 @@ export function DteSection(props: Props) {
               <span>{emitirError}</span>
             </div>
           )}
-          {isOperador && !confirmEmit && (
+          {props.emisionBloqueada && (
+            <p className="mt-3 text-xs text-tx-3">
+              Los FSE ahora se gestionan desde el módulo de Compras.
+            </p>
+          )}
+          {isOperador && !props.emisionBloqueada && !confirmEmit && (
             <button
               type="button"
               className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim"
@@ -245,7 +248,7 @@ export function DteSection(props: Props) {
               <Icon name="send" size={14} /> Emitir DTE
             </button>
           )}
-          {isOperador && confirmEmit && (
+          {isOperador && !props.emisionBloqueada && confirmEmit && (
             <div className="mt-3">
               <ConfirmRow
                 message={`Se enviará la ${tipoActual} al MH. Esta acción no se puede deshacer fácilmente. ¿Confirmar?`}
@@ -367,7 +370,12 @@ Descripción: ${descripcion ?? '—'}${observaciones.length > 0 ? '\n\nObservaci
               </div>
             );
           })()}
-          {isOperador && (
+          {props.emisionBloqueada && (
+            <p className="mt-3 text-xs text-tx-3">
+              Los FSE ahora se gestionan desde el módulo de Compras.
+            </p>
+          )}
+          {isOperador && !props.emisionBloqueada && (
             <button
               type="button"
               className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim"

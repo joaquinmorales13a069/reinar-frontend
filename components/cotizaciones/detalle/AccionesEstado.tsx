@@ -9,8 +9,10 @@ import { GenerarFacturaModal } from '@/components/cotizaciones/GenerarFacturaMod
 import {
   descargarCotizacionPdf,
   useCambiarEstadoCotizacion,
+  useCrearVariante,
   useEliminarCotizacion,
 } from '@/hooks/use-cotizaciones';
+import { letraOpcion } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 import type { Cotizacion } from '@/types/api';
 
@@ -23,8 +25,20 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
   const [conflicto, setConflicto] = useState<string | null>(null);
   const cambiar = useCambiarEstadoCotizacion();
   const eliminar = useEliminarCotizacion();
+  const crearVariante = useCrearVariante();
   const user = useAuthStore((s) => s.user);
   const puedeEscribir = !!user && user.rol !== 'VISUALIZADOR';
+  // El backend revalida; esto solo evita el round-trip con un hint claro.
+  const varianteAprobada = (cotizacion.variantes ?? []).some((v) => v.estado === 'APROBADA');
+
+  async function nuevaVariante() {
+    try {
+      const v = await crearVariante.mutateAsync(cotizacion.id);
+      router.push(`/cotizaciones/${v.id}`);
+    } catch {
+      // el hook ya muestra el toast de error
+    }
+  }
 
   const btnBase =
     'inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors';
@@ -56,6 +70,15 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
   if (cotizacion.estado === 'BORRADOR') {
     botones = (
       <>
+        <button
+          type="button"
+          disabled={crearVariante.isPending || varianteAprobada}
+          title={varianteAprobada ? 'Ya existe una variante aprobada de este número' : undefined}
+          className={`${btnBase} border border-bd text-tx-2 hover:bg-bg-sunken disabled:opacity-50`}
+          onClick={() => { void nuevaVariante(); }}
+        >
+          <Icon name="copy" size={14} /> {crearVariante.isPending ? 'Creando…' : 'Crear variante'}
+        </button>
         <Link href={`/cotizaciones/${cotizacion.id}/editar`} className={`${btnBase} border border-bd text-tx-2 hover:bg-bg-sunken`}>
           <Icon name="edit" size={14} /> Editar
         </Link>
@@ -70,6 +93,15 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
   } else if (cotizacion.estado === 'ENVIADA') {
     botones = (
       <>
+        <button
+          type="button"
+          disabled={crearVariante.isPending || varianteAprobada}
+          title={varianteAprobada ? 'Ya existe una variante aprobada de este número' : undefined}
+          className={`${btnBase} border border-bd text-tx-2 hover:bg-bg-sunken disabled:opacity-50`}
+          onClick={() => { void nuevaVariante(); }}
+        >
+          <Icon name="copy" size={14} /> {crearVariante.isPending ? 'Creando…' : 'Crear variante'}
+        </button>
         <button type="button" className={`${btnBase} border border-bd text-danger hover:bg-danger-soft`} onClick={() => setConfirm('rechazar')}>
           <Icon name="x" size={14} /> Rechazar
         </button>
@@ -111,7 +143,13 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
       <button
         type="button"
         className={`${btnBase} border border-bd text-tx-2 hover:bg-bg-sunken`}
-        onClick={() => void descargarCotizacionPdf(cotizacion.id, cotizacion.numeroCotizacion)}
+        onClick={() =>
+          void descargarCotizacionPdf(
+            cotizacion.id,
+            cotizacion.numeroCotizacion,
+            letraOpcion(cotizacion.numeroCotizacion, (cotizacion.variantes ?? []).length > 0),
+          )
+        }
       >
         <Icon name="download" size={14} /> PDF
       </button>

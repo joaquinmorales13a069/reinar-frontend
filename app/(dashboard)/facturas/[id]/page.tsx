@@ -16,6 +16,7 @@ import { PagosCard } from '@/components/facturas/detalle/PagosCard';
 import { ProgresoCobroCard } from '@/components/facturas/detalle/ProgresoCobroCard';
 import { ActasVinculadasCard } from '@/components/facturas/detalle/ActasVinculadasCard';
 import { PeriodoFacturaCard } from '@/components/facturas/detalle/PeriodoFacturaCard';
+import { ActaFisicaCard } from '@/components/facturas/detalle/ActaFisicaCard';
 import { AjustarEstadoCard } from '@/components/facturas/detalle/AjustarEstadoCard';
 import { HeaderAcciones } from '@/components/facturas/detalle/HeaderAcciones';
 import { DteSection } from '@/components/dte/DteSection';
@@ -30,7 +31,7 @@ import {
   descargarFacturaJsonDTE,
 } from '@/hooks/use-facturas';
 import { useAuthStore } from '@/stores/auth.store';
-import type { TipoDTE } from '@/types/api';
+import type { TipoDTEEmitible } from '@/types/api';
 
 export default function FacturaDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -78,7 +79,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
       ? factura.cliente.razonSocial ?? '—'
       : [factura.cliente.nombre, factura.cliente.apellido].filter(Boolean).join(' ') || '—';
 
-  async function emitirCon(tipo: TipoDTE) {
+  async function emitirCon(tipo: TipoDTEEmitible) {
     setEmitirError(null);
     try {
       await emitirDTE.mutateAsync({ id, data: { tipoDTE: tipo } });
@@ -195,8 +196,15 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             isSincronizando={sincronizarDTE.isPending}
             isDescargandoPdf={descargandoPdfDte}
             onAsignarTipo={(t) => { void emitirCon(t); }}
-            onEmitir={() => { if (factura.tipoDTE) void emitirCon(factura.tipoDTE); }}
-            onReemitir={() => { if (factura.tipoDTE) void emitirCon(factura.tipoDTE); }}
+            // Históricos con tipoDTE SUJETO_EXCLUIDO (FSE) ya no se pueden
+            // (re)emitir desde ventas — el backend tampoco lo acepta (Task 7).
+            onEmitir={() => {
+              if (factura.tipoDTE && factura.tipoDTE !== 'SUJETO_EXCLUIDO') void emitirCon(factura.tipoDTE);
+            }}
+            onReemitir={() => {
+              if (factura.tipoDTE && factura.tipoDTE !== 'SUJETO_EXCLUIDO') void emitirCon(factura.tipoDTE);
+            }}
+            emisionBloqueada={factura.tipoDTE === 'SUJETO_EXCLUIDO'}
             onSincronizar={() => { void sincronizarDTE.mutateAsync(id); }}
             onAnular={() => router.push(`/facturas/${id}/anular-dte`)}
             onAnularSoloDTE={(motivo) => { void anularParaCambiarTipo(motivo); }}
@@ -210,6 +218,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
           />
           <ItemsFacturadosCard factura={factura} />
           <PeriodoFacturaCard factura={factura} />
+          <ActaFisicaCard factura={factura} />
           <PagosCard factura={factura} isOperador={isOperador} isAdminOGerente={isAdminOGerente} />
           <ActasVinculadasCard factura={factura} puedeEscribir={!!puedeEscribir} />
         </div>

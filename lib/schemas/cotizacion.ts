@@ -24,16 +24,19 @@ export const step3Schema = z
       .default(13),
     exentoIva: z.boolean().default(false),
     depositoModo: z.enum(['NINGUNO', 'MONTO']).default('NINGUNO'),
-    depositoMonto: z.number().positive().optional().nullable(),
+    // Sin .positive() en la base: el monto solo importa en modo MONTO y se
+    // exige en el superRefine. Así un residuo saneado (null) en modo NINGUNO
+    // nunca bloquea el submit.
+    depositoMonto: z.number().nullable().optional(),
     notas: z.string().optional().nullable(),
     notasInternas: z.string().optional().nullable(),
   })
   .superRefine((data, ctx) => {
-    if (data.depositoModo === 'MONTO' && !data.depositoMonto) {
+    if (data.depositoModo === 'MONTO' && (data.depositoMonto == null || data.depositoMonto <= 0)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['depositoMonto'],
-        message: 'Ingresa el monto',
+        message: 'Ingresa un monto mayor a 0',
       });
     }
   });

@@ -40,6 +40,14 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: 'Compras',
+    items: [
+      { id: 'fse',                 label: 'FSE — Sujeto Excluido',   href: '/fse',                 icon: 'receipt' },
+      { id: 'proveedores',         label: 'Proveedores',             href: '/proveedores',         icon: 'building' },
+      { id: 'ingresos-inventario', label: 'Ingresos de inventario',  href: '/ingresos-inventario', icon: 'download' },
+    ],
+  },
+  {
     label: 'Inventario',
     items: [
       { id: 'equipos',        label: 'Equipos',                href: '/equipos',        icon: 'package' },
@@ -48,8 +56,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { id: 'herramientas',   label: 'Herramientas & Consum.', href: '/herramientas',   icon: 'hammer' },
       { id: 'bodegas',               label: 'Bodegas',                href: '/bodegas',               icon: 'warehouse' },
       { id: 'mantenimientos',        label: 'Mantenimientos',         href: '/mantenimientos',        icon: 'wrench' },
-      { id: 'proveedores',           label: 'Proveedores',            href: '/proveedores',           icon: 'building' },
-      { id: 'ingresos-inventario',   label: 'Ingresos de inventario', href: '/ingresos-inventario',   icon: 'download' },
     ],
   },
   {
@@ -124,18 +130,27 @@ export const BOTTOM_NAV_ITEMS: BottomNavSlot[] = [
   },
   {
     kind: 'group',
+    id: 'compras',
+    label: 'Compras',
+    icon: 'receipt',
+    children: [
+      NAV_GROUPS[2].items[0], // FSE — Sujeto Excluido
+      NAV_GROUPS[2].items[1], // Proveedores
+      NAV_GROUPS[2].items[2], // Ingresos de inventario
+    ],
+  },
+  {
+    kind: 'group',
     id: 'inventario',
     label: 'Inventario',
     icon: 'package',
     children: [
-      NAV_GROUPS[2].items[0], // Equipos
-      NAV_GROUPS[2].items[2], // Andamios
-      NAV_GROUPS[2].items[3], // Herramientas & Consum.
-      NAV_GROUPS[2].items[1], // Servicios
-      NAV_GROUPS[2].items[4], // Bodegas
-      NAV_GROUPS[2].items[5], // Mantenimientos
-      NAV_GROUPS[2].items[6], // Proveedores
-      NAV_GROUPS[2].items[7], // Ingresos de inventario
+      NAV_GROUPS[3].items[0], // Equipos
+      NAV_GROUPS[3].items[2], // Andamios
+      NAV_GROUPS[3].items[3], // Herramientas & Consum.
+      NAV_GROUPS[3].items[1], // Servicios
+      NAV_GROUPS[3].items[4], // Bodegas
+      NAV_GROUPS[3].items[5], // Mantenimientos
     ],
   },
   { kind: 'link', id: 'reportes', label: 'Reportes', href: '/reportes', icon: 'chartBar' },

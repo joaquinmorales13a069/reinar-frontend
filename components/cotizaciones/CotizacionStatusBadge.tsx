@@ -9,6 +9,7 @@ const META: Record<EstadoCotizacion, { label: string; kind: 'neutral' | 'info' |
   // CANCELADA usa "neutral" en vez de "danger" porque no representa un
   // rechazo del cliente sino una anulacion administrativa de la factura.
   CANCELADA: { label: 'Cancelada', kind: 'neutral' },
+  DESCARTADA: { label: 'Descartada', kind: 'neutral' },
 };
 
 export function CotizacionStatusBadge({ estado }: { estado: EstadoCotizacion }) {

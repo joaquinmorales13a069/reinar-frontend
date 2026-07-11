@@ -22,6 +22,9 @@ export const crearActaFormSchema = z.object({
   cotizacionId: z.string().optional(),
   bodegaOrigenId: z.string().min(1, 'Seleccioná bodega de origen'),
   direccionEntrega: z.string().optional(),
+  // Referencias extra de entrega — se anexan a la porción de calle del string
+  // direccionEntrega al enviar; no viaja como campo propio al backend.
+  direccionDetalleExtra: z.string().optional(),
   notas: z.string().optional(),
   periodoRentaInicio: z.string().optional(),
   periodoRentaFin: z.string().optional(),

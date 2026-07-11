@@ -25,7 +25,7 @@ export default function CotizacionesPage() {
     estado: estado ?? undefined,
   });
 
-  const chips = (['BORRADOR', 'ENVIADA', 'APROBADA', 'RECHAZADA'] as const).map((e) => ({
+  const chips = (['BORRADOR', 'ENVIADA', 'APROBADA', 'RECHAZADA', 'DESCARTADA'] as const).map((e) => ({
     label: e[0] + e.slice(1).toLowerCase(),
     active: estado === e,
     onToggle: () => setEstado(estado === e ? null : e),

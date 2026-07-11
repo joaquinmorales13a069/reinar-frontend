@@ -23,6 +23,7 @@ export const PERMISOS_NAV: Record<string, RolUsuario[]> = {
   pagos:           ['ADMIN', 'GERENTE', 'OPERADOR', 'LOGISTICA', 'VISUALIZADOR'],
   'notas-credito': ['ADMIN', 'GERENTE', 'OPERADOR', 'LOGISTICA', 'VISUALIZADOR'],
   retenciones:     ['ADMIN', 'GERENTE', 'OPERADOR', 'LOGISTICA', 'VISUALIZADOR'],
+  fse:             ['ADMIN', 'GERENTE', 'OPERADOR', 'LOGISTICA', 'VISUALIZADOR'],
 
   // Inventario — servicios excluye LOGISTICA en el backend; el resto los 5 roles
   equipos:         ['ADMIN', 'GERENTE', 'OPERADOR', 'LOGISTICA', 'VISUALIZADOR'],
