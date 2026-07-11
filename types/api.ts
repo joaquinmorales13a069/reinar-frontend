@@ -1107,6 +1107,9 @@ export type Factura = {
   fechaEntregaReal: string | null;
   periodoRentaInicio: string | null;
   periodoRentaFin: string | null;
+  // Folio del talonario físico manual — respaldo del PDF cuando no hay actas
+  // despachadas con folio.
+  numeroActaFisicoManual: string | null;
   createdAt: string;
   updatedAt: string;
   cliente: Cliente;
@@ -1148,6 +1151,7 @@ export type ActualizarFacturaDto = {
   fechaVencimiento?: string;
   periodoRentaInicio?: string | null;
   periodoRentaFin?: string | null;
+  numeroActaFisicoManual?: string | null;
   plazoCredito?: number;
 };
 
@@ -1246,6 +1250,7 @@ export type ActaItem = {
 export type ActaListItem = {
   id: string;
   numeroActa: string;
+  numeroActaFisico: string | null;
   estado: EstadoActa;
   // Flujo cotización-first: cotizacionId siempre existe; facturaId queda
   // null hasta que la cotización origen se facture (o nunca si no se factura).
