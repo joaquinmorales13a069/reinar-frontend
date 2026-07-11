@@ -94,3 +94,12 @@ export function nombreCliente(cliente: {
 export function numeroComercial(numero: string): string {
   return numero.replace(/-[B-Z]$/, '');
 }
+
+// Letra de opción cuando el número tiene variantes: sufijo para variantes,
+// 'A' para la original con variantes, null sin variantes. Espejo del helper
+// del backend (server/src/lib/variantes.ts).
+export function letraOpcion(numero: string, tieneVariantes: boolean): string | null {
+  const sufijo = /-([B-Z])$/.exec(numero)?.[1];
+  if (sufijo) return sufijo;
+  return tieneVariantes ? 'A' : null;
+}

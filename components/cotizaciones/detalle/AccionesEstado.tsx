@@ -12,6 +12,7 @@ import {
   useCrearVariante,
   useEliminarCotizacion,
 } from '@/hooks/use-cotizaciones';
+import { letraOpcion } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 import type { Cotizacion } from '@/types/api';
 
@@ -142,7 +143,13 @@ export function AccionesEstado({ cotizacion }: { cotizacion: Cotizacion }) {
       <button
         type="button"
         className={`${btnBase} border border-bd text-tx-2 hover:bg-bg-sunken`}
-        onClick={() => void descargarCotizacionPdf(cotizacion.id, cotizacion.numeroCotizacion)}
+        onClick={() =>
+          void descargarCotizacionPdf(
+            cotizacion.id,
+            cotizacion.numeroCotizacion,
+            letraOpcion(cotizacion.numeroCotizacion, (cotizacion.variantes ?? []).length > 0),
+          )
+        }
       >
         <Icon name="download" size={14} /> PDF
       </button>

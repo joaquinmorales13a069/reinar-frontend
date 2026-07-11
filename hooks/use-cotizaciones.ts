@@ -263,7 +263,7 @@ export function useEliminarItemCotizacion() {
 
 // ─── PDF ────────────────────────────────────────────────────────────
 
-export async function descargarCotizacionPdf(id: string, numero: string) {
+export async function descargarCotizacionPdf(id: string, numero: string, letra?: string | null) {
   // El loading toast se descarta cuando llega la respuesta — no aplica onError
   // porque cualquier excepción la captura el caller (que muestra toast.error).
   const toastId = toast.loading('Generando PDF…');
@@ -272,7 +272,7 @@ export async function descargarCotizacionPdf(id: string, numero: string) {
     const url = URL.createObjectURL(res.data);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${numeroComercial(numero)}.pdf`;
+    a.download = `${numeroComercial(numero)}${letra ? `-${letra}` : ''}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
     toast.dismiss(toastId);
