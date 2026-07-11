@@ -85,6 +85,12 @@ export function FseForm({
   const { data: proveedor } = useProveedor(proveedorId || null);
   const { data: plantillas } = usePlantillasFse(proveedorId || null);
 
+  // El listado solo trae los primeros 100 proveedores activos: en modo edición
+  // el proveedor del FSE puede estar inactivo o fuera de ese rango, y sin este
+  // merge el <select> quedaría en blanco pese a tener proveedorId asignado.
+  const proveedorFueraDeLista = !!proveedor && !proveedores.some((p) => p.id === proveedor.id);
+  const opcionesProveedores = proveedorFueraDeLista ? [proveedor, ...proveedores] : proveedores;
+
   const [items, setItems] = useState<ItemRow[]>(() =>
     fseInicial
       ? fseInicial.items.map((it) => ({
@@ -206,9 +212,10 @@ export function FseForm({
             render={({ field }) => (
               <select {...field} className={inputBase}>
                 <option value="">— Seleccioná —</option>
-                {proveedores.map((p) => (
+                {opcionesProveedores.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.nombre}
+                    {!p.activo ? ' (inactivo)' : ''}
                   </option>
                 ))}
               </select>
