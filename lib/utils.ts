@@ -87,3 +87,10 @@ export function nombreCliente(cliente: {
   if (esEmpresa) return cliente.razonSocial ?? '—';
   return [cliente.nombre, cliente.apellido].filter(Boolean).join(' ') || '—';
 }
+
+// Número que ve el cliente: sin el sufijo interno de variante (-B..-Z) que
+// distingue cotizaciones hermanas del mismo consecutivo. Espejo del helper
+// homónimo del backend (server/src/lib/variantes.ts).
+export function numeroComercial(numero: string): string {
+  return numero.replace(/-[B-Z]$/, '');
+}

@@ -731,7 +731,7 @@ export type FiltrosProyectos = {
 // CANCELADA es estado terminal asignado automaticamente al anular la factura
 // generada por la cotizacion. Libera el inventario reservado y no permite
 // re-aprobacion — si se quiere rehacer la venta, crear una nueva cotizacion.
-export type EstadoCotizacion = 'BORRADOR' | 'ENVIADA' | 'APROBADA' | 'RECHAZADA' | 'CANCELADA';
+export type EstadoCotizacion = 'BORRADOR' | 'ENVIADA' | 'APROBADA' | 'RECHAZADA' | 'CANCELADA' | 'DESCARTADA';
 
 export type TipoItemCotizacion =
   | 'EQUIPO'
@@ -846,6 +846,9 @@ export type Cotizacion = {
   factura: { id: string; numeroFactura: string; estado: string } | null;
   actaEntregaOrigenId: string | null;
   actaEntregaOrigen?: { id: string; numeroActa: string } | null;
+  // Hermanas del mismo consecutivo (variantes con sufijo -B..-Z). El backend
+  // siempre lo devuelve ([] cuando no hay variantes).
+  variantes: { id: string; numeroCotizacion: string; estado: EstadoCotizacion; total: string }[];
 };
 
 export type CrearCotizacionDto = {

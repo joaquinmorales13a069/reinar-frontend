@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/lib/api';
+import { numeroComercial } from '@/lib/utils';
 import type {
   ApiResponse,
   PaginatedResponse,
@@ -62,6 +63,27 @@ export function useCrearCotizacion() {
     },
     onError: (err) => {
       toast.error(extractErrorMessage(err, 'No se pudo crear la cotización.'));
+    },
+  });
+}
+
+export function useCrearVariante() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.post<ApiResponse<Cotizacion>>(`/cotizaciones/${id}/variantes`).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
+    onSuccess: (variante) => {
+      qc.invalidateQueries({ queryKey: ['cotizaciones'] });
+      // Prefijo 'cotizacion' invalida también el detalle del origen, cuya
+      // tarjeta de variantes debe refrescarse.
+      qc.invalidateQueries({ queryKey: ['cotizacion'] });
+      toast.success(`Variante ${variante.numeroCotizacion} creada.`);
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'No se pudo crear la variante.'));
     },
   });
 }
@@ -250,7 +272,7 @@ export async function descargarCotizacionPdf(id: string, numero: string) {
     const url = URL.createObjectURL(res.data);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${numero}.pdf`;
+    a.download = `${numeroComercial(numero)}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
     toast.dismiss(toastId);
