@@ -16,6 +16,8 @@ import { ItemRow } from '@/components/actas-recepciones/ItemRow';
 import { useBodegas } from '@/hooks/use-bodegas';
 import { useFactura } from '@/hooks/use-facturas';
 import { useCotizacion } from '@/hooks/use-cotizaciones';
+import { useProyectosCliente } from '@/hooks/use-proyectos';
+import { ubicacionProyectoADireccionEntrega, anexarDetalleExtra } from '@/lib/direccion-entrega';
 import {
   useItemsDisponiblesDespacho,
   useItemsDisponiblesDespachoCotizacion,
@@ -142,6 +144,7 @@ function NuevaActaPage() {
       cotizacionId: modo === 'cotizacion' ? cotizacionIdInicial : '',
       bodegaOrigenId: '',
       direccionEntrega: '',
+      direccionDetalleExtra: '',
       notas: '',
       periodoRentaInicio: '',
       periodoRentaFin: '',
@@ -196,6 +199,15 @@ function NuevaActaPage() {
   // numeroCotizacion + cliente) tanto si viene por ?cotizacionId= como si el
   // usuario la elige en <SelectorCotizacion> (que solo entrega el id).
   const { data: cotizacionActiva } = useCotizacion(modo === 'cotizacion' ? cotizacionIdActivo : null);
+
+  // Proyectos del cliente del origen — pobla el desplegable que autorellena
+  // la dirección de entrega. clienteId vacío desactiva el query (enabled).
+  const clienteId =
+    modo === 'factura'
+      ? facturaInicial?.cliente?.id ?? ''
+      : cotizacionActiva?.cliente?.id ?? '';
+  const { data: proyectos } = useProyectosCliente(clienteId);
+  const [proyectoDireccionId, setProyectoDireccionId] = useState('');
 
   useEffect(() => {
     if (modo !== 'cotizacion') return;
@@ -304,7 +316,9 @@ function NuevaActaPage() {
 
       const dto: CrearActaDto = {
         bodegaOrigenId: data.bodegaOrigenId,
-        direccionEntrega: data.direccionEntrega || undefined,
+        direccionEntrega:
+          anexarDetalleExtra(data.direccionEntrega ?? '', data.direccionDetalleExtra ?? '') ||
+          undefined,
         notas: data.notas || undefined,
         periodoRentaInicio: data.periodoRentaInicio
           ? new Date(data.periodoRentaInicio).toISOString()
@@ -354,6 +368,7 @@ function NuevaActaPage() {
     // El periodo precargado pertenece a la factura anterior.
     form.setValue('periodoRentaInicio', '');
     form.setValue('periodoRentaFin', '');
+    setProyectoDireccionId('');
   }
 
   function handleSeleccionarCotizacion(cotizacionId: string) {
@@ -368,6 +383,7 @@ function NuevaActaPage() {
     // Reseteamos la bodega elegida: las bodegas disponibles dependen de la
     // cotización, así que la selección previa puede ya no ser válida.
     form.setValue('bodegaOrigenId', '');
+    setProyectoDireccionId('');
   }
 
   return (
@@ -535,6 +551,41 @@ function NuevaActaPage() {
       {/* ── Dirección de entrega ─────────────────────────────────────── */}
       <div className="rounded-lg border border-bd bg-surface p-4 mb-4">
         <h3 className="text-sm font-semibold text-tx mb-3">Dirección de entrega</h3>
+        <div className="mb-3">
+          <label className={labelCls}>Proyecto (opcional)</label>
+          <select
+            className={inputBase}
+            value={proyectoDireccionId}
+            disabled={!clienteId || (proyectos ?? []).length === 0}
+            onChange={(e) => {
+              const id = e.target.value;
+              setProyectoDireccionId(id);
+              const proyecto = (proyectos ?? []).find((p) => p.id === id);
+              if (proyecto) {
+                form.setValue(
+                  'direccionEntrega',
+                  ubicacionProyectoADireccionEntrega(proyecto.ubicacion),
+                );
+              }
+            }}
+          >
+            <option value="">
+              {!clienteId
+                ? 'Seleccioná primero la cotización o factura'
+                : (proyectos ?? []).length === 0
+                  ? 'El cliente no tiene proyectos'
+                  : '— Rellenar desde un proyecto —'}
+            </option>
+            {(proyectos ?? []).map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nombre}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-tx-3 mt-1">
+            Rellena la dirección con la ubicación del proyecto; podés editarla abajo.
+          </p>
+        </div>
         <Controller
           control={form.control}
           name="direccionEntrega"
@@ -546,6 +597,14 @@ function NuevaActaPage() {
             />
           )}
         />
+        <div className="mt-3">
+          <label className={labelCls}>Detalles adicionales (opcional)</label>
+          <input
+            className={inputBase}
+            placeholder="Portón 2, entregar en bodega trasera…"
+            {...form.register('direccionDetalleExtra')}
+          />
+        </div>
       </div>
 
       {/* ── Ítems a despachar ────────────────────────────────────────── */}
