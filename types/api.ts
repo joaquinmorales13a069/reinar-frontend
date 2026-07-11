@@ -1921,6 +1921,18 @@ export type CrearProveedorDto = {
   telefono?: string;
   email?: string;
   notas?: string;
+  // Datos fiscales opcionales para FSE (compras a sujetos excluidos) — espejo
+  // de crearProveedorFields en el backend. Se reutiliza el mismo DTO para
+  // crear y editar (useEditarProveedor manda el mismo shape en el PUT).
+  tipoDocumento?: TipoDocumentoCliente;
+  numeroDocumento?: string;
+  tipoPersona?: TipoPersonaProveedor;
+  actividadEconomica?: string;
+  departamento?: string;
+  municipio?: string;
+  distrito?: string;
+  complemento?: string;
+  giroPredominante?: TipoItemFse;
 };
 
 export type DatosCompraDto = {

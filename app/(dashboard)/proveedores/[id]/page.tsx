@@ -10,9 +10,14 @@ import { Spinner } from '@/components/ui/Spinner';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
+import { PlantillasFseCard } from '@/components/proveedores/PlantillasFseCard';
 import { useProveedor, useCambiarActivoProveedor } from '@/hooks/use-proveedores';
 import { useAuthStore } from '@/stores/auth.store';
 import { puedeEjecutarProveedor } from '@/lib/proveedores';
+import { formatCurrency } from '@/lib/utils';
+import { resolverDepartamento, resolverMunicipio, resolverDistrito } from '@/lib/sv-geo';
+import { getActividadByCodigo } from '@/lib/cat019';
+import { LABEL_TIPO_DOCUMENTO } from '@/lib/format-documentos';
 
 const btnSec =
   'inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-bd text-tx-2 bg-surface text-xs font-medium hover:bg-bg-sunken transition-colors';
@@ -122,6 +127,60 @@ export default function ProveedorDetallePage({
             <dd className="text-tx-2 break-all">{proveedor.email ?? '—'}</dd>
           </dl>
         </Card>
+
+        <div className="lg:col-span-2">
+          <Card>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">Datos fiscales (para FSE)</h3>
+              {proveedor.elegibilidadFse && (
+                <Badge
+                  status={proveedor.elegibilidadFse.elegible ? 'Elegible FSE' : proveedor.elegibilidadFse.motivo ?? 'No elegible'}
+                  kind={proveedor.elegibilidadFse.elegible ? 'ok' : 'warn'}
+                />
+              )}
+            </div>
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <dt className="text-tx-3">Documento</dt>
+              <dd className="font-mono text-tx-2">
+                {proveedor.tipoDocumento
+                  ? `${LABEL_TIPO_DOCUMENTO[proveedor.tipoDocumento]} — ${proveedor.numeroDocumento ?? '—'}`
+                  : '—'}
+              </dd>
+              <dt className="text-tx-3">Tipo de persona</dt>
+              <dd className="text-tx-2">
+                {proveedor.tipoPersona === 'NATURAL' ? 'Natural' : proveedor.tipoPersona === 'JURIDICA' ? 'Jurídica' : '—'}
+              </dd>
+              <dt className="text-tx-3">Actividad económica</dt>
+              <dd className="text-tx-2">
+                {proveedor.actividadEconomica
+                  ? `${proveedor.actividadEconomica} — ${getActividadByCodigo(proveedor.actividadEconomica)?.descripcion ?? ''}`
+                  : '—'}
+              </dd>
+              <dt className="text-tx-3">Giro predominante</dt>
+              <dd className="text-tx-2">
+                {proveedor.giroPredominante === 'BIENES' ? 'Bienes' : proveedor.giroPredominante === 'SERVICIOS' ? 'Servicios' : '—'}
+              </dd>
+              <dt className="text-tx-3">Dirección</dt>
+              <dd className="text-tx-2 sm:col-span-1">
+                {proveedor.departamento ? (
+                  <>
+                    {resolverDepartamento(proveedor.departamento)}, {resolverMunicipio(proveedor.municipio, proveedor.departamento)}
+                    {proveedor.distrito ? `, ${resolverDistrito(proveedor.distrito, proveedor.municipio, proveedor.departamento)}` : ''}
+                    {proveedor.complemento ? ` — ${proveedor.complemento}` : ''}
+                  </>
+                ) : (
+                  '—'
+                )}
+              </dd>
+            </dl>
+            {typeof proveedor.acumuladoFse12m !== 'undefined' && (
+              <p className="text-xs text-tx-3 mt-3 pt-3 border-t border-bd">
+                Compras FSE últimos 12 meses: <span className="font-mono text-tx-2">{formatCurrency(proveedor.acumuladoFse12m)}</span>
+              </p>
+            )}
+          </Card>
+        </div>
+
         {proveedor.notas && (
           <div className="lg:col-span-2">
             <Card>
@@ -130,6 +189,10 @@ export default function ProveedorDetallePage({
             </Card>
           </div>
         )}
+
+        <div className="lg:col-span-2">
+          <PlantillasFseCard proveedorId={proveedor.id} />
+        </div>
       </div>
     </div>
   );
