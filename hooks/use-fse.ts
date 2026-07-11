@@ -250,6 +250,23 @@ export async function descargarFsePdf(id: string, numero: string) {
   }
 }
 
+export async function descargarFseJson(id: string, numero: string) {
+  const toastId = toast.loading('Obteniendo JSON del DTE…');
+  try {
+    const res = await api.get(`/fse/${id}/json`, { responseType: 'blob' });
+    const url = URL.createObjectURL(res.data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${numero}-DTE.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.dismiss(toastId);
+  } catch (err) {
+    toast.dismiss(toastId);
+    toast.error(extractErrorMessage(err, 'No se pudo descargar el JSON.'));
+  }
+}
+
 export async function descargarConstanciaRetencion(id: string, numero: string) {
   const toastId = toast.loading('Generando constancia de retención…');
   try {
