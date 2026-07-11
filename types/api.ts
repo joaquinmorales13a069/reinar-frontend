@@ -60,6 +60,7 @@ export type Notificacion = {
 };
 
 import type { DiaSemana } from '@/lib/dias-semana';
+import type { TipoDocumentoCliente } from '@/lib/format-documentos';
 
 export type Cliente = {
   id: string;
@@ -1806,6 +1807,81 @@ export type FiltrosAuditLog = {
   hasta?: string;
 };
 
+// ─── FSE: compras a sujetos excluidos ─────────────────────────────────
+export type TipoItemFse = 'BIENES' | 'SERVICIOS';
+export type TipoPersonaProveedor = 'NATURAL' | 'JURIDICA';
+
+export type FseItem = {
+  id: string;
+  tipoItem: TipoItemFse;
+  descripcion: string;
+  cantidad: number;
+  precioUnitario: string;
+  subtotal: string;
+  orden: number;
+};
+
+export type FseListItem = {
+  id: string;
+  numeroFse: string;
+  fechaEmision: string;
+  estadoDTE: EstadoDTE;
+  totalCompra: string;
+  reteRenta: string;
+  totalPagar: string;
+  proveedor: { id: string; nombre: string };
+  _count: { items: number };
+};
+
+export type Fse = {
+  id: string;
+  numeroFse: string;
+  proveedorId: string;
+  proveedor: Proveedor;
+  fechaEmision: string;
+  condicionPago: 'CONTADO' | 'CREDITO';
+  subtotalBienes: string;
+  subtotalServicios: string;
+  totalCompra: string;
+  reteRenta: string;
+  totalPagar: string;
+  exonerarReteRenta: boolean;
+  motivoExoneracion: string | null;
+  estadoDTE: EstadoDTE;
+  dteId: string | null;
+  dteControlNumber: string | null;
+  dteRespuestaMH: DteRespuestaMH;
+  notas: string | null;
+  creadoPor: { id: string; nombre: string; apellido: string };
+  items: FseItem[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CrearFseItemDto = { tipoItem: TipoItemFse; descripcion: string; cantidad: number; precioUnitario: number };
+export type CrearFseDto = {
+  proveedorId: string;
+  condicionPago: 'CONTADO' | 'CREDITO';
+  exonerarReteRenta: boolean;
+  motivoExoneracion?: string;
+  notas?: string;
+  items: CrearFseItemDto[];
+};
+
+export type PlantillaFse = { id: string; proveedorId: string; descripcion: string; tipoItem: TipoItemFse; precioUnitario: string | null; createdAt: string };
+
+export type CrearPlantillaFseDto = { descripcion: string; tipoItem: TipoItemFse; precioUnitario?: number };
+
+// El backend (filtrosFseSchema) no acepta `search` — solo estos filtros.
+export type FiltrosFse = {
+  page?: number;
+  limit?: number;
+  proveedorId?: string;
+  estadoDTE?: EstadoDTE;
+  fechaDesde?: string;
+  fechaHasta?: string;
+};
+
 // ─── Proveedores (E3) ────────────────────────────────────────────────
 
 export type Proveedor = {
@@ -1820,6 +1896,21 @@ export type Proveedor = {
   activo: boolean;
   createdAt: string;
   updatedAt: string;
+  // Campos fiscales agregados para FSE (compras a sujetos excluidos) — el backend
+  // los usa para armar el DTE de sujeto excluido y calcular la retención de renta.
+  tipoDocumento?: TipoDocumentoCliente | null;
+  numeroDocumento?: string | null;
+  tipoPersona?: TipoPersonaProveedor | null;
+  actividadEconomica?: string | null;
+  departamento?: string | null;
+  municipio?: string | null;
+  distrito?: string | null;
+  complemento?: string | null;
+  giroPredominante?: TipoItemFse | null;
+  // Solo viene en el detalle (GET /proveedores/:id) — el backend calcula
+  // elegibilidad FSE y el acumulado de compras de los últimos 12 meses.
+  elegibilidadFse?: { elegible: boolean; motivo: string | null };
+  acumuladoFse12m?: string;
 };
 
 export type CrearProveedorDto = {
