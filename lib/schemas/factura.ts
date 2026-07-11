@@ -1,14 +1,5 @@
 import { z } from 'zod';
 
-// ── Emitir DTE ─────────────────────────────────────────────────────────
-// El backend usa FC (Factura Consumidor) para DTE; NO confundir con CF
-// (Consumidor Final) que se usa en TipoDocumentoFiscal de cotizaciones.
-// Son enums distintos en Prisma: TipoDTE vs TipoDocumentoCotizacion.
-export const emitirDTESchema = z.object({
-  tipoDTE: z.enum(['FC', 'CCF', 'SUJETO_EXCLUIDO']),
-});
-export type EmitirDTEForm = z.infer<typeof emitirDTESchema>;
-
 // ── Ajustar estado manual (ADMIN/GERENTE) ──────────────────────────────
 // PAGADA se omite intencionalmente: el backend la rechaza porque ese estado
 // se asigna automaticamente al registrar pagos que cubran el total.

@@ -131,7 +131,7 @@ export function PlantillasFseCard({ proveedorId }: { proveedorId: string }) {
                 <input
                   className={`${inputBase} font-mono`}
                   type="number"
-                  min="0"
+                  min="0.01"
                   step="0.01"
                   placeholder="Precio (opcional)"
                   value={precioUnitario}

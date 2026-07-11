@@ -204,6 +204,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             onReemitir={() => {
               if (factura.tipoDTE && factura.tipoDTE !== 'SUJETO_EXCLUIDO') void emitirCon(factura.tipoDTE);
             }}
+            emisionBloqueada={factura.tipoDTE === 'SUJETO_EXCLUIDO'}
             onSincronizar={() => { void sincronizarDTE.mutateAsync(id); }}
             onAnular={() => router.push(`/facturas/${id}/anular-dte`)}
             onAnularSoloDTE={(motivo) => { void anularParaCambiarTipo(motivo); }}

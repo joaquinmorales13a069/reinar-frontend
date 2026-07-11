@@ -40,6 +40,10 @@ type Props = {
   // correo destino; el sub-componente padre maneja la llamada y feedback.
   onEnviarEmail?: (email: string) => Promise<void> | void;
   isEnviandoEmail?: boolean;
+  // FSE historicos (tipoDTE SUJETO_EXCLUIDO) ya no se emiten/reemiten desde
+  // ventas — el flujo se movio al modulo de Compras (Task 7). Oculta los
+  // botones de emision/reemision y muestra una nota explicativa en su lugar.
+  emisionBloqueada?: boolean;
 };
 
 const TIPO_INFO: Record<TipoDTE, { label: string; desc: string }> = {
@@ -229,7 +233,12 @@ export function DteSection(props: Props) {
               <span>{emitirError}</span>
             </div>
           )}
-          {isOperador && !confirmEmit && (
+          {props.emisionBloqueada && (
+            <p className="mt-3 text-xs text-tx-3">
+              Los FSE ahora se gestionan desde el módulo de Compras.
+            </p>
+          )}
+          {isOperador && !props.emisionBloqueada && !confirmEmit && (
             <button
               type="button"
               className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim"
@@ -239,7 +248,7 @@ export function DteSection(props: Props) {
               <Icon name="send" size={14} /> Emitir DTE
             </button>
           )}
-          {isOperador && confirmEmit && (
+          {isOperador && !props.emisionBloqueada && confirmEmit && (
             <div className="mt-3">
               <ConfirmRow
                 message={`Se enviará la ${tipoActual} al MH. Esta acción no se puede deshacer fácilmente. ¿Confirmar?`}
@@ -361,7 +370,12 @@ Descripción: ${descripcion ?? '—'}${observaciones.length > 0 ? '\n\nObservaci
               </div>
             );
           })()}
-          {isOperador && (
+          {props.emisionBloqueada && (
+            <p className="mt-3 text-xs text-tx-3">
+              Los FSE ahora se gestionan desde el módulo de Compras.
+            </p>
+          )}
+          {isOperador && !props.emisionBloqueada && (
             <button
               type="button"
               className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim"

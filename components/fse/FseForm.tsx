@@ -139,7 +139,14 @@ export function FseForm({
 
   const noElegible = proveedor?.elegibilidadFse && !proveedor.elegibilidadFse.elegible;
 
-  const puedeSubmit = !!proveedor && !noElegible && items.length > 0 && !isGuardando;
+  // Evita que un item con descripcion vacia o precio en 0 (el default de
+  // nuevaFila) pase el gate y falle recien en el backend via toast.
+  function itemInvalido(it: ItemRow): boolean {
+    return !it.descripcion.trim() || !(it.precioUnitario > 0) || !(it.cantidad >= 1);
+  }
+  const todosItemsValidos = items.length > 0 && items.every((it) => !itemInvalido(it));
+
+  const puedeSubmit = !!proveedor && !noElegible && todosItemsValidos && !isGuardando;
 
   const onSubmit = form.handleSubmit(
     async (data) => {
@@ -153,6 +160,10 @@ export function FseForm({
       }
       if (items.length === 0) {
         toast.error('Agregá al menos un ítem.');
+        return;
+      }
+      if (!todosItemsValidos) {
+        toast.error('Completá descripción, cantidad y precio de cada ítem.');
         return;
       }
 
@@ -365,6 +376,11 @@ export function FseForm({
                     <Icon name="trash" size={14} />
                   </button>
                 </div>
+                {itemInvalido(item) && (
+                  <div className="col-span-12 text-xs text-danger">
+                    Completá descripción, cantidad (mín. 1) y precio (mayor a $0).
+                  </div>
+                )}
               </div>
             ))}
           </div>
