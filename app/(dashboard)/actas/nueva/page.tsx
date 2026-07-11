@@ -167,7 +167,11 @@ function NuevaActaPage() {
   // resolvemos la factura completa para poblar facturaSeleccionada y disparar
   // la carga de items. Sin esto, el usuario tendría que buscar y elegir
   // manualmente la misma factura que ya seleccionó al venir de su detalle.
-  const { data: facturaInicial } = useFactura(modo === 'factura' ? facturaIdInicial || null : null);
+  // Resolvemos la factura completa tanto si viene por ?facturaId= como si el
+  // usuario la elige en <SelectorFactura> (el list item no trae el periodo).
+  const { data: facturaInicial } = useFactura(
+    modo === 'factura' ? (facturaSeleccionada?.id ?? facturaIdInicial) || null : null,
+  );
 
   useEffect(() => {
     if (modo !== 'factura') return;
@@ -229,9 +233,18 @@ function NuevaActaPage() {
     setRows(inicial);
   }, [itemsDisp]);
 
-  // La cotización no expone periodoInicio/periodoFin en el tipo Factura que
-  // devuelve el backend, así que dejamos esos campos en blanco para que el
-  // usuario los rellene manualmente.
+  // Precarga el periodo de renta desde la factura (feedback ventas jul-2026).
+  // Solo si el campo está vacío, para no pisar lo que el usuario ya tipeó.
+  useEffect(() => {
+    if (modo !== 'factura' || !facturaInicial) return;
+    const { periodoRentaInicio, periodoRentaFin } = form.getValues();
+    if (!periodoRentaInicio && facturaInicial.periodoRentaInicio) {
+      form.setValue('periodoRentaInicio', facturaInicial.periodoRentaInicio.slice(0, 10));
+    }
+    if (!periodoRentaFin && facturaInicial.periodoRentaFin) {
+      form.setValue('periodoRentaFin', facturaInicial.periodoRentaFin.slice(0, 10));
+    }
+  }, [modo, facturaInicial, form]);
 
   const crearFactura = useCrearActa();
   const crearCotizacion = useCrearActaDesdeCotizacion(cotizacionSeleccionada?.id ?? '');
@@ -338,6 +351,9 @@ function NuevaActaPage() {
     // Reseteamos la bodega elegida: las bodegas disponibles dependen de la
     // factura, así que la selección previa puede ya no ser válida.
     form.setValue('bodegaOrigenId', '');
+    // El periodo precargado pertenece a la factura anterior.
+    form.setValue('periodoRentaInicio', '');
+    form.setValue('periodoRentaFin', '');
   }
 
   function handleSeleccionarCotizacion(cotizacionId: string) {
