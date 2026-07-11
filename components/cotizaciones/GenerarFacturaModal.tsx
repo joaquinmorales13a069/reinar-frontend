@@ -48,7 +48,7 @@ export function GenerarFacturaModal({
   // reclamar IVA; PARTICULAR cobra como consumidor final (FC). El operador
   // puede cambiarlo si el caso lo amerita.
   const [tipoDTE, setTipoDTE] =
-    useState<'FC' | 'CCF' | 'SUJETO_EXCLUIDO'>(
+    useState<'FC' | 'CCF'>(
       cliente.tipo === 'EMPRESA' ? 'CCF' : 'FC',
     );
   const [contactoFacturacionId, setContactoFacturacionId] = useState<
@@ -165,15 +165,12 @@ export function GenerarFacturaModal({
             <select
               value={tipoDTE}
               onChange={(e) =>
-                setTipoDTE(
-                  e.target.value as 'FC' | 'CCF' | 'SUJETO_EXCLUIDO',
-                )
+                setTipoDTE(e.target.value as 'FC' | 'CCF')
               }
               className={inputBase}
             >
               <option value="FC">FC — Factura de Consumidor Final</option>
               <option value="CCF">CCF — Crédito Fiscal</option>
-              <option value="SUJETO_EXCLUIDO">FSE — Sujeto Excluido</option>
             </select>
           </div>
 

@@ -994,6 +994,11 @@ export type EstadoDTE =
 
 export type TipoDTE = 'FC' | 'CCF' | 'SUJETO_EXCLUIDO';
 
+// FSE (SUJETO_EXCLUIDO) pasó a ser documento de compras (módulo /fse) — el
+// flujo de ventas solo puede emitir FC/CCF. TipoDTE (lectura) conserva el
+// tercer valor para que facturas históricas con FSE sigan mostrando su badge.
+export type TipoDTEEmitible = 'FC' | 'CCF';
+
 // El backend tambien acepta ANTICIPO, pero solo lo asigna el servicio de
 // cotizaciones al aprobar — la UI no lo expone como opcion al registrar pago.
 export type MetodoPago =
@@ -1165,7 +1170,7 @@ export type CambiarEstadoFacturaDto = {
 };
 
 export type EmitirDTEDto = {
-  tipoDTE: TipoDTE;
+  tipoDTE: TipoDTEEmitible;
 };
 
 export type CrearPagoDto = {

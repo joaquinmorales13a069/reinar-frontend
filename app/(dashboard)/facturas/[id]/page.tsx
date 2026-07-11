@@ -31,7 +31,7 @@ import {
   descargarFacturaJsonDTE,
 } from '@/hooks/use-facturas';
 import { useAuthStore } from '@/stores/auth.store';
-import type { TipoDTE } from '@/types/api';
+import type { TipoDTEEmitible } from '@/types/api';
 
 export default function FacturaDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -79,7 +79,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
       ? factura.cliente.razonSocial ?? '—'
       : [factura.cliente.nombre, factura.cliente.apellido].filter(Boolean).join(' ') || '—';
 
-  async function emitirCon(tipo: TipoDTE) {
+  async function emitirCon(tipo: TipoDTEEmitible) {
     setEmitirError(null);
     try {
       await emitirDTE.mutateAsync({ id, data: { tipoDTE: tipo } });
@@ -196,8 +196,14 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             isSincronizando={sincronizarDTE.isPending}
             isDescargandoPdf={descargandoPdfDte}
             onAsignarTipo={(t) => { void emitirCon(t); }}
-            onEmitir={() => { if (factura.tipoDTE) void emitirCon(factura.tipoDTE); }}
-            onReemitir={() => { if (factura.tipoDTE) void emitirCon(factura.tipoDTE); }}
+            // Históricos con tipoDTE SUJETO_EXCLUIDO (FSE) ya no se pueden
+            // (re)emitir desde ventas — el backend tampoco lo acepta (Task 7).
+            onEmitir={() => {
+              if (factura.tipoDTE && factura.tipoDTE !== 'SUJETO_EXCLUIDO') void emitirCon(factura.tipoDTE);
+            }}
+            onReemitir={() => {
+              if (factura.tipoDTE && factura.tipoDTE !== 'SUJETO_EXCLUIDO') void emitirCon(factura.tipoDTE);
+            }}
             onSincronizar={() => { void sincronizarDTE.mutateAsync(id); }}
             onAnular={() => router.push(`/facturas/${id}/anular-dte`)}
             onAnularSoloDTE={(motivo) => { void anularParaCambiarTipo(motivo); }}
