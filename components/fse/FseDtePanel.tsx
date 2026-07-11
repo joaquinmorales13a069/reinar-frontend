@@ -174,7 +174,7 @@ export function FseDtePanel(props: Props) {
                       placeholder="Motivo de la anulación (mín. 10 caracteres)…"
                       className="w-full px-2 py-1.5 rounded border border-bd bg-bg text-sm text-tx"
                     />
-                    {motivoAnular.length > 0 && !motivoValido && (
+                    {!motivoValido && (
                       <p className="text-xs text-danger">El motivo debe tener al menos 10 caracteres.</p>
                     )}
                   </div>
