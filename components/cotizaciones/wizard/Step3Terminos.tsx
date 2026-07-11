@@ -26,7 +26,7 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
   const depositoModoInicial: Step3Form['depositoModo'] =
     cotizacion.depositoMonto ? 'MONTO' : 'NINGUNO';
 
-  const { register, handleSubmit, control, watch, formState: { errors, isSubmitting } } = useForm<Step3Form>({
+  const { register, handleSubmit, control, watch, setValue, formState: { errors, isSubmitting } } = useForm<Step3Form>({
     resolver: zodResolver(step3Schema),
     defaultValues: {
       porcentajeIva: cotizacion.porcentajeIva,
@@ -147,7 +147,13 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
                   <input
                     type="radio"
                     checked={field.value === m}
-                    onChange={() => field.onChange(m)}
+                    onChange={() => {
+                      field.onChange(m);
+                      // Limpia el residuo del monto al volver a "Sin depósito":
+                      // un NaN retenido por RHF bloqueaba el submit con el
+                      // error oculto (solo se renderiza en modo MONTO).
+                      if (m === 'NINGUNO') setValue('depositoMonto', null);
+                    }}
                     className="accent-accent"
                   />
                   {m === 'NINGUNO' ? 'Sin depósito' : 'Monto fijo'}
@@ -165,7 +171,13 @@ export function Step3Terminos({ cotizacion, onBack, onNext }: Props) {
               step="0.01"
               min={0.01}
               className="w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx font-mono"
-              {...register('depositoMonto', { valueAsNumber: true })}
+              {...register('depositoMonto', {
+                // Input vacío → null (valueAsNumber daba NaN, que Zod rechaza).
+                setValueAs: (v) => {
+                  const n = typeof v === 'number' ? v : parseFloat(v);
+                  return Number.isNaN(n) ? null : n;
+                },
+              })}
             />
             {errors.depositoMonto && (
               <p className="text-xs text-danger mt-1">{errors.depositoMonto.message}</p>
