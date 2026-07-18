@@ -217,13 +217,13 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             isEnviandoEmail={enviarDTE.isPending}
           />
           <ItemsFacturadosCard factura={factura} />
-          <PeriodoFacturaCard factura={factura} />
-          <ActaFisicaCard factura={factura} />
           <PagosCard factura={factura} isOperador={isOperador} isAdminOGerente={isAdminOGerente} />
-          <ActasVinculadasCard factura={factura} puedeEscribir={!!puedeEscribir} />
         </div>
         <div className="space-y-4">
           <ProgresoCobroCard factura={factura} />
+          <PeriodoFacturaCard factura={factura} />
+          <ActaFisicaCard factura={factura} />
+          <ActasVinculadasCard factura={factura} puedeEscribir={!!puedeEscribir} />
         </div>
       </div>
     </div>
