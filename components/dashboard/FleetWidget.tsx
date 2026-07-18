@@ -1,21 +1,11 @@
 'use client';
 // components/dashboard/FleetWidget.tsx
 
-import type { CategoriaFlota, UtilizacionCategoria } from '@/types/dashboard';
+import type { UtilizacionCategoria } from '@/types/dashboard';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 type FleetWidgetProps = {
   utilizacionPorCategoria: UtilizacionCategoria[];
-};
-
-const CATEGORIA_LABEL: Record<CategoriaFlota, string> = {
-  COMPRESOR_GENERADOR:       'Compresores y generadores',
-  SANDBLASTING:              'Sandblasting',
-  ANDAMIO_PLATAFORMA:        'Andamios y plataformas',
-  COMPACTADOR_RODILLO:       'Compactadores y rodillos',
-  HERRAMIENTA_ESPECIALIZADA: 'Herramienta especializada',
-  OTRO:                      'Otros equipos',
-  ANDAMIO_PIEZA:             'Andamios (piezas)',
 };
 
 function pct(n: number, total: number): number {
@@ -50,7 +40,7 @@ export function FleetWidget({ utilizacionPorCategoria }: FleetWidgetProps) {
         {utilizacionPorCategoria.map((fila) => (
           <div key={fila.categoria} className="grid grid-cols-[1fr_auto] gap-x-3 items-center">
             <div className="min-w-0">
-              <div className="text-sm text-tx truncate">{CATEGORIA_LABEL[fila.categoria]}</div>
+              <div className="text-sm text-tx truncate">{fila.categoria}</div>
               <div className="flex h-2 rounded-full overflow-hidden bg-bd mt-1.5">
                 <div className="bg-accent" style={{ width: `${pct(fila.rentado, fila.total)}%` }} />
                 <div className="bg-warn"   style={{ width: `${pct(fila.mantenimiento, fila.total)}%` }} />

@@ -1,16 +1,9 @@
-export type CategoriaFlota =
-  | 'COMPRESOR_GENERADOR'
-  | 'SANDBLASTING'
-  | 'ANDAMIO_PLATAFORMA'
-  | 'COMPACTADOR_RODILLO'
-  | 'HERRAMIENTA_ESPECIALIZADA'
-  | 'OTRO'
-  | 'ANDAMIO_PIEZA';
-
 // Una fila por categoría. usoInterno/inactivo se cuentan en `total` pero el
 // FleetWidget sólo pinta rentado/mantenimiento/disponible en la barra visual.
+// `categoria` es el nombre real de la categoría en BD (dashboard.service.ts
+// envía cat.nombre, más la fila fija "Piezas de andamio") — no un enum.
 export type UtilizacionCategoria = {
-  categoria: CategoriaFlota;
+  categoria: string;
   rentado: number;
   mantenimiento: number;
   disponible: number;
