@@ -172,6 +172,9 @@ export function DteSection(props: Props) {
           {(['FC', 'CCF'] as const).map((t) => {
             const bloqueo = motivoBloqueo(t, cliente);
             const deshabilitado = !!bloqueo;
+            // El bloqueo por falta de período de renta también debe verse deshabilitado,
+            // aunque el motivo textual (bloqueo) solo aplique a datos fiscales del cliente.
+            const bloqueadoVisual = deshabilitado || props.faltaPeriodo;
             return (
               <button
                 key={t}
@@ -180,7 +183,7 @@ export function DteSection(props: Props) {
                 onClick={() => setConfirmTipo(t)}
                 title={bloqueo ?? undefined}
                 className={`text-left rounded-md border p-3 transition-colors ${
-                  deshabilitado
+                  bloqueadoVisual
                     ? 'border-bd bg-bg-sunken opacity-60 cursor-not-allowed'
                     : 'border-bd hover:bg-bg-sunken cursor-pointer'
                 }`}
@@ -277,7 +280,7 @@ export function DteSection(props: Props) {
           {isOperador && !props.emisionBloqueada && !confirmEmit && (
             <button
               type="button"
-              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim"
+              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => setConfirmEmit(true)}
               disabled={isEmitiendo || props.faltaPeriodo}
             >
@@ -398,7 +401,7 @@ Descripción: ${descripcion ?? '—'}${observaciones.length > 0 ? '\n\nObservaci
           {isOperador && !props.emisionBloqueada && (
             <button
               type="button"
-              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim"
+              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => props.onReemitir?.()}
               disabled={isEmitiendo || props.faltaPeriodo}
             >
