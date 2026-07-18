@@ -68,17 +68,18 @@ En `components/dte/DteSection.tsx`, estado `APROBADO`, hay dos botones separados
 
 ### Cambio
 
-- Nuevo componente local `components/dte/DteDescargasMenu.tsx` que replica el patrón probado de `components/facturas/FacturaDescargasMenu.tsx`: estado `open`, cierre al hacer click fuera (`mousedown` en `document`), `role="menu"` / `role="menuitem"`, `aria-haspopup` y `aria-expanded`.
-- El trigger es un botón amarillo (`bg-accent text-navy hover:bg-accent-dim`) con icono `download`, texto **"Descargar"** y chevron.
-- Opciones del menú:
-  - "PDF oficial" → `onDescargarPdf`; muestra "Generando…" y se deshabilita mientras `isDescargandoPdf`.
-  - "JSON" → `onDescargarJson`; muestra "Obteniendo…" y se deshabilita mientras `isDescargandoJson`.
-- **Caso sin JSON:** cuando el consumidor no pasa `onDescargarJson`, no se renderiza dropdown — el botón amarillo ejecuta la descarga de PDF directamente (un menú de una sola opción no aporta).
+- Nuevo componente compartido `components/dte/DteDescargasMenu.tsx` que replica el patrón probado de `components/facturas/FacturaDescargasMenu.tsx`: estado `open`, cierre al hacer click fuera (`mousedown` en `document`), `role="menu"` / `role="menuitem"`, `aria-haspopup` y `aria-expanded`.
+- API por items (`{ label, loadingLabel, icon, isLoading, onClick }[]`) para servir a los dos consumidores (DteSection y FseDtePanel) sin acoplarse a props de factura.
+- El trigger es un botón amarillo (`bg-accent text-navy hover:bg-accent-dim`) con icono `download`, texto **"Descargar"** y chevron. Mientras una descarga está en curso, el trigger muestra el `loadingLabel` del item activo ("Generando…" / "Obteniendo…") y se deshabilita — el menú se cierra al hacer click, así que el feedback de progreso vive en el botón.
+- Opciones del menú: "PDF oficial" → `onDescargarPdf` y "JSON" → `onDescargarJson`.
+- **Caso de una sola opción:** cuando el consumidor pasa un solo item (ej. notas de crédito, que hoy no pasa `onDescargarJson`), no se renderiza dropdown — el botón amarillo ejecuta la descarga directamente (un menú de una opción no aporta).
 - En `DteSection.tsx` se reemplazan los dos botones actuales por este componente. Los botones "Anular DTE y cambiar tipo" y "Anular factura/nota" no cambian.
 
 ### Alcance compartido
 
-`DteSection` se usa en facturas, notas de crédito (`app/(dashboard)/notas-credito/[id]/page.tsx`) y FSE (`components/fse/FseDtePanel.tsx`). Los tres módulos heredan el botón unificado — consistencia deliberada, no efecto colateral.
+`DteSection` se usa en facturas y notas de crédito (`app/(dashboard)/notas-credito/[id]/page.tsx`). El módulo FSE **no** usa `DteSection`: tiene su propio panel espejo `components/fse/FseDtePanel.tsx` con botones duplicados de "Descargar PDF oficial" y "Descargar JSON". Para mantener consistencia, `FseDtePanel` también reemplaza sus dos botones por `DteDescargasMenu`.
+
+En FSE, el botón "Descargar constancia de retención" (visible cuando `reteRenta > 0`) **se mantiene como botón separado**: es un documento legal distinto del DTE y el feedback solo pidió unificar PDF y JSON.
 
 ---
 
@@ -93,5 +94,5 @@ En `components/dte/DteSection.tsx`, estado `APROBADO`, hay dos botones separados
 - `pnpm tsc --noEmit` y `pnpm lint` sin errores.
 - Dashboard: las barras de "Utilización de flota" muestran el nombre de cada categoría real de la BD.
 - Detalle de factura en ≥ `lg`: columna derecha con Progreso de cobro + Período de renta + Acta(s) físicas + Actas vinculadas; sin espacio muerto. En 768px todo apila en una columna sin romperse.
-- Card DTE (factura con DTE APROBADO): botón amarillo "Descargar" despliega PDF oficial y JSON; ambas descargas funcionan y muestran su estado de carga. Verificar también en una nota de crédito y un FSE aprobados.
+- Card DTE (factura con DTE APROBADO): botón amarillo "Descargar" despliega PDF oficial y JSON; ambas descargas funcionan y el trigger muestra el estado de carga. Verificar también en una nota de crédito (botón directo, sin menú) y en un FSE aprobado (menú + constancia de retención como botón aparte).
 - Dark mode sin regresiones en los tres cambios.
