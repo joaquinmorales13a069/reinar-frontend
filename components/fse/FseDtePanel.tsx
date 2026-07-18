@@ -5,6 +5,7 @@ import Decimal from 'decimal.js';
 import { Icon } from '@/components/ui/Icon';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { EstadoDteBadge } from '@/components/facturas/EstadoDteBadge';
+import { DteDescargasMenu } from '@/components/dte/DteDescargasMenu';
 import type { Fse } from '@/types/api';
 
 type Props = {
@@ -144,12 +145,24 @@ export function FseDtePanel(props: Props) {
             </div>
           )}
           <div className="flex flex-wrap gap-2 mt-3">
-            <button type="button" className={btnPrimary} onClick={() => props.onDescargarPdf?.()} disabled={props.isDescargandoPdf}>
-              <Icon name="download" size={14} /> {props.isDescargandoPdf ? 'Generando…' : 'Descargar PDF oficial'}
-            </button>
-            <button type="button" className={btnSecondary} onClick={() => props.onDescargarJson?.()} disabled={props.isDescargandoJson}>
-              <Icon name="download" size={14} /> {props.isDescargandoJson ? 'Obteniendo…' : 'Descargar JSON'}
-            </button>
+            <DteDescargasMenu
+              items={[
+                {
+                  label: 'PDF oficial',
+                  loadingLabel: 'Generando…',
+                  icon: 'fileText',
+                  isLoading: props.isDescargandoPdf,
+                  onClick: () => props.onDescargarPdf?.(),
+                },
+                {
+                  label: 'JSON',
+                  loadingLabel: 'Obteniendo…',
+                  icon: 'clipboard',
+                  isLoading: props.isDescargandoJson,
+                  onClick: () => props.onDescargarJson?.(),
+                },
+              ]}
+            />
             {tieneRetencion && (
               <button type="button" className={btnSecondary} onClick={() => props.onDescargarConstancia?.()} disabled={props.isDescargandoConstancia}>
                 <Icon name="idCard" size={14} /> {props.isDescargandoConstancia ? 'Generando…' : 'Descargar constancia de retención'}
