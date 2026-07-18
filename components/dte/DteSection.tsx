@@ -46,6 +46,11 @@ type Props = {
   // ventas — el flujo se movio al modulo de Compras (Task 7). Oculta los
   // botones de emision/reemision y muestra una nota explicativa en su lugar.
   emisionBloqueada?: boolean;
+  // La factura necesita período de renta registrado para emitir (viaja en las
+  // observaciones del DTE). Con true se deshabilitan asignar tipo / emitir /
+  // reemitir y se muestra el hint que dirige al card de período. Solo aplica
+  // a kind 'factura'.
+  faltaPeriodo?: boolean;
 };
 
 const TIPO_INFO: Record<TipoDTE, { label: string; desc: string }> = {
@@ -107,6 +112,12 @@ export function DteSection(props: Props) {
     </div>
   ) : null;
 
+  const hintPeriodo = props.faltaPeriodo ? (
+    <p className="mt-3 text-xs text-warn">
+      Registrá el período de renta antes de emitir el DTE — usá el card «Período de renta» de esta página.
+    </p>
+  ) : null;
+
   const confirmAnularTipoBlock = confirmAnularTipo ? (
     <div className="mt-3 rounded-md border border-bd bg-bg-sunken p-3 space-y-2">
       <div className="text-sm font-medium text-tx">Anular el DTE para cambiar de tipo</div>
@@ -161,15 +172,18 @@ export function DteSection(props: Props) {
           {(['FC', 'CCF'] as const).map((t) => {
             const bloqueo = motivoBloqueo(t, cliente);
             const deshabilitado = !!bloqueo;
+            // El bloqueo por falta de período de renta también debe verse deshabilitado,
+            // aunque el motivo textual (bloqueo) solo aplique a datos fiscales del cliente.
+            const bloqueadoVisual = deshabilitado || props.faltaPeriodo;
             return (
               <button
                 key={t}
                 type="button"
-                disabled={deshabilitado || !isOperador}
+                disabled={deshabilitado || !isOperador || props.faltaPeriodo}
                 onClick={() => setConfirmTipo(t)}
                 title={bloqueo ?? undefined}
                 className={`text-left rounded-md border p-3 transition-colors ${
-                  deshabilitado
+                  bloqueadoVisual
                     ? 'border-bd bg-bg-sunken opacity-60 cursor-not-allowed'
                     : 'border-bd hover:bg-bg-sunken cursor-pointer'
                 }`}
@@ -188,6 +202,7 @@ export function DteSection(props: Props) {
             );
           })}
         </div>
+        {hintPeriodo}
         {confirmTipo && (
           <div className="mt-3">
             <ConfirmRow
@@ -250,6 +265,7 @@ export function DteSection(props: Props) {
             <Icon name="alertTriangle" size={14} />
             <span>Este documento aún no ha sido enviado al Ministerio de Hacienda.</span>
           </div>
+          {hintPeriodo}
           {emitirError && (
             <div className="mt-2 flex items-start gap-2 bg-danger-soft text-danger rounded-md px-3 py-2 text-sm">
               <Icon name="alertTriangle" size={14} />
@@ -264,9 +280,9 @@ export function DteSection(props: Props) {
           {isOperador && !props.emisionBloqueada && !confirmEmit && (
             <button
               type="button"
-              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim"
+              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => setConfirmEmit(true)}
-              disabled={isEmitiendo}
+              disabled={isEmitiendo || props.faltaPeriodo}
             >
               <Icon name="send" size={14} /> Emitir DTE
             </button>
@@ -381,12 +397,13 @@ Descripción: ${descripcion ?? '—'}${observaciones.length > 0 ? '\n\nObservaci
               Los FSE ahora se gestionan desde el módulo de Compras.
             </p>
           )}
+          {hintPeriodo}
           {isOperador && !props.emisionBloqueada && (
             <button
               type="button"
-              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim"
+              className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => props.onReemitir?.()}
-              disabled={isEmitiendo}
+              disabled={isEmitiendo || props.faltaPeriodo}
             >
               <Icon name="refresh" size={14} /> {kind === 'nota' ? 'Corregir y re-emitir nota' : 'Corregir y re-emitir'}
             </button>

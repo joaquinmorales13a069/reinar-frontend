@@ -72,6 +72,8 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
   const isAdminOGerente = user?.rol === 'ADMIN' || user?.rol === 'GERENTE';
   // VISUALIZADOR no puede crear ni modificar registros.
   const puedeEscribir = user && user.rol !== 'VISUALIZADOR';
+  // Sin período de renta el backend rechaza la emisión (422) — bloqueamos antes.
+  const faltaPeriodo = !factura.periodoRentaInicio || !factura.periodoRentaFin;
 
   // Subtitle: nombre del cliente segun tipo (EMPRESA -> razonSocial, PARTICULAR -> nombre+apellido).
   const nombreCliente =
@@ -205,6 +207,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
               if (factura.tipoDTE && factura.tipoDTE !== 'SUJETO_EXCLUIDO') void emitirCon(factura.tipoDTE);
             }}
             emisionBloqueada={factura.tipoDTE === 'SUJETO_EXCLUIDO'}
+            faltaPeriodo={faltaPeriodo}
             onSincronizar={() => { void sincronizarDTE.mutateAsync(id); }}
             onAnular={() => router.push(`/facturas/${id}/anular-dte`)}
             onAnularSoloDTE={(motivo) => { void anularParaCambiarTipo(motivo); }}
