@@ -6,6 +6,8 @@ import { Icon } from '@/components/ui/Icon';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { EstadoDteBadge } from '@/components/facturas/EstadoDteBadge';
 import { TipoDteBadge } from '@/components/facturas/TipoDteBadge';
+import { DteDescargasMenu } from '@/components/dte/DteDescargasMenu';
+import type { DescargaDteItem } from '@/components/dte/DteDescargasMenu';
 import { formatDate } from '@/lib/utils';
 import type { Cliente, Factura, TipoDTE, TipoDTEEmitible } from '@/types/api';
 
@@ -76,6 +78,27 @@ export function DteSection(props: Props) {
   const [confirmAnularTipo, setConfirmAnularTipo] = useState(false);
   const [motivoAnular, setMotivoAnular] = useState(MOTIVO_ANULAR_DEFAULT);
   const motivoAnularValido = motivoAnular.trim().length >= 10;
+
+  // Items del botón unificado de descargas (estado APROBADO). El item de JSON
+  // solo existe si el consumidor pasó onDescargarJson (notas de crédito no).
+  const itemsDescarga: DescargaDteItem[] = [
+    {
+      label: 'PDF oficial',
+      loadingLabel: 'Generando…',
+      icon: 'fileText',
+      isLoading: isDescargandoPdf,
+      onClick: () => props.onDescargarPdf?.(),
+    },
+  ];
+  if (props.onDescargarJson) {
+    itemsDescarga.push({
+      label: 'JSON',
+      loadingLabel: 'Obteniendo…',
+      icon: 'clipboard',
+      isLoading: props.isDescargandoJson,
+      onClick: () => props.onDescargarJson?.(),
+    });
+  }
 
   const anularErrorBlock = props.anularError ? (
     <div className="mt-2 flex items-start gap-2 bg-danger-soft text-danger rounded-md px-3 py-2 text-sm">
@@ -302,24 +325,7 @@ export function DteSection(props: Props) {
             </div>
           )}
           <div className="flex flex-wrap gap-2 mt-3">
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim disabled:opacity-50"
-              onClick={() => props.onDescargarPdf?.()}
-              disabled={isDescargandoPdf}
-            >
-              <Icon name="download" size={14} /> {isDescargandoPdf ? 'Generando…' : 'Descargar PDF oficial'}
-            </button>
-            {props.onDescargarJson && (
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium border border-bd text-tx-2 hover:bg-bg-sunken disabled:opacity-50"
-                onClick={() => props.onDescargarJson?.()}
-                disabled={props.isDescargandoJson}
-              >
-                <Icon name="download" size={14} /> {props.isDescargandoJson ? 'Obteniendo…' : 'Descargar JSON'}
-              </button>
-            )}
+            <DteDescargasMenu items={itemsDescarga} />
             {isAdmin && props.onAnularSoloDTE && (
               <button
                 type="button"
