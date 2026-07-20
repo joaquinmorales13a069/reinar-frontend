@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { useRenovarRenta } from '@/hooks/use-actas';
+import { fechaSVToIso, hoySV, isoToFechaSV } from '@/lib/utils';
 import type { Acta } from '@/types/api';
 
 // Solo se renuevan ítems rentables que siguen en obra.
@@ -21,16 +22,22 @@ function duracionDias(it: Acta['items'][number]): number {
   return DIAS_POR_PERIODO[ci.periodo] ?? ci.cantidadDias;
 }
 
+// Convierte un instante a su dia calendario en TZ El Salvador — consistente
+// con como se interpretan los instantes que arman este mismo calculo (ver
+// periodoSugerido).
 function toDateInput(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return isoToFechaSV(d.toISOString());
 }
 
 // El período sugerido arranca el día siguiente al fin vigente del acta. Si el
 // acta no tiene fin o ya venció, arranca hoy: renovar una renta vencida es un
 // caso real y no debe proponer fechas en el pasado.
 function periodoSugerido(acta: Acta, seleccionados: Acta['items']): { inicio: string; fin: string } {
-  const hoy = new Date();
-  hoy.setUTCHours(0, 0, 0, 0);
+  // "Hoy" se ancla a medianoche El Salvador (no UTC) para no adelantar el día
+  // entre las 18:00 y las 23:59 hora local, y se expresa como el mismo tipo de
+  // instante que periodoRentaFin (que el backend serializa como medianoche SV
+  // en ISO UTC) para poder comparar y sumar días sin mezclar husos horarios.
+  const hoy = new Date(fechaSVToIso(hoySV()));
   const finActa = acta.periodoRentaFin ? new Date(acta.periodoRentaFin) : null;
   const base = finActa && finActa >= hoy ? new Date(finActa.getTime() + 86400000) : hoy;
 
