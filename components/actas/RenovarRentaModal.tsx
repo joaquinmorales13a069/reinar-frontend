@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { useRenovarRenta } from '@/hooks/use-actas';
-import { hoySV } from '@/lib/utils';
+import { hoySV, isoToFechaSV } from '@/lib/utils';
 import type { Acta } from '@/types/api';
 
 // Solo se renuevan ítems rentables que siguen en obra.
@@ -36,22 +36,6 @@ function diasAFecha(dias: number): string {
   return new Date(dias * 86_400_000).toISOString().slice(0, 10);
 }
 
-// acta.periodoRentaFin llega como el ISO de un Date que el backend construyó
-// con `new Date('YYYY-MM-DD')` a partir de un string plano validado con
-// z.string().date() — eso ancla el valor a medianoche UTC PURA, no a
-// medianoche El Salvador. El ISO resultante es siempre "...T00:00:00.000Z"
-// del mismo día calendario que se guardó, así que el día correcto se lee de
-// los componentes UTC del Date. isoToFechaSV interpretaría ese instante en TZ
-// El Salvador, leería medianoche UTC como las 18:00 del día anterior, y
-// correría el período sugerido un día hacia atrás.
-function fechaCalendarioDeIsoUtc(iso: string): string {
-  const d = new Date(iso);
-  const anio = d.getUTCFullYear();
-  const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const dia = String(d.getUTCDate()).padStart(2, '0');
-  return `${anio}-${mes}-${dia}`;
-}
-
 // El período sugerido arranca el día siguiente al fin vigente del acta. Si el
 // acta no tiene fin o ya venció, arranca hoy: renovar una renta vencida es un
 // caso real y no debe proponer fechas en el pasado.
@@ -59,8 +43,13 @@ function periodoSugerido(acta: Acta, seleccionados: Acta['items']): { inicio: st
   // hoySV() ya devuelve el día calendario en El Salvador (evita adelantar el
   // día entre las 18:00 y las 23:59 hora local); acá solo se compara como
   // fecha calendario contra el fin del acta, sin volver a pasar por ninguna TZ.
+  // acta.periodoRentaFin llega anclado a medianoche El Salvador (fase 1 de
+  // unificación TZ — ver .superpowers/sdd/tz-inventario-campos-fecha.md), así
+  // que isoToFechaSV es el decodificador correcto: antes de esa migración el
+  // campo estaba anclado a medianoche UTC pura y este mismo helper corría el
+  // período un día hacia atrás (por eso el commit previo lo evitaba a propósito).
   const hoy = fechaADias(hoySV());
-  const finActa = acta.periodoRentaFin ? fechaADias(fechaCalendarioDeIsoUtc(acta.periodoRentaFin)) : null;
+  const finActa = acta.periodoRentaFin ? fechaADias(isoToFechaSV(acta.periodoRentaFin)) : null;
   const base = finActa !== null && finActa >= hoy ? finActa + 1 : hoy;
 
   const dias = seleccionados.length > 0 ? Math.max(...seleccionados.map(duracionDias)) : 30;
