@@ -10,7 +10,7 @@ import { FacturaOrigenCard } from '@/components/notas-credito/FacturaOrigenCard'
 import { TipoRetencionPicker } from '@/components/retenciones/TipoRetencionPicker';
 import { useFacturas, useFactura } from '@/hooks/use-facturas';
 import { useRegistrarRetencion } from '@/hooks/use-retenciones';
-import { formatCurrency, hoySV } from '@/lib/utils';
+import { fechaSVToIso, formatCurrency, hoySV } from '@/lib/utils';
 import type { FacturaListItem } from '@/types/api';
 
 type Props = { facturaIdPre?: string };
@@ -97,9 +97,12 @@ export function RetencionForm({ facturaIdPre }: Props) {
         numeroCR: numeroCR.trim(),
         porcentaje,
         monto,
-        // Backend espera ISO datetime; convertimos el date input local a
-        // medianoche UTC para satisfacer z.string().datetime().
-        fecha: new Date(`${fecha}T00:00:00.000Z`).toISOString(),
+        // Backend espera ISO datetime (z.string().datetime()) y persiste el
+        // instante tal cual, sin reinterpretarlo — hay que anclar a medianoche
+        // El Salvador (no UTC), porque formatDate() al mostrarlo convierte de
+        // vuelta a TZ El Salvador y medianoche UTC ahí se lee como las 18:00
+        // del día anterior.
+        fecha: fechaSVToIso(fecha),
         ...(notas.trim() ? { notas: notas.trim() } : {}),
       });
       router.push(`/retenciones/${r.id}`);
