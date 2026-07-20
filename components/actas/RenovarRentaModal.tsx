@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/components/ui/Icon';
 import { useRenovarRenta } from '@/hooks/use-actas';
-import { fechaSVToIso, hoySV, isoToFechaSV } from '@/lib/utils';
+import { hoySV } from '@/lib/utils';
 import type { Acta } from '@/types/api';
 
 // Solo se renuevan ítems rentables que siguen en obra.
@@ -22,28 +22,49 @@ function duracionDias(it: Acta['items'][number]): number {
   return DIAS_POR_PERIODO[ci.periodo] ?? ci.cantidadDias;
 }
 
-// Convierte un instante a su dia calendario en TZ El Salvador — consistente
-// con como se interpretan los instantes que arman este mismo calculo (ver
-// periodoSugerido).
-function toDateInput(d: Date): string {
-  return isoToFechaSV(d.toISOString());
+// Un período de renta es una fecha CALENDARIO, no un instante — por eso toda
+// la aritmética se hace contando días desde una época fija, sin construir
+// instantes intermedios que arrastren un huso horario. Date.UTC acá se usa
+// solo como contador puro (no representa un instante real de nada), así que
+// el resultado es exacto sin importar la TZ del navegador o del servidor.
+function fechaADias(fecha: string): number {
+  const [anio, mes, dia] = fecha.split('-').map(Number);
+  return Date.UTC(anio, mes - 1, dia) / 86_400_000;
+}
+
+function diasAFecha(dias: number): string {
+  return new Date(dias * 86_400_000).toISOString().slice(0, 10);
+}
+
+// acta.periodoRentaFin llega como el ISO de un Date que el backend construyó
+// con `new Date('YYYY-MM-DD')` a partir de un string plano validado con
+// z.string().date() — eso ancla el valor a medianoche UTC PURA, no a
+// medianoche El Salvador. El ISO resultante es siempre "...T00:00:00.000Z"
+// del mismo día calendario que se guardó, así que el día correcto se lee de
+// los componentes UTC del Date. isoToFechaSV interpretaría ese instante en TZ
+// El Salvador, leería medianoche UTC como las 18:00 del día anterior, y
+// correría el período sugerido un día hacia atrás.
+function fechaCalendarioDeIsoUtc(iso: string): string {
+  const d = new Date(iso);
+  const anio = d.getUTCFullYear();
+  const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dia = String(d.getUTCDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
 }
 
 // El período sugerido arranca el día siguiente al fin vigente del acta. Si el
 // acta no tiene fin o ya venció, arranca hoy: renovar una renta vencida es un
 // caso real y no debe proponer fechas en el pasado.
 function periodoSugerido(acta: Acta, seleccionados: Acta['items']): { inicio: string; fin: string } {
-  // "Hoy" se ancla a medianoche El Salvador (no UTC) para no adelantar el día
-  // entre las 18:00 y las 23:59 hora local, y se expresa como el mismo tipo de
-  // instante que periodoRentaFin (que el backend serializa como medianoche SV
-  // en ISO UTC) para poder comparar y sumar días sin mezclar husos horarios.
-  const hoy = new Date(fechaSVToIso(hoySV()));
-  const finActa = acta.periodoRentaFin ? new Date(acta.periodoRentaFin) : null;
-  const base = finActa && finActa >= hoy ? new Date(finActa.getTime() + 86400000) : hoy;
+  // hoySV() ya devuelve el día calendario en El Salvador (evita adelantar el
+  // día entre las 18:00 y las 23:59 hora local); acá solo se compara como
+  // fecha calendario contra el fin del acta, sin volver a pasar por ninguna TZ.
+  const hoy = fechaADias(hoySV());
+  const finActa = acta.periodoRentaFin ? fechaADias(fechaCalendarioDeIsoUtc(acta.periodoRentaFin)) : null;
+  const base = finActa !== null && finActa >= hoy ? finActa + 1 : hoy;
 
   const dias = seleccionados.length > 0 ? Math.max(...seleccionados.map(duracionDias)) : 30;
-  const fin = new Date(base.getTime() + (dias - 1) * 86400000);
-  return { inicio: toDateInput(base), fin: toDateInput(fin) };
+  return { inicio: diasAFecha(base), fin: diasAFecha(base + dias - 1) };
 }
 
 export function RenovarRentaModal({ acta, onClose }: { acta: Acta; onClose: () => void }) {
