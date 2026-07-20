@@ -61,6 +61,18 @@ export function fechaSVHoyMasDias(dias: number): string {
   return target.toLocaleDateString('en-CA', { timeZone: TZ_SV });
 }
 
+// Hoy en TZ El Salvador, formato YYYY-MM-DD — para defaults de inputs
+// type="date" (vencimiento, entrega, período de renta, etc). NUNCA usar
+// new Date().toISOString().slice(0, 10): eso da el dia calendario en UTC, y
+// El Salvador es UTC-6 sin horario de verano, asi que entre las 18:00 y las
+// 23:59 hora local ese calculo ya devuelve "manana". Forzar TZ_SV en vez de
+// leer la hora local del dispositivo tambien evita que un servidor (SSR, en
+// UTC) y el navegador del operador calculen dias distintos en el primer
+// render.
+export function hoySV(): string {
+  return fechaSVHoyMasDias(0);
+}
+
 export function getInitials(nombre: string): string {
   // Máximo dos iniciales — los componentes de avatar solo tienen espacio para dos caracteres.
   return nombre

@@ -23,6 +23,11 @@ function extractErrorMessage(err: unknown, fallback: string): string {
   return anyErr?.response?.data?.error?.message ?? fallback;
 }
 
+function extractErrorCode(err: unknown): string | undefined {
+  const anyErr = err as { response?: { data?: { error?: { code?: string } } } };
+  return anyErr?.response?.data?.error?.code;
+}
+
 // ─── Queries ─────────────────────────────────────────────────────────
 
 export function useCotizaciones(params: FiltrosCotizaciones = {}) {
@@ -229,6 +234,10 @@ export function useEditarItemCotizacion() {
       qc.setQueryData(['cotizacion', cotizacionId], cot);
     },
     onError: (err) => {
+      // CANTIDAD_EXCEDE_ORIGEN se muestra inline junto al input en Step2Items
+      // (es un error de validación de negocio, no un fallo de red) — evitamos
+      // duplicarlo también como toast.
+      if (extractErrorCode(err) === 'CANTIDAD_EXCEDE_ORIGEN') return;
       toast.error(extractErrorMessage(err, 'No se pudo editar el ítem.'));
     },
   });

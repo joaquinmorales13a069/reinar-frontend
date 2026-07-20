@@ -124,10 +124,18 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
       <PageHeader
         title={factura.numeroFactura}
         subtitle={
-          <span className="inline-flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 flex-wrap">
             <span>{nombreCliente}</span>
             <span className="text-tx-3">·</span>
             <FacturaEstadoBadge estado={factura.estado} />
+            {factura.cotizacion?.actaEntregaOrigen && (
+              <Link
+                href={`/actas/${factura.cotizacion.actaEntregaOrigen.id}`}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-accent-soft text-accent text-xs font-medium hover:underline"
+              >
+                <Icon name="refresh" size={11} /> Renovación de {factura.cotizacion.actaEntregaOrigen.numeroActa}
+              </Link>
+            )}
           </span>
         }
         back

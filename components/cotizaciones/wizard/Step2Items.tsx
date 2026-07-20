@@ -47,6 +47,19 @@ const TIPO_LABEL: Record<TipoItemCotizacion, string> = {
   CUSTOM: 'Custom',
 };
 
+// Duplicado intencionalmente (mismo patrón que los hooks use-*.ts): extrae
+// el mensaje de error del backend para mostrarlo inline bajo el input de
+// cantidad cuando el código es CANTIDAD_EXCEDE_ORIGEN.
+function extractErrorMessage(err: unknown, fallback: string): string {
+  const anyErr = err as { response?: { data?: { error?: { message?: string } } } };
+  return anyErr?.response?.data?.error?.message ?? fallback;
+}
+
+function extractErrorCode(err: unknown): string | undefined {
+  const anyErr = err as { response?: { data?: { error?: { code?: string } } } };
+  return anyErr?.response?.data?.error?.code;
+}
+
 // Sub-componente por fila para mantener estado local de los inputs editables.
 // El subtotal mostrado se calcula localmente con previewSubtotal mientras el
 // usuario tipea, y se reemplaza con el valor del backend cuando el cache se
@@ -54,16 +67,21 @@ const TIPO_LABEL: Record<TipoItemCotizacion, string> = {
 // foco — UX confusa para el operador.
 function ItemRow({
   it,
-  patch,
+  cotizacionId,
   onDelete,
 }: {
   it: CotizacionItem;
-  patch: (item: CotizacionItem, data: EditarItemDto) => void;
+  cotizacionId: string;
   onDelete: (itemId: string) => void;
 }) {
   const [unidades, setUnidades] = useState(String(it.cantidadUnidades));
   const [dias, setDias]         = useState(String(it.cantidadDias));
   const [tarifa, setTarifa]     = useState(String(it.tarifaAplicada));
+  // Error de negocio (CANTIDAD_EXCEDE_ORIGEN) del último intento de subir la
+  // cantidad de un ítem renovado. Se limpia apenas el operador vuelve a
+  // tipear (onChange) — un error pegado tras corregir el valor confundiría
+  // más que no mostrarlo.
+  const [errorCantidad, setErrorCantidad] = useState<string | null>(null);
 
   // Cuando el backend confirma un cambio, los valores en `it` cambian; resync
   // los inputs locales si difieren (evita que el operador vea su valor stale
@@ -71,6 +89,36 @@ function ItemRow({
   useEffect(() => { setUnidades(String(it.cantidadUnidades)); }, [it.cantidadUnidades]);
   useEffect(() => { setDias(String(it.cantidadDias)); },         [it.cantidadDias]);
   useEffect(() => { setTarifa(String(it.tarifaAplicada)); },     [it.tarifaAplicada]);
+
+  // Dos observers de mutación por fila, no uno solo ni uno compartido entre
+  // filas. MutationObserver guarda un único #mutateOptions por instancia y
+  // desconecta la mutación anterior en vuelo al volver a llamar mutate(),
+  // así que el callback por-llamada de la mutación vieja nunca corre. La
+  // cantidad es el único campo cuyo error se muestra inline (depende de ese
+  // callback), así que va en su propio observer: editar días o tarifa
+  // mientras el PATCH de cantidad sigue en vuelo ya no se lo lleva puesto.
+  const editar = useEditarItemCotizacion();
+  const editarCantidad = useEditarItemCotizacion();
+
+  function patch(data: EditarItemDto) {
+    editar.mutate({ cotizacionId, itemId: it.id, data });
+  }
+
+  function patchCantidad(n: number, opts: { onError: (msg: string) => void; onSuccess: () => void }) {
+    editarCantidad.mutate(
+      { cotizacionId, itemId: it.id, data: { cantidadUnidades: n } },
+      {
+        onSuccess: opts.onSuccess,
+        // El hook ya toastea el resto de errores; acá solo capturamos
+        // CANTIDAD_EXCEDE_ORIGEN para mostrarlo inline en la fila.
+        onError: (err) => {
+          if (extractErrorCode(err) === 'CANTIDAD_EXCEDE_ORIGEN') {
+            opts.onError(extractErrorMessage(err, 'No se pudo actualizar la cantidad.'));
+          }
+        },
+      },
+    );
+  }
 
   const unidadesN = parseInt(unidades, 10);
   const diasN     = parseInt(dias, 10);
@@ -91,9 +139,14 @@ function ItemRow({
           className="w-full bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none text-sm"
           defaultValue={it.descripcion}
           onBlur={(e) => {
-            if (e.target.value !== it.descripcion) patch(it, { descripcion: e.target.value });
+            if (e.target.value !== it.descripcion) patch({ descripcion: e.target.value });
           }}
         />
+        {it.cotizacionItemOrigenId && (
+          <span className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-bg-sunken text-tx-3">
+            <Icon name="refresh" size={10} /> Renovado
+          </span>
+        )}
       </td>
       <td className="px-3 py-2">
         {it.tipo === 'CONSUMIBLE' ? (
@@ -121,14 +174,24 @@ function ItemRow({
             min={1}
             className="w-16 text-right font-mono bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
             value={unidades}
-            onChange={(e) => setUnidades(e.target.value)}
+            onChange={(e) => {
+              setUnidades(e.target.value);
+              setErrorCantidad(null);
+            }}
             onBlur={() => {
               const n = parseInt(unidades, 10) || 1;
-              if (n !== it.cantidadUnidades) patch(it, { cantidadUnidades: n });
-              else setUnidades(String(it.cantidadUnidades));
+              if (n !== it.cantidadUnidades) {
+                patchCantidad(n, {
+                  onSuccess: () => setErrorCantidad(null),
+                  onError: setErrorCantidad,
+                });
+              } else {
+                setUnidades(String(it.cantidadUnidades));
+              }
             }}
           />
         )}
+        {errorCantidad && <p className="text-xs text-danger mt-1">{errorCantidad}</p>}
       </td>
       <td className="px-3 py-2 text-right">
         {it.tipo === 'SERVICIO' || it.tipo === 'CONSUMIBLE' ? (
@@ -142,7 +205,7 @@ function ItemRow({
             onChange={(e) => setDias(e.target.value)}
             onBlur={() => {
               const n = parseInt(dias, 10) || 1;
-              if (n !== it.cantidadDias) patch(it, { cantidadDias: n });
+              if (n !== it.cantidadDias) patch({ cantidadDias: n });
               else setDias(String(it.cantidadDias));
             }}
           />
@@ -165,7 +228,7 @@ function ItemRow({
               setTarifa(String(it.tarifaAplicada));
               return;
             }
-            patch(it, { tarifaCustom: v });
+            patch({ tarifaCustom: v });
           }}
         />
       </td>
@@ -187,17 +250,12 @@ type Props = { cotizacion: Cotizacion; onBack: () => void; onNext: () => void };
 
 export function Step2Items({ cotizacion, onBack, onNext }: Props) {
   const [modal, setModal] = useState(false);
-  const editar = useEditarItemCotizacion();
   const eliminar = useEliminarItemCotizacion();
 
   // Fallback a [] porque el backend POST /cotizaciones devuelve los escalares
   // sin la relacion items; el seed inicial puede llegar sin el campo si en
   // algun edge case se hidrata con la respuesta cruda del create.
   const items = cotizacion.items ?? [];
-
-  function patch(item: CotizacionItem, data: EditarItemDto) {
-    editar.mutate({ cotizacionId: cotizacion.id, itemId: item.id, data });
-  }
 
   return (
     <div className="space-y-4">
@@ -238,7 +296,7 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
                 <ItemRow
                   key={it.id}
                   it={it}
-                  patch={patch}
+                  cotizacionId={cotizacion.id}
                   onDelete={(id) => eliminar.mutate({ cotizacionId: cotizacion.id, itemId: id })}
                 />
               ))}

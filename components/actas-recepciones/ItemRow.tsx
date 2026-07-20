@@ -26,16 +26,15 @@ export function ItemRow({ item, mode = 'view', rightSlot }: Props) {
   const info = describirItem(item);
   const cantidad = item.cantidadConsumible ?? item.cantidadRecibida ?? null;
 
-  // Para consumibles: mostrar el pendiente cuando haya datos de seguimiento disponibles.
-  // El pendiente es lo que queda por devolver (despachado − ya devuelto).
-  const esConsumible = !!item.consumible;
-  const tieneSeguimiento =
-    esConsumible &&
-    item.cantidadConsumible != null &&
-    item.cantidadRecibida != null;
-  const pendiente = tieneSeguimiento
-    ? (item.cantidadConsumible ?? 0) - (item.cantidadRecibida ?? 0)
-    : null;
+  // Consumibles y piezas de andamio se devuelven por cantidad (cf.
+  // tieneSeguimientoPorCantidad en recepciones/nueva). cantidadConsumible y
+  // cantidadRecibida son mutuamente excluyentes por tipo de ítem — nunca
+  // ambos a la vez — así que no sirven para calcular "lo que queda por
+  // devolver". Ese pendiente real (despachado − ya devuelto) lo trae
+  // cantidadPendiente, poblado solo por items-pendientes-devolucion.
+  const seDevuelvePorCantidad = !!item.consumible || !!item.piezaTipo;
+  const tieneSeguimiento = seDevuelvePorCantidad && item.cantidadPendiente != null;
+  const pendiente = tieneSeguimiento ? item.cantidadPendiente : null;
 
   return (
     <div className="flex items-start justify-between gap-3 py-2">

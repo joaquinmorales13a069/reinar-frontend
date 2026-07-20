@@ -10,7 +10,7 @@ import { FacturaOrigenCard } from '@/components/notas-credito/FacturaOrigenCard'
 import { TipoRetencionPicker } from '@/components/retenciones/TipoRetencionPicker';
 import { useFacturas, useFactura } from '@/hooks/use-facturas';
 import { useRegistrarRetencion } from '@/hooks/use-retenciones';
-import { formatCurrency } from '@/lib/utils';
+import { fechaSVToIso, formatCurrency, hoySV } from '@/lib/utils';
 import type { FacturaListItem } from '@/types/api';
 
 type Props = { facturaIdPre?: string };
@@ -63,7 +63,7 @@ export function RetencionForm({ facturaIdPre }: Props) {
   // Flag para saber si el usuario editó el monto; permite que el cálculo automático
   // vuelva a tomar el control al cambiar de factura.
   const [montoManual, setMontoManual] = useState(false);
-  const [fecha, setFecha] = useState(() => new Date().toISOString().slice(0, 10));
+  const [fecha, setFecha] = useState(() => hoySV());
   const [notas, setNotas] = useState('');
 
   // Pre-carga monto cuando hay factura + porcentaje y el usuario no lo tocó.
@@ -97,9 +97,12 @@ export function RetencionForm({ facturaIdPre }: Props) {
         numeroCR: numeroCR.trim(),
         porcentaje,
         monto,
-        // Backend espera ISO datetime; convertimos el date input local a
-        // medianoche UTC para satisfacer z.string().datetime().
-        fecha: new Date(`${fecha}T00:00:00.000Z`).toISOString(),
+        // Backend espera ISO datetime (z.string().datetime()) y persiste el
+        // instante tal cual, sin reinterpretarlo — hay que anclar a medianoche
+        // El Salvador (no UTC), porque formatDate() al mostrarlo convierte de
+        // vuelta a TZ El Salvador y medianoche UTC ahí se lee como las 18:00
+        // del día anterior.
+        fecha: fechaSVToIso(fecha),
         ...(notas.trim() ? { notas: notas.trim() } : {}),
       });
       router.push(`/retenciones/${r.id}`);

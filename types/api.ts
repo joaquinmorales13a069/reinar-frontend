@@ -777,6 +777,8 @@ export type CotizacionItem = {
   servicioId: string | null;
   consumibleId: string | null;
   piezaTipoId: string | null;
+  // Renovación: ítem de la cotización anterior que este renueva. null = inventario nuevo.
+  cotizacionItemOrigenId: string | null;
 };
 
 // Forma reducida devuelta por GET /cotizaciones (lista).
@@ -847,6 +849,10 @@ export type Cotizacion = {
   factura: { id: string; numeroFactura: string; estado: string } | null;
   actaEntregaOrigenId: string | null;
   actaEntregaOrigen?: { id: string; numeroActa: string } | null;
+  // Rango de renta a nivel cotización — respalda el default que se copia al acta
+  // y a la factura al despachar/emitir.
+  periodoRentaInicio: string | null;
+  periodoRentaFin: string | null;
   // Hermanas del mismo consecutivo (variantes con sufijo -B..-Z). El backend
   // siempre lo devuelve ([] cuando no hay variantes).
   variantes: { id: string; numeroCotizacion: string; estado: EstadoCotizacion; total: string }[];
@@ -1079,6 +1085,7 @@ export type ActaResumen = {
   id: string;
   numeroActa: string;
   estado: string;
+  numeroActaFisico: string | null;
 };
 
 // Forma completa devuelta por GET /facturas/:id.
@@ -1136,6 +1143,16 @@ export type Factura = {
       nombre: string | null;
       apellido: string | null;
     };
+    // Renovación: la factura no tiene actas propias, pero el acta origen respalda
+    // el inventario que ya está en obra. numeroActaFisico es null hasta que el
+    // acta se despacha (el folio no existe al crearla).
+    actaEntregaOrigen: {
+      id: string;
+      numeroActa: string;
+      numeroActaFisico: string | null;
+      estado: EstadoActa;
+      fechaEntrega: string | null;
+    } | null;
   };
   contactoFacturacion: Contacto | null;
   pagos: Pago[];
@@ -1236,6 +1253,8 @@ export type EstadoActaItem = 'PENDIENTE_DEVOLUCION' | 'DEVUELTO';
 export type ActaItem = {
   id: string;
   cotizacionItemId: string;
+  // El modal de renovación lo usa para sugerir un período por defecto.
+  cotizacionItem: { periodo: PeriodoItem; cantidadDias: number } | null;
   equipo?: { id: string; nombre: string; codigo: string } | null;
   herramientaUnidad?: {
     id: string;
@@ -1246,6 +1265,12 @@ export type ActaItem = {
   piezaTipo?:  { id: string; nombre: string } | null;
   cantidadConsumible?: number | null;
   cantidadRecibida?:   number | null;
+  // Pendiente REAL (despachado − ya devuelto en recepciones previas). Solo lo
+  // envía GET .../items-pendientes-devolucion para consumibles y piezas de
+  // andamio — null para equipos/herramientas (indivisibles, sin seguimiento
+  // por cantidad) y undefined en endpoints que no calculan este dato (ej. el
+  // detalle de acta).
+  cantidadPendiente?: number | null;
   condicionSalida?:    CondicionItem | null;
   observacionesSalida?: string | null;
   horometroSalida?:    string | null;
@@ -1309,6 +1334,15 @@ export type Acta = {
   fechaDevolucion: string | null;
   periodoRentaInicio: string | null;
   periodoRentaFin: string | null;
+  // Fin del período tal como se entregó y firmó, congelado la primera vez que
+  // una renovación extiende el acta. Puede ser null incluso en actas extendidas
+  // (actas sin período registrado al entregar) — por eso no sirve como señal de
+  // "fue extendida"; para eso está periodoRentaExtendido.
+  periodoRentaFinOriginal: string | null;
+  // true si al menos una renovación aprobada extendió el período de este acta.
+  // Es la señal correcta de "fue extendida" — periodoRentaFinOriginal puede ser
+  // null tanto por no haberse extendido nunca como por no tener período original.
+  periodoRentaExtendido: boolean;
   usuarioDespacho: { id: string; nombre: string; apellido: string } | null;
   contactoReceptor: { id: string; nombre: string } | null;
   receptorNombre: string | null;
@@ -1323,7 +1357,14 @@ export type Acta = {
   };
   factura?: { id: string; numeroFactura: string; clienteId: string } | null;
   items: ActaItem[];
-  renovaciones?: { id: string; numeroCotizacion: string; estado: EstadoCotizacion; factura: { id: string; numeroFactura: string } | null }[];
+  renovaciones?: {
+    id: string;
+    numeroCotizacion: string;
+    estado: EstadoCotizacion;
+    periodoRentaInicio: string | null;
+    periodoRentaFin: string | null;
+    factura: { id: string; numeroFactura: string } | null;
+  }[];
   createdAt: string;
 };
 
@@ -1506,7 +1547,8 @@ export type CrearRecepcionDto = {
     observacionesRetorno?: string;
     horometroRetorno?: number;
     combustibleRetorno?: string;
-    // Solo para ítems CONSUMIBLE — el backend ignora estos campos en equipos/piezas.
+    // Para ítems CONSUMIBLE y PIEZA de andamio (devolución parcial acumulativa) —
+    // el backend ignora estos campos en equipos/herramientas (indivisibles).
     // Si se omite cantidadDevuelta, el backend devuelve la totalidad del pendiente y cierra.
     cantidadDevuelta?: number;
     cerrar?: boolean;

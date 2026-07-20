@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { useMarcarFacturaEntregada } from '@/hooks/use-facturas';
-import { formatDate } from '@/lib/utils';
+import { formatDate, hoySV } from '@/lib/utils';
 import type { Factura } from '@/types/api';
 
 interface Props {
@@ -16,14 +16,9 @@ interface Props {
 const inputBase =
   'px-3 py-2 text-sm rounded-md border bg-surface text-tx placeholder:text-tx-3 focus:outline-none focus:border-accent transition-colors border-bd';
 
-// Default = hoy en formato YYYY-MM-DD para el input type="date".
-function hoyISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export function EntregaQuedanCard({ factura, puedeEscribir }: Props) {
   const marcar = useMarcarFacturaEntregada(factura.id);
-  const [fechaReal, setFechaReal] = useState(hoyISO());
+  const [fechaReal, setFechaReal] = useState(hoySV());
 
   const yaEntregada = !!factura.fechaEntregaReal;
   const mostrarFormulario = puedeEscribir && !yaEntregada;
