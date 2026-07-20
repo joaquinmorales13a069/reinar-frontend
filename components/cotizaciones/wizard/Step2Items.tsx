@@ -90,26 +90,30 @@ function ItemRow({
   useEffect(() => { setDias(String(it.cantidadDias)); },         [it.cantidadDias]);
   useEffect(() => { setTarifa(String(it.tarifaAplicada)); },     [it.tarifaAplicada]);
 
-  // Un observer de mutación por fila (no uno compartido entre todas las
-  // filas del padre): así los callbacks onError/onSuccess por-llamada no se
-  // pisan cuando dos filas se editan en rápida sucesión. MutationObserver
-  // solo guarda un #mutateOptions por instancia y desconecta la mutación
-  // anterior en vuelo al llamar mutate() de nuevo sobre el mismo observer.
+  // Dos observers de mutación por fila, no uno solo ni uno compartido entre
+  // filas. MutationObserver guarda un único #mutateOptions por instancia y
+  // desconecta la mutación anterior en vuelo al volver a llamar mutate(),
+  // así que el callback por-llamada de la mutación vieja nunca corre. La
+  // cantidad es el único campo cuyo error se muestra inline (depende de ese
+  // callback), así que va en su propio observer: editar días o tarifa
+  // mientras el PATCH de cantidad sigue en vuelo ya no se lo lleva puesto.
   const editar = useEditarItemCotizacion();
+  const editarCantidad = useEditarItemCotizacion();
 
-  function patch(
-    data: EditarItemDto,
-    opts?: { onError?: (msg: string) => void; onSuccess?: () => void },
-  ) {
-    editar.mutate(
-      { cotizacionId, itemId: it.id, data },
-      opts && {
-        onSuccess: () => opts.onSuccess?.(),
+  function patch(data: EditarItemDto) {
+    editar.mutate({ cotizacionId, itemId: it.id, data });
+  }
+
+  function patchCantidad(n: number, opts: { onError: (msg: string) => void; onSuccess: () => void }) {
+    editarCantidad.mutate(
+      { cotizacionId, itemId: it.id, data: { cantidadUnidades: n } },
+      {
+        onSuccess: opts.onSuccess,
         // El hook ya toastea el resto de errores; acá solo capturamos
         // CANTIDAD_EXCEDE_ORIGEN para mostrarlo inline en la fila.
         onError: (err) => {
           if (extractErrorCode(err) === 'CANTIDAD_EXCEDE_ORIGEN') {
-            opts.onError?.(extractErrorMessage(err, 'No se pudo actualizar la cantidad.'));
+            opts.onError(extractErrorMessage(err, 'No se pudo actualizar la cantidad.'));
           }
         },
       },
@@ -177,7 +181,7 @@ function ItemRow({
             onBlur={() => {
               const n = parseInt(unidades, 10) || 1;
               if (n !== it.cantidadUnidades) {
-                patch({ cantidadUnidades: n }, {
+                patchCantidad(n, {
                   onSuccess: () => setErrorCantidad(null),
                   onError: setErrorCantidad,
                 });
