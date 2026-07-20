@@ -8,7 +8,7 @@ import { SelectorClienteReceptor } from '@/components/facturas/SelectorClienteRe
 import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { DIAS_UTC, LABEL_DIA } from '@/lib/dias-semana';
-import { hoySV, nombreCliente } from '@/lib/utils';
+import { hoySV, fechaSVToIso, nombreCliente } from '@/lib/utils';
 import type { Cliente } from '@/types/api';
 
 interface Props {
@@ -108,9 +108,12 @@ export function GenerarFacturaModal({
         contactoFacturacionId: contactoFacturacionId ?? undefined,
         condicionPago,
         esQuedan: quedanActivo,
-        ...(esCredito && !quedanActivo ? { fechaVencimiento } : {}),
+        // fechaVencimiento/fechaEntregaFactura son fechas calendario (input
+        // type="date"); fechaSVToIso ancla a medianoche El Salvador para que
+        // formatDate() no las muestre un dia antes.
+        ...(esCredito && !quedanActivo ? { fechaVencimiento: fechaSVToIso(fechaVencimiento) } : {}),
         ...(quedanActivo
-          ? { plazoCredito: Number(plazoCredito), fechaEntregaFactura }
+          ? { plazoCredito: Number(plazoCredito), fechaEntregaFactura: fechaSVToIso(fechaEntregaFactura) }
           : {}),
         ...(esTercero ? { receptorClienteId: receptorClienteId! } : {}),
       },

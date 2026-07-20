@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { useMarcarFacturaEntregada } from '@/hooks/use-facturas';
-import { formatDate, hoySV } from '@/lib/utils';
+import { formatDate, hoySV, fechaSVToIso } from '@/lib/utils';
 import type { Factura } from '@/types/api';
 
 interface Props {
@@ -84,7 +84,7 @@ export function EntregaQuedanCard({ factura, puedeEscribir }: Props) {
           </div>
           <button
             type="button"
-            onClick={() => marcar.mutate(fechaReal)}
+            onClick={() => marcar.mutate(fechaSVToIso(fechaReal))}
             disabled={marcar.isPending || !fechaReal}
             className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-accent text-navy text-sm font-semibold hover:bg-accent-dim transition-colors disabled:opacity-50"
           >

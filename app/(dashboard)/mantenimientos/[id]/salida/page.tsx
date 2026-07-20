@@ -18,7 +18,7 @@ import { useMantenimiento, useRegistrarSalida } from '@/hooks/use-mantenimientos
 import { useConsumibles } from '@/hooks/use-consumibles';
 import { useProveedores } from '@/hooks/use-proveedores';
 import { useAuthStore } from '@/stores/auth.store';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, fechaSVToIso } from '@/lib/utils';
 
 const repuestoSchema = z.discriminatedUnion('modo', [
   z.object({
@@ -132,7 +132,10 @@ export default function SalidaMantenimientoPage() {
           descripcion: r.descripcion,
           proveedorId: r.proveedorId || undefined,
           costoCompra: r.costoCompra,
-          fechaCompra: r.fechaCompra ? new Date(r.fechaCompra).toISOString() : undefined,
+          // fechaCompra es una fecha calendario (input type="date"), no un
+          // instante — fechaSVToIso ancla a medianoche El Salvador para que
+          // formatDate() (si algun dia se muestra) no la corra un dia atras.
+          fechaCompra: r.fechaCompra ? fechaSVToIso(r.fechaCompra) : undefined,
           cantidad:    r.cantidad,
         };
       });

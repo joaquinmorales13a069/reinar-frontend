@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { MantenimientoFormFields } from '@/components/mantenimientos/MantenimientoFormFields';
 import { useMantenimiento, useActualizarMantenimiento } from '@/hooks/use-mantenimientos';
 import { useAuthStore } from '@/stores/auth.store';
+import { horaSVToIso, isoToHoraSV } from '@/lib/utils';
 import type { Control, UseFormRegister, FieldErrors } from 'react-hook-form';
 import type { MantenimientoFormValues } from '@/components/mantenimientos/MantenimientoFormFields';
 
@@ -70,8 +71,9 @@ export default function EditarMantenimientoPage() {
       costoEstimado: m.costoEstimado ? Number(m.costoEstimado) : undefined,
       categoriaId:   m.categoriaId,
       proximoMantenimiento: m.proximoMantenimiento
-        // datetime-local espera "YYYY-MM-DDTHH:mm" sin segundos ni TZ.
-        ? m.proximoMantenimiento.slice(0, 16)
+        // datetime-local espera "YYYY-MM-DDTHH:mm" sin segundos ni TZ, en
+        // hora de pared El Salvador (no los digitos UTC crudos del ISO).
+        ? isoToHoraSV(m.proximoMantenimiento)
         : '',
     });
   }, [m, reset]);
@@ -97,10 +99,11 @@ export default function EditarMantenimientoPage() {
         horometro:     values.horometro,
         costoEstimado: values.costoEstimado,
         // El input datetime-local produce "YYYY-MM-DDTHH:mm" sin timezone.
-        // Convertimos a ISO completo que es lo que valida z.string().datetime() en el backend.
+        // horaSVToIso interpreta esos digitos como hora de pared en El
+        // Salvador (no en la TZ del navegador) antes de convertir a ISO.
         // null explicito para limpiar la fecha; undefined la deja como estaba.
         proximoMantenimiento: values.proximoMantenimiento
-          ? new Date(values.proximoMantenimiento).toISOString()
+          ? horaSVToIso(values.proximoMantenimiento)
           : null,
       });
       router.push(`/mantenimientos/${id}`);

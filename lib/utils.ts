@@ -58,6 +58,28 @@ export function fechaSVToIso(fecha: string): string {
   return fromZonedTime(`${fecha}T00:00:00`, TZ_SV).toISOString();
 }
 
+// ─── Helper de "hora de pared" El Salvador (fecha + hora significativa) ───
+// A diferencia de fechaSVToIso/isoToFechaSV (que fuerzan medianoche porque el
+// dato es una fecha CALENDARIO), estos dos son para campos que sí llevan una
+// hora real elegida por el usuario (ej. cita de mantenimiento vía
+// <input type="datetime-local">). Sin esto, new Date(str).toISOString()
+// interpreta el string en la TZ del NAVEGADOR del operador, no en la de
+// El Salvador — un operador viajando o con el reloj del SO mal configurado
+// guardaria una hora corrida.
+
+// Toma "YYYY-MM-DDTHH:mm" (lo que produce un input datetime-local) e
+// interpreta esos digitos como hora de pared en TZ El Salvador, devolviendo
+// el instante UTC real para que el backend lo persista.
+export function horaSVToIso(fechaHora: string): string {
+  return fromZonedTime(fechaHora, TZ_SV).toISOString();
+}
+
+// Toma el ISO que devuelve el backend y lo formatea como "YYYY-MM-DDTHH:mm"
+// en hora de pared El Salvador, para pre-llenar un input datetime-local.
+export function isoToHoraSV(iso: string): string {
+  return format(toZonedTime(iso, TZ_SV), "yyyy-MM-dd'T'HH:mm");
+}
+
 // Devuelve la fecha de hoy + N dias en TZ El Salvador, formato YYYY-MM-DD.
 export function fechaSVHoyMasDias(dias: number): string {
   const target = new Date(Date.now() + dias * 24 * 60 * 60 * 1000);

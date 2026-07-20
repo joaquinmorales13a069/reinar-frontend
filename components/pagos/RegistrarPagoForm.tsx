@@ -7,7 +7,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { registrarPagoSchema, type RegistrarPagoForm as Form } from '@/lib/schemas/factura';
 import { useCrearPago } from '@/hooks/use-pagos';
-import { formatCurrency, hoySV } from '@/lib/utils';
+import { formatCurrency, hoySV, fechaSVToIso } from '@/lib/utils';
 
 const METODOS: { value: Form['metodoPago']; label: string }[] = [
   { value: 'EFECTIVO',       label: 'Efectivo' },
@@ -51,8 +51,12 @@ export function RegistrarPagoForm({ facturaId, saldoPendiente, onClose, onSucces
   async function onSubmit(values: Form) {
     try {
       // Convertimos fecha YYYY-MM-DD a ISO datetime: el schema del backend
-      // exige z.string().datetime().
-      const fechaIso = new Date(values.fecha + 'T12:00:00.000Z').toISOString();
+      // exige z.string().datetime(). fechaSVToIso ancla a medianoche El
+      // Salvador (igual que el resto de fechas calendario del sistema) — antes
+      // anclaba a mediodia UTC, lo que hacia que un pago de "hoy" quedara
+      // fuera de un filtro "hasta: hoy" (ver PagosFilters.tsx, que ya filtra
+      // con fechaSVToIso desde antes).
+      const fechaIso = fechaSVToIso(values.fecha);
       await crear.mutateAsync({
         facturaId,
         data: { ...values, fecha: fechaIso },
