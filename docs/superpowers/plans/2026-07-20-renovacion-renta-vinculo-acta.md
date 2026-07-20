@@ -548,6 +548,239 @@ git commit -m "feat(actas): renovarRenta captura período, marca ítems origen y
 
 ---
 
+### Task 2b: Devolución parcial de piezas de andamio en `registrarRecepcion`
+
+**Por qué existe esta tarea:** se agregó durante la ejecución, tras el review de Task 2. El spec asumía que las devoluciones parciales de piezas se acumulaban en `ActaRecepcionItem.cantidadDevuelta`, pero eso **solo vale para consumibles**. Hoy cualquier recepción de piezas cae en la rama `else` de `actas.service.ts:924-926` (`{ devuelta: null, cerrarItem: true }`), lo que cierra el ítem completo y restaura **toda** `cantidadRecibida` al stock (`:989-998`) sin importar cuánto volvió físicamente. Consecuencias: (a) devolver 5 de 20 crucetas infla el stock en 15 piezas que siguen en obra, y (b) el `cantidadEnObra` de Task 2 opera sobre un estado inalcanzable, así que la renovación de andamios no puede descontar devoluciones. El schema Zod ya acepta `cantidadDevuelta` y `cerrar` para cualquier ítem (`actas.schemas.ts:143-155`) — la restricción es puramente del servicio.
+
+**Files:**
+- Modify: `server/src/modules/actas/actas.service.ts:904-927` (plan por ítem), `:989-998` (restauración de stock de piezas)
+- Modify: `server/src/modules/actas/actas.schemas.ts:149-153` (comentario)
+- Modify: `server/prisma/schema.prisma:908-910` (comentario — no genera migración)
+- Test: `server/tests/modules/actas/actas.service.test.ts`
+
+**Interfaces:**
+- Consumes: nada de tareas anteriores
+- Produces: `registrarRecepcion` acepta devoluciones parciales de `PIEZA_ANDAMIO`; el `ActaEntregaItem` queda `PENDIENTE_DEVOLUCION` con `cantidadDevuelta` acumulada hasta completar. Esto vuelve alcanzable el input que `cantidadEnObra` (Task 2) ya sabe procesar.
+
+**Semántica de `cerrar` en piezas:** para consumibles, `cerrar: true` con `devuelta < pendiente` significa "el remanente se consumió". Una pieza no se consume: cerrar con remanente significa que esas piezas **no van a volver** (pérdida o daño), así que no se restauran al stock. El comportamiento del código es el mismo; lo que cambia es qué documenta el comentario.
+
+- [ ] **Step 1: Escribir los tests que fallan**
+
+Agregar a `server/tests/modules/actas/actas.service.test.ts`, dentro del `describe('registrarRecepcion')` existente (`:177`):
+
+```typescript
+  it('devuelve piezas parcialmente: el ítem sigue abierto y solo se restaura lo devuelto', async () => {
+    const item = {
+      id: 'aei-p', piezaTipoId: 'pz-1', cantidadRecibida: 20,
+      equipoId: null, herramientaUnidadId: null, consumibleId: null, cantidadConsumible: null,
+      actaEntrega: { id: 'acta-1', bodegaOrigenId: 'bod-1', cotizacionId: COT_ID, facturaId: null },
+    }
+    mockRecepcionBase([item])
+    mockPrisma.actaRecepcionItem.aggregate.mockResolvedValue({ _sum: { cantidadDevuelta: 0 } } as any)
+
+    await service.registrarRecepcion(COT_ID, null, {
+      items: [{ actaEntregaItemId: 'aei-p', cantidadDevuelta: 5 }],
+    } as any, 'user-1')
+
+    // No se cierra: quedan 15 en obra.
+    expect(mockPrisma.actaEntregaItem.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ data: { estado: 'DEVUELTO' } }),
+    )
+    // Solo vuelven 5 al stock, no las 20 despachadas.
+    expect(mockPrisma.piezaTipo.update).toHaveBeenCalledWith({
+      where: { id: 'pz-1' },
+      data:  { stockActual: { increment: 5 } },
+    })
+  })
+
+  it('cierra la pieza cuando la devolución acumulada completa lo despachado', async () => {
+    const item = {
+      id: 'aei-p', piezaTipoId: 'pz-1', cantidadRecibida: 20,
+      equipoId: null, herramientaUnidadId: null, consumibleId: null, cantidadConsumible: null,
+      actaEntrega: { id: 'acta-1', bodegaOrigenId: 'bod-1', cotizacionId: COT_ID, facturaId: null },
+    }
+    mockRecepcionBase([item])
+    // Ya se devolvieron 5 en una recepción anterior.
+    mockPrisma.actaRecepcionItem.aggregate.mockResolvedValue({ _sum: { cantidadDevuelta: 5 } } as any)
+
+    await service.registrarRecepcion(COT_ID, null, {
+      items: [{ actaEntregaItemId: 'aei-p', cantidadDevuelta: 15 }],
+    } as any, 'user-1')
+
+    expect(mockPrisma.actaEntregaItem.update).toHaveBeenCalledWith({
+      where: { id: 'aei-p' }, data: { estado: 'DEVUELTO' },
+    })
+    expect(mockPrisma.piezaTipo.update).toHaveBeenCalledWith({
+      where: { id: 'pz-1' }, data: { stockActual: { increment: 15 } },
+    })
+  })
+
+  it('rechaza devolver más piezas de las pendientes', async () => {
+    const item = {
+      id: 'aei-p', piezaTipoId: 'pz-1', cantidadRecibida: 20,
+      equipoId: null, herramientaUnidadId: null, consumibleId: null, cantidadConsumible: null,
+      actaEntrega: { id: 'acta-1', bodegaOrigenId: 'bod-1', cotizacionId: COT_ID, facturaId: null },
+    }
+    mockRecepcionBase([item])
+    mockPrisma.actaRecepcionItem.aggregate.mockResolvedValue({ _sum: { cantidadDevuelta: 5 } } as any)
+
+    await expect(service.registrarRecepcion(COT_ID, null, {
+      items: [{ actaEntregaItemId: 'aei-p', cantidadDevuelta: 16 }],
+    } as any, 'user-1')).rejects.toMatchObject({ statusCode: 422, code: 'VALIDATION_ERROR' })
+  })
+
+  it('cerrar con remanente da las piezas por no retornadas: no se restauran al stock', async () => {
+    const item = {
+      id: 'aei-p', piezaTipoId: 'pz-1', cantidadRecibida: 20,
+      equipoId: null, herramientaUnidadId: null, consumibleId: null, cantidadConsumible: null,
+      actaEntrega: { id: 'acta-1', bodegaOrigenId: 'bod-1', cotizacionId: COT_ID, facturaId: null },
+    }
+    mockRecepcionBase([item])
+    mockPrisma.actaRecepcionItem.aggregate.mockResolvedValue({ _sum: { cantidadDevuelta: 0 } } as any)
+
+    await service.registrarRecepcion(COT_ID, null, {
+      items: [{ actaEntregaItemId: 'aei-p', cantidadDevuelta: 5, cerrar: true }],
+    } as any, 'user-1')
+
+    expect(mockPrisma.actaEntregaItem.update).toHaveBeenCalledWith({
+      where: { id: 'aei-p' }, data: { estado: 'DEVUELTO' },
+    })
+    expect(mockPrisma.piezaTipo.update).toHaveBeenCalledWith({
+      where: { id: 'pz-1' }, data: { stockActual: { increment: 5 } },
+    })
+  })
+
+  it('equipos y unidades de herramienta siguen cerrando en una sola recepción', async () => {
+    const item = {
+      id: 'aei-e', equipoId: 'eq-1', piezaTipoId: null, cantidadRecibida: null,
+      herramientaUnidadId: null, consumibleId: null, cantidadConsumible: null,
+      actaEntrega: { id: 'acta-1', bodegaOrigenId: 'bod-1', cotizacionId: COT_ID, facturaId: null },
+    }
+    mockRecepcionBase([item])
+
+    await service.registrarRecepcion(COT_ID, null, {
+      items: [{ actaEntregaItemId: 'aei-e' }],
+    } as any, 'user-1')
+
+    expect(mockPrisma.actaEntregaItem.update).toHaveBeenCalledWith({
+      where: { id: 'aei-e' }, data: { estado: 'DEVUELTO' },
+    })
+    expect(mockPrisma.equipo.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'eq-1' } }),
+    )
+  })
+```
+
+`mockRecepcionBase(items)` es un helper a escribir siguiendo el patrón de los tests existentes de `registrarRecepcion` en ese `describe` — debe montar `actaEntregaItem.findMany` con los ítems, `$transaction` pasando `mockPrisma`, `generarNumero`, y los mocks de `actaRecepcion.create` / `actaRecepcionItem.createMany`. Reutilizar el setup que ya usan los tests vecinos en vez de inventar uno nuevo. Agregar `aggregate: vi.fn()` al mock de `actaRecepcionItem` en el encabezado del archivo si no está.
+
+- [ ] **Step 2: Correr los tests para verificar que fallan**
+
+```bash
+cd /Users/joaquinmorales13a06/Desktop/Reinar/server
+pnpm vitest run tests/modules/actas/actas.service.test.ts -t "piezas"
+```
+
+Expected: FAIL — hoy las piezas siempre cierran y restauran `cantidadRecibida` completo.
+
+- [ ] **Step 3: Generalizar el plan por ítem**
+
+En `server/src/modules/actas/actas.service.ts`, reemplazar el bloque `:904-927`:
+
+```typescript
+    // Plan por item: cuanto se devuelve y si se cierra. Consumibles y piezas de
+    // andamio se devuelven por cantidad, así que admiten devolución parcial
+    // acumulativa (varias recepciones sobre el mismo ítem). Equipos y unidades
+    // de herramienta son indivisibles: se cierran en una sola recepción total.
+    const plan = new Map<string, { devuelta: number | null; cerrarItem: boolean }>()
+    for (const item of items) {
+      const retorno = retornoMap.get(item.id)!
+      const totalDespachado =
+        item.consumibleId && item.cantidadConsumible != null ? item.cantidadConsumible
+        : item.piezaTipoId && item.cantidadRecibida != null  ? item.cantidadRecibida
+        : null
+      if (totalDespachado != null) {
+        const prev = await tx.actaRecepcionItem.aggregate({
+          where: { actaEntregaItemId: item.id },
+          _sum:  { cantidadDevuelta: true },
+        })
+        const yaDevuelto = prev._sum.cantidadDevuelta ?? 0
+        const pendiente  = totalDespachado - yaDevuelto
+        const devuelta   = retorno.cantidadDevuelta ?? pendiente
+        if (devuelta > pendiente) {
+          throw new AppError(422, 'VALIDATION_ERROR', `La cantidad devuelta (${devuelta}) excede lo pendiente (${pendiente})`)
+        }
+        // Cierra si se cubrió todo el pendiente, o si se marca cerrar: en
+        // consumibles el remanente se dio por consumido, en piezas por no retornado.
+        const cerrarItem = retorno.cerrar === true || devuelta === pendiente
+        plan.set(item.id, { devuelta, cerrarItem })
+      } else {
+        plan.set(item.id, { devuelta: null, cerrarItem: true })
+      }
+    }
+```
+
+- [ ] **Step 4: Restaurar al stock solo lo devuelto**
+
+Reemplazar la rama de piezas de `:989-998`:
+
+```typescript
+      } else if (item.piezaTipoId && devuelta != null && devuelta > 0) {
+        // Solo vuelve al stock lo realmente devuelto: las piezas que siguen en
+        // obra (o que se dieron por no retornadas) no están en bodega.
+        await tx.stockBodega.upsert({
+          where:  { piezaTipoId_bodegaId: { piezaTipoId: item.piezaTipoId, bodegaId: bodegaDestinoId } },
+          create: { piezaTipoId: item.piezaTipoId, bodegaId: bodegaDestinoId, cantidad: devuelta },
+          update: { cantidad: { increment: devuelta } },
+        })
+        await tx.piezaTipo.update({
+          where: { id: item.piezaTipoId },
+          data:  { stockActual: { increment: devuelta } },
+        })
+      }
+```
+
+- [ ] **Step 5: Actualizar los comentarios que documentaban la limitación**
+
+En `server/src/modules/actas/actas.schemas.ts:149-153`:
+
+```typescript
+  // Devolución parcial de consumibles y piezas de andamio: cantidad realmente
+  // devuelta en esta recepción. Si se omite, se devuelve el pendiente completo.
+  // 0 = no devuelve nada cuando se combina con cerrar. `cerrar` cierra el ítem
+  // dando el remanente por consumido (consumibles) o por no retornado (piezas).
+```
+
+En `server/prisma/schema.prisma`, el comentario de `ActaRecepcionItem.cantidadDevuelta` (`:908-910`):
+
+```prisma
+  // Cantidad realmente devuelta en esta recepcion (consumibles y piezas de
+  // andamio). null para equipos/unidades de herramienta, que son indivisibles
+  // y se reciben de una sola vez. Permite devolucion parcial acumulativa:
+  // varias ActaRecepcionItem por ActaEntregaItem.
+```
+
+Verificar con `pnpm prisma migrate status` que cambiar un comentario no generó drift (no debería: los comentarios `//` de Prisma no son parte del DDL).
+
+- [ ] **Step 6: Correr los tests**
+
+```bash
+cd /Users/joaquinmorales13a06/Desktop/Reinar/server
+pnpm vitest run tests/modules/actas/actas.service.test.ts
+pnpm tsc --noEmit
+```
+
+Expected: los 5 tests nuevos PASS, los tests de `registrarRecepcion` y `renovarRenta` existentes siguen en verde, sin fallos nuevos respecto al baseline.
+
+- [ ] **Step 7: Commit**
+
+```bash
+cd /Users/joaquinmorales13a06/Desktop/Reinar/server
+git add src/modules/actas/actas.service.ts src/modules/actas/actas.schemas.ts prisma/schema.prisma tests/modules/actas/actas.service.test.ts
+git commit -m "fix(actas): devolución parcial de piezas de andamio — el stock solo recupera lo que volvió"
+```
+
+---
+
 ### Task 3: Excluir ítems renovados del despacho
 
 **Files:**

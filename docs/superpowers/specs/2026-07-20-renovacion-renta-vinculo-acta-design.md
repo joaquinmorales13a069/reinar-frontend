@@ -28,7 +28,7 @@ En la aprobación (`cotizaciones.service.ts:887, 902`) el gate de disponibilidad
 
 ## Alcance
 
-- **Incluye:** vínculo factura↔acta original, captura y propagación del período de renta de la renovación, distinción de ítems renovados vs nuevos, caso mixto con dos actas, corrección del gate de disponibilidad por ítem, y la cantidad de renovación descontando devoluciones parciales.
+- **Incluye:** vínculo factura↔acta original, captura y propagación del período de renta de la renovación, distinción de ítems renovados vs nuevos, caso mixto con dos actas, corrección del gate de disponibilidad por ítem, la cantidad de renovación descontando devoluciones parciales, y —agregado durante la ejecución— el soporte de devolución parcial de piezas de andamio en `registrarRecepcion` (ver Task 2b más abajo).
 - **Excluye:** el bug de `crearActa` que no marca `HerramientaUnidad` como `RENTADA` (ver "Fuera de alcance"). Notas de crédito, FSE y retenciones no se tocan.
 
 ## Decisiones
@@ -155,6 +155,8 @@ Esta tabla refleja `calcularSubtotal` (`cotizaciones.service.ts:35-45`), donde `
 **Renovar una renovación.** `renovarRenta` siempre parte del acta y clona desde los `CotizacionItem` de la cotización original, así que `cotizacionItemOrigenId` apunta siempre a esos ítems. La cadena queda plana, no recursiva, y la enésima renovación funciona igual que la primera.
 
 **Devolución parcial antes de renovar.** `renovarRenta` clona `cantidadUnidades` del `CotizacionItem` original sin descontar lo ya devuelto. Si el cliente devolvió 5 de 20 crucetas y después renueva, el sistema renueva 20 y **sobre-factura**. La cantidad correcta es `cantidadRecibida − Σ cantidadDevuelta` de los `ActaRecepcionItem` asociados a cada `ActaEntregaItem`. Se corrige en este trabajo porque toca dinero del cliente y el flujo de renovación es donde se manifiesta. Si la cantidad resultante es 0, el ítem no se clona.
+
+> **Corrección durante la ejecución (Task 2b).** Este spec asumía que las devoluciones parciales de piezas ya se acumulaban en `ActaRecepcionItem.cantidadDevuelta`. Es falso: eso **solo vale para consumibles**. `registrarRecepcion` manda toda recepción de piezas a la rama `{ devuelta: null, cerrarItem: true }` (`actas.service.ts:924-926`), que cierra el ítem completo y restaura **toda** `cantidadRecibida` al stock (`:989-998`). Devolver 5 de 20 crucetas infla el inventario en 15 piezas que siguen en obra — un bug preexistente, independiente de las renovaciones. Sin arreglarlo, el descuento por devolución parcial de este spec es inalcanzable para andamios. Se amplió el alcance con la Task 2b para que las piezas admitan devolución parcial acumulativa igual que los consumibles.
 
 **Aumentar la cantidad de un ítem renovado.** Si el operador sube `cantidadUnidades` de un ítem renovado de 20 a 30, esas 10 extras son inventario nuevo pero viven dentro de un ítem marcado como renovado, así que nunca se despacharían. Un ítem renovado no puede superar la cantidad de su ítem origen: `422 CANTIDAD_EXCEDE_ORIGEN`. Para sumar unidades hay que agregar un ítem nuevo, que sí pasa por el gate de disponibilidad y por el acta.
 
