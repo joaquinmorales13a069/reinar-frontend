@@ -2,6 +2,7 @@
 
 import { toast } from 'sonner';
 import api from '@/lib/api';
+import { fechaSVToIso } from '@/lib/utils';
 
 // Tipos de reporte exportables (devuelven blob PDF/Excel/CSV).
 // Inventario queda fuera porque su endpoint devuelve JSON y se consume en /reportes/inventario.
@@ -66,12 +67,6 @@ export async function extraerErrorDeBlob(err: unknown, fallback: string): Promis
   return fallbackErr?.error?.message ?? fallback;
 }
 
-// Las fechas viajan al backend como ISO completo (zod las valida con `.datetime()`).
-// Convertimos YYYY-MM-DD a ISO de medianoche UTC para evitar ambigüedad de timezone.
-function aIsoUtc(fecha: string): string {
-  return new Date(`${fecha}T00:00:00.000Z`).toISOString();
-}
-
 export async function generarReporte(params: GenerarReporteParams): Promise<void> {
   const { tipo, desde, hasta, formato, comparar, top,
           tipoMant, categoria, estado, equipoId, herramientaUnidadId, tecnico } = params;
@@ -81,8 +76,13 @@ export async function generarReporte(params: GenerarReporteParams): Promise<void
     const res = await api.get(`/reportes/${tipo}`, {
       responseType: 'blob',
       params: {
-        desde:    aIsoUtc(desde),
-        hasta:    aIsoUtc(hasta),
+        // Las fechas viajan al backend como ISO completo (zod las valida con
+        // `.datetime()`) y los reportes comparan contra columnas ancladas al
+        // día calendario de El Salvador (fecha, fechaServicio, createdAt…).
+        // Anclamos a medianoche SV, no UTC, para que el corte coincida con el
+        // día que ve el usuario sin importar su ubicación física.
+        desde:    fechaSVToIso(desde),
+        hasta:    fechaSVToIso(hasta),
         formato,
         // Sólo enviamos `comparar` y `top` cuando vienen definidos para no
         // sobreescribir los defaults del backend ni romper el schema (top tiene min/max).
