@@ -18,6 +18,7 @@ import { useFactura } from '@/hooks/use-facturas';
 import { useCotizacion } from '@/hooks/use-cotizaciones';
 import { useProyectosCliente } from '@/hooks/use-proyectos';
 import { ubicacionProyectoADireccionEntrega, anexarDetalleExtra } from '@/lib/direccion-entrega';
+import { fechaSVToIso } from '@/lib/utils';
 import {
   useItemsDisponiblesDespacho,
   useItemsDisponiblesDespachoCotizacion,
@@ -330,11 +331,14 @@ function NuevaActaPage() {
           anexarDetalleExtra(data.direccionEntrega ?? '', data.direccionDetalleExtra ?? '') ||
           undefined,
         notas: data.notas || undefined,
+        // fechaSVToIso ancla a medianoche El Salvador (06:00 UTC) — new
+        // Date(str).toISOString() anclaba a medianoche UTC pura y corría el
+        // período un día atrás al mostrarlo con formatDate() (SV-aware).
         periodoRentaInicio: data.periodoRentaInicio
-          ? new Date(data.periodoRentaInicio).toISOString()
+          ? fechaSVToIso(data.periodoRentaInicio)
           : undefined,
         periodoRentaFin: data.periodoRentaFin
-          ? new Date(data.periodoRentaFin).toISOString()
+          ? fechaSVToIso(data.periodoRentaFin)
           : undefined,
         items,
       };

@@ -1,6 +1,6 @@
 import Decimal from 'decimal.js';
 import { format, parseISO } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { es } from 'date-fns/locale';
 
 // Reinar opera en El Salvador. Todas las fechas comerciales (vencimiento,
@@ -50,9 +50,12 @@ export function isoToFechaSV(iso: string): string {
 // convierte al instante de medianoche en TZ El Salvador, en ISO UTC para
 // que el backend lo persista.
 export function fechaSVToIso(fecha: string): string {
-  // "YYYY-MM-DDT00:00:00-06:00" = medianoche en El Salvador (sin DST).
-  // El Salvador NO observa horario de verano, por eso UTC-6 es siempre fijo.
-  return new Date(`${fecha}T00:00:00-06:00`).toISOString();
+  // fromZonedTime interpreta "medianoche" como hora de pared en TZ_SV (la
+  // misma zona nombrada que usa el resto del archivo) y devuelve el instante
+  // UTC real, en vez de depender del offset literal -06:00. Verificado que
+  // produce el mismo ISO que la implementacion anterior para fechas de
+  // distintos meses, anios bisiestos y decadas (ver reporte de la rama).
+  return fromZonedTime(`${fecha}T00:00:00`, TZ_SV).toISOString();
 }
 
 // Devuelve la fecha de hoy + N dias en TZ El Salvador, formato YYYY-MM-DD.

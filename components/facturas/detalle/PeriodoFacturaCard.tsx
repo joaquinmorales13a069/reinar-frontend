@@ -4,11 +4,16 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
 import { useActualizarFactura } from '@/hooks/use-facturas';
 import { useActa, useActasDeFactura } from '@/hooks/use-actas';
+import { fechaSVToIso } from '@/lib/utils';
 import type { Factura } from '@/types/api';
 
 const inputCls =
   'w-full px-3 py-2 text-sm rounded-md border border-bd bg-bg text-tx focus:outline-none focus:border-accent transition-colors';
 
+// Seguro para ambos anclajes: medianoche El Salvador (06:00 UTC) y medianoche
+// UTC pura (00:00 UTC, legado) caen en la misma porción de fecha del ISO —
+// nunca cruzan a otro día UTC — así que recortar los primeros 10 caracteres
+// da el día calendario correcto sin necesidad de pasar por ninguna TZ.
 function toDateInput(iso: string | null | undefined): string {
   return iso ? iso.slice(0, 10) : '';
 }
@@ -62,8 +67,10 @@ export function PeriodoFacturaCard({ factura }: { factura: Factura }) {
     await actualizar.mutateAsync({
       id: factura.id,
       data: {
-        periodoRentaInicio: inicio ? new Date(inicio).toISOString() : null,
-        periodoRentaFin: fin ? new Date(fin).toISOString() : null,
+        // fechaSVToIso ancla a medianoche El Salvador — new Date(str).toISOString()
+        // anclaba a medianoche UTC pura y corría el período un día atrás.
+        periodoRentaInicio: inicio ? fechaSVToIso(inicio) : null,
+        periodoRentaFin: fin ? fechaSVToIso(fin) : null,
       },
     });
   }

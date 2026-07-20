@@ -16,7 +16,12 @@ import { useCrearEquipo, useEditarEquipo, useCambiarEstadoEquipo, useSubirImagen
 import { useCategorias } from '@/hooks/use-categorias';
 import { puedeEjecutar } from '@/lib/equipos';
 import { useAuthStore } from '@/stores/auth.store';
+import { hoySV } from '@/lib/utils';
 import type { Equipo, EstadoEquipoEditable } from '@/types/api';
+
+// Año actual en TZ El Salvador — evita que el límite máximo del año de
+// fabricación dependa del reloj/timezone del dispositivo del usuario.
+const ANIO_ACTUAL_SV = Number(hoySV().slice(0, 4));
 
 const baseSchema = z.object({
   nombre: z.string().min(1, 'El nombre es obligatorio.'),
@@ -24,7 +29,7 @@ const baseSchema = z.object({
   categoriaId: z.string().min(1, 'La categoría es obligatoria.'),
   marca: z.string().optional(),
   modelo: z.string().optional(),
-  anoFabricacion: z.coerce.number().int().min(1900).max(new Date().getFullYear()).optional().or(z.literal('')),
+  anoFabricacion: z.coerce.number().int().min(1900).max(ANIO_ACTUAL_SV).optional().or(z.literal('')),
   tarifaDia: z.coerce.number().positive('La tarifa por día debe ser positiva.'),
   tarifaSemana: z.coerce.number().positive('La tarifa por semana debe ser positiva.'),
   tarifaMes: z.coerce.number().positive('La tarifa por mes debe ser positiva.'),
