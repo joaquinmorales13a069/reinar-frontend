@@ -311,17 +311,24 @@ export function useCrearRecepcionDesdeCotizacion(cotizacionId: string) {
   });
 }
 
+type RenovarRentaVars = {
+  cotizacionItemIds: string[];
+  periodoRentaInicio: string;
+  periodoRentaFin: string;
+};
+
 export function useRenovarRenta(actaId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (cotizacionItemIds: string[]) =>
-      api.post<ApiResponse<Cotizacion>>(`/actas/${actaId}/renovar`, { cotizacionItemIds }).then((r) => {
+    mutationFn: (vars: RenovarRentaVars) =>
+      api.post<ApiResponse<Cotizacion>>(`/actas/${actaId}/renovar`, vars).then((r) => {
         if (!r.data.success) throw new Error(r.data.error.message);
         return r.data.data;
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['acta', actaId] });
       qc.invalidateQueries({ queryKey: ['cotizaciones'] });
+      toast.success('Renovación creada.');
     },
     onError: (err) => {
       toast.error(extractErrorMessage(err, 'No se pudo crear la renovación.'));
