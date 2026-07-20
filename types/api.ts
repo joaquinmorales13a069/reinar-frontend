@@ -777,6 +777,8 @@ export type CotizacionItem = {
   servicioId: string | null;
   consumibleId: string | null;
   piezaTipoId: string | null;
+  // Renovación: ítem de la cotización anterior que este renueva. null = inventario nuevo.
+  cotizacionItemOrigenId: string | null;
 };
 
 // Forma reducida devuelta por GET /cotizaciones (lista).
@@ -847,6 +849,10 @@ export type Cotizacion = {
   factura: { id: string; numeroFactura: string; estado: string } | null;
   actaEntregaOrigenId: string | null;
   actaEntregaOrigen?: { id: string; numeroActa: string } | null;
+  // Rango de renta a nivel cotización — respalda el default que se copia al acta
+  // y a la factura al despachar/emitir.
+  periodoRentaInicio: string | null;
+  periodoRentaFin: string | null;
   // Hermanas del mismo consecutivo (variantes con sufijo -B..-Z). El backend
   // siempre lo devuelve ([] cuando no hay variantes).
   variantes: { id: string; numeroCotizacion: string; estado: EstadoCotizacion; total: string }[];
@@ -1079,6 +1085,7 @@ export type ActaResumen = {
   id: string;
   numeroActa: string;
   estado: string;
+  numeroActaFisico: string | null;
 };
 
 // Forma completa devuelta por GET /facturas/:id.
@@ -1136,6 +1143,16 @@ export type Factura = {
       nombre: string | null;
       apellido: string | null;
     };
+    // Renovación: la factura no tiene actas propias, pero el acta origen respalda
+    // el inventario que ya está en obra. numeroActaFisico es null hasta que el
+    // acta se despacha (el folio no existe al crearla).
+    actaEntregaOrigen: {
+      id: string;
+      numeroActa: string;
+      numeroActaFisico: string | null;
+      estado: EstadoActa;
+      fechaEntrega: string | null;
+    } | null;
   };
   contactoFacturacion: Contacto | null;
   pagos: Pago[];
@@ -1236,6 +1253,8 @@ export type EstadoActaItem = 'PENDIENTE_DEVOLUCION' | 'DEVUELTO';
 export type ActaItem = {
   id: string;
   cotizacionItemId: string;
+  // El modal de renovación lo usa para sugerir un período por defecto.
+  cotizacionItem: { periodo: PeriodoItem; cantidadDias: number } | null;
   equipo?: { id: string; nombre: string; codigo: string } | null;
   herramientaUnidad?: {
     id: string;
@@ -1309,6 +1328,9 @@ export type Acta = {
   fechaDevolucion: string | null;
   periodoRentaInicio: string | null;
   periodoRentaFin: string | null;
+  // Fin del período tal como se entregó y firmó, congelado la primera vez que
+  // una renovación extiende el acta. null = el acta nunca fue extendida.
+  periodoRentaFinOriginal: string | null;
   usuarioDespacho: { id: string; nombre: string; apellido: string } | null;
   contactoReceptor: { id: string; nombre: string } | null;
   receptorNombre: string | null;
@@ -1323,7 +1345,14 @@ export type Acta = {
   };
   factura?: { id: string; numeroFactura: string; clienteId: string } | null;
   items: ActaItem[];
-  renovaciones?: { id: string; numeroCotizacion: string; estado: EstadoCotizacion; factura: { id: string; numeroFactura: string } | null }[];
+  renovaciones?: {
+    id: string;
+    numeroCotizacion: string;
+    estado: EstadoCotizacion;
+    periodoRentaInicio: string | null;
+    periodoRentaFin: string | null;
+    factura: { id: string; numeroFactura: string } | null;
+  }[];
   createdAt: string;
 };
 

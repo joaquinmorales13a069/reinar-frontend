@@ -44,6 +44,10 @@ function rowToActaItemDisplay(r: ItemDisponibleDespacho): ActaItem {
   return {
     id: r.id,
     cotizacionItemId: r.id,
+    // Este adaptador construye un ActaItem "de vista previa" antes de crear el
+    // acta — el modal de renovación (el único consumidor de cotizacionItem)
+    // opera sobre actas ya existentes, así que aquí no aplica.
+    cotizacionItem: null,
     equipo: r.equipo,
     herramientaUnidad: r.herramientaTipo
       ? {
