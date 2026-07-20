@@ -249,18 +249,24 @@ function NuevaActaPage() {
     setRows(inicial);
   }, [itemsDisp]);
 
-  // Precarga el periodo de renta desde la factura (feedback ventas jul-2026).
+  // Precarga el periodo de renta desde la factura (feedback ventas jul-2026) o
+  // desde la cotización cuando el acta nace de una renovación con inventario
+  // nuevo: ese inventario cubre el mismo lapso que la renovación. Usamos
+  // cotizacionActiva (detalle completo, GET /cotizaciones/:id) y no
+  // cotizacionSeleccionada, que es un resumen (id/numero/razonSocial) sin los
+  // campos de período.
   // Solo si el campo está vacío, para no pisar lo que el usuario ya tipeó.
   useEffect(() => {
-    if (modo !== 'factura' || !facturaInicial) return;
+    const origen = modo === 'factura' ? facturaInicial : cotizacionActiva;
+    if (!origen) return;
     const { periodoRentaInicio, periodoRentaFin } = form.getValues();
-    if (!periodoRentaInicio && facturaInicial.periodoRentaInicio) {
-      form.setValue('periodoRentaInicio', facturaInicial.periodoRentaInicio.slice(0, 10));
+    if (!periodoRentaInicio && origen.periodoRentaInicio) {
+      form.setValue('periodoRentaInicio', origen.periodoRentaInicio.slice(0, 10));
     }
-    if (!periodoRentaFin && facturaInicial.periodoRentaFin) {
-      form.setValue('periodoRentaFin', facturaInicial.periodoRentaFin.slice(0, 10));
+    if (!periodoRentaFin && origen.periodoRentaFin) {
+      form.setValue('periodoRentaFin', origen.periodoRentaFin.slice(0, 10));
     }
-  }, [modo, facturaInicial, form]);
+  }, [modo, facturaInicial, cotizacionActiva, form]);
 
   const crearFactura = useCrearActa();
   const crearCotizacion = useCrearActaDesdeCotizacion(cotizacionSeleccionada?.id ?? '');
@@ -387,6 +393,10 @@ function NuevaActaPage() {
     // Reseteamos la bodega elegida: las bodegas disponibles dependen de la
     // cotización, así que la selección previa puede ya no ser válida.
     form.setValue('bodegaOrigenId', '');
+    // El periodo precargado (si la cotización era una renovación) pertenece
+    // a la cotización anterior.
+    form.setValue('periodoRentaInicio', '');
+    form.setValue('periodoRentaFin', '');
     setProyectoDireccionId('');
   }
 
