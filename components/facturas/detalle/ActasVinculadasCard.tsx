@@ -92,8 +92,25 @@ export function ActasVinculadasCard({ factura, puedeEscribir }: Props) {
 
       {actaOrigen && seConfirmoSinInventarioNuevo && (
         <div className="px-4 py-2 border-t border-bd text-xs text-tx-3">
-          Esta renovación no requiere acta nueva — el inventario sigue en obra bajo el acta{' '}
-          <Link href={`/actas/${actaOrigen.id}`} className="text-accent hover:underline font-mono">{actaOrigen.numeroActa}</Link>.
+          {actas.length > 0 ? (
+            // Renovación mixta: el inventario nuevo ya se despachó bajo otra
+            // acta (visible en la tabla de arriba), así que el pendiente real
+            // queda cubierto entre esa acta y la de origen — no falta ninguna.
+            <>
+              Esta renovación no requiere otra acta nueva — el inventario queda cubierto entre el acta{' '}
+              <Link href={`/actas/${actaOrigen.id}`} className="text-accent hover:underline font-mono">{actaOrigen.numeroActa}</Link>
+              {' '}y {actas.length === 1 ? (
+                <>la nueva entrega <Link href={`/actas/${actas[0].id}`} className="text-accent hover:underline font-mono">{actas[0].numeroActa}</Link></>
+              ) : (
+                'las nuevas entregas listadas arriba'
+              )}.
+            </>
+          ) : (
+            <>
+              Esta renovación no requiere acta nueva — el inventario sigue en obra bajo el acta{' '}
+              <Link href={`/actas/${actaOrigen.id}`} className="text-accent hover:underline font-mono">{actaOrigen.numeroActa}</Link>.
+            </>
+          )}
         </div>
       )}
 
