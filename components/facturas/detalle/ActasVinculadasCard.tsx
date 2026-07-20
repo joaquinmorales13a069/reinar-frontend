@@ -21,8 +21,13 @@ export function ActasVinculadasCard({ factura, puedeEscribir }: Props) {
   // El botón de crear acta solo tiene sentido si queda inventario sin despachar.
   // En una renovación pura no queda ninguno: la mercadería ya está en obra.
   const disponibles = useItemsDisponiblesDespachoCotizacion(cotizacionId);
-  const hayInventarioNuevo = (disponibles.data?.length ?? 0) > 0;
-  const mostrarBoton = puedeEscribir && hayInventarioNuevo;
+  // Solo ocultamos el botón cuando la query confirmó (con éxito) que no hay
+  // nada por despachar. Mientras carga o si falla, no sabemos el estado real —
+  // y ocultar de más rompería en silencio el flujo principal de despacho para
+  // TODAS las facturas si esta query auxiliar cae. Mostrar de más es inofensivo:
+  // el backend rechaza con 422 ITEM_YA_EN_OBRA cualquier ítem ya renovado.
+  const seConfirmoSinInventarioNuevo = disponibles.isSuccess && disponibles.data.length === 0;
+  const mostrarBoton = puedeEscribir && !seConfirmoSinInventarioNuevo;
 
   const total = actas.length + (actaOrigen ? 1 : 0);
 
@@ -80,7 +85,7 @@ export function ActasVinculadasCard({ factura, puedeEscribir }: Props) {
         </table>
       )}
 
-      {actaOrigen && !hayInventarioNuevo && (
+      {actaOrigen && seConfirmoSinInventarioNuevo && (
         <div className="px-4 py-2 border-t border-bd text-xs text-tx-3">
           Esta renovación no requiere acta nueva — el inventario sigue en obra bajo el acta{' '}
           <Link href={`/actas/${actaOrigen.id}`} className="text-accent hover:underline font-mono">{actaOrigen.numeroActa}</Link>.
