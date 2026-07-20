@@ -1320,7 +1320,9 @@ export async function recalcularPeriodoActa(
 
 - [ ] **Step 4: Llamarla al anular o descartar**
 
-Dentro de `cambiarEstado`, en las ramas que llevan a `ANULADA` y `DESCARTADA`, dentro de la transacción correspondiente:
+**Corregido durante la ejecución:** `EstadoCotizacion` **no tiene valor `ANULADA`** (sus valores son `BORRADOR, ENVIADA, APROBADA, RECHAZADA, CANCELADA, DESCARTADA`), y `TRANSICIONES_VALIDAS` solo permite `BORRADOR→ENVIADA` y `ENVIADA→APROBADA|RECHAZADA`. La cascada real de anulación (factura ANULADA → cotización APROBADA→CANCELADA) vive en `cancelarCotizacionPorAnulacionFactura`, invocada desde `facturas.service.ts` y que ya recibe un `tx`. Ahí va la llamada, **después** del `update` a CANCELADA para que la cotización recién cancelada no cuente como vigente. `DESCARTADA` solo ocurre en el bucle de hermanas de `cambiarEstado`, filtrado a BORRADOR/ENVIADA, que nunca extendieron el acta — ahí solo va el comentario explicativo, sin llamada.
+
+Dentro de `cancelarCotizacionPorAnulacionFactura`, tras marcar la cotización como CANCELADA:
 
 ```typescript
       if (cotizacion.actaEntregaOrigenId) {
