@@ -1094,10 +1094,10 @@ git commit -m "feat(cotizaciones): gate de disponibilidad por ítem y extensión
 
 ---
 
-### Task 5: `actualizarItem` rechaza superar la cantidad del ítem origen
+### Task 5: `editarItem` rechaza superar la cantidad del ítem origen
 
 **Files:**
-- Modify: `server/src/modules/cotizaciones/cotizaciones.service.ts:552-592` (`actualizarItem`)
+- Modify: `server/src/modules/cotizaciones/cotizaciones.service.ts:561+` (`editarItem`)
 - Test: `server/tests/modules/cotizaciones/cotizaciones.service.test.ts`
 
 **Interfaces:**
@@ -1107,7 +1107,7 @@ git commit -m "feat(cotizaciones): gate de disponibilidad por ítem y extensión
 - [ ] **Step 1: Escribir el test que falla**
 
 ```typescript
-describe('actualizarItem — cantidad de ítems renovados', () => {
+describe('editarItem — cantidad de ítems renovados', () => {
   it('rechaza subir la cantidad de un ítem renovado por encima del origen', async () => {
     mockPrisma.cotizacion.findUnique.mockResolvedValue({ estado: 'BORRADOR' } as any)
     mockPrisma.cotizacionItem.findUnique
@@ -1120,7 +1120,7 @@ describe('actualizarItem — cantidad de ítems renovados', () => {
       } as any)
       .mockResolvedValueOnce({ cantidadUnidades: 20 } as any)
 
-    await expect(service.actualizarItem(COT_ID, 'ci-renov', { cantidadUnidades: 30 } as any, 'user-1'))
+    await expect(service.editarItem(COT_ID, 'ci-renov', { cantidadUnidades: 30 } as any, 'user-1'))
       .rejects.toMatchObject({ statusCode: 422, code: 'CANTIDAD_EXCEDE_ORIGEN' })
   })
 
@@ -1137,7 +1137,7 @@ describe('actualizarItem — cantidad de ítems renovados', () => {
       .mockResolvedValueOnce({ cantidadUnidades: 20 } as any)
     mockPrisma.$transaction.mockImplementation(async (fn: any) => fn(mockPrisma))
 
-    await expect(service.actualizarItem(COT_ID, 'ci-renov', { cantidadUnidades: 10 } as any, 'user-1'))
+    await expect(service.editarItem(COT_ID, 'ci-renov', { cantidadUnidades: 10 } as any, 'user-1'))
       .resolves.not.toThrow()
   })
 })

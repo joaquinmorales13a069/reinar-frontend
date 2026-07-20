@@ -113,7 +113,7 @@ Esta tabla refleja `calcularSubtotal` (`cotizaciones.service.ts:35-45`), donde `
 - `crearVariante` (`:277`): hoy propaga `actaEntregaOrigenId`; debe propagar además `periodoRenta*` y el `cotizacionItemOrigenId` de cada ítem clonado. Sin esto, la variante de una renovación pierde la marca y vuelve a comportarse como entrega nueva.
 - **Aprobación (`:788-940`):** los sets `renovEquipos`/`renovHerr`/`renovPiezas` y las consultas de `actaEntregaItem` de `:800-808` se eliminan, reemplazados por el chequeo directo `item.cotizacionItemOrigenId != null`. Un ítem renovado salta el gate y no se re-marca `RENTADO`; un ítem nuevo pasa por la validación completa aunque comparta tipo con uno renovado.
 - En la misma transacción, si `cotizacion.actaEntregaOrigenId != null` y hay `periodoRentaFin`: congelar `ActaEntrega.periodoRentaFinOriginal` si está en `null`, y aplicar `periodoRentaFin = max(periodoRentaFin actual, cotizacion.periodoRentaFin)`. **`ActaEntrega.periodoRentaInicio` no se toca nunca**: marca cuándo empezó la renta del inventario que hay en obra, y eso no cambia al renovar.
-- `actualizarItem` (`:563+`): rechazar con `422 CANTIDAD_EXCEDE_ORIGEN` si un ítem con `cotizacionItemOrigenId != null` intenta superar la `cantidadUnidades` de su ítem origen (ver "Casos límite").
+- `editarItem` (`:561+`): rechazar con `422 CANTIDAD_EXCEDE_ORIGEN` si un ítem con `cotizacionItemOrigenId != null` intenta superar la `cantidadUnidades` de su ítem origen (ver "Casos límite").
 
 ### Backend — `server/src/modules/actas/actas.service.ts`
 
@@ -179,7 +179,7 @@ La BD es remota y compartida, así que `prisma migrate dev` se cuelga. El SQL se
 | Código | Dónde | Cuándo |
 |---|---|---|
 | `422 ITEM_YA_EN_OBRA` | `crearActa` | Se intenta despachar un ítem con `cotizacionItemOrigenId != null` |
-| `422 CANTIDAD_EXCEDE_ORIGEN` | `actualizarItem` | Un ítem renovado supera la cantidad de su ítem origen |
+| `422 CANTIDAD_EXCEDE_ORIGEN` | `editarItem` | Un ítem renovado supera la cantidad de su ítem origen |
 
 El `422 PERIODO_RENTA_REQUERIDO` existente (`facturas.service.ts:280`, `facturallama.service.ts:264, 350`) se mantiene como red de seguridad, aunque las renovaciones ya no deberían llegar a dispararlo.
 
