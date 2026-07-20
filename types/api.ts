@@ -1535,7 +1535,8 @@ export type CrearRecepcionDto = {
     observacionesRetorno?: string;
     horometroRetorno?: number;
     combustibleRetorno?: string;
-    // Solo para ítems CONSUMIBLE — el backend ignora estos campos en equipos/piezas.
+    // Para ítems CONSUMIBLE y PIEZA de andamio (devolución parcial acumulativa) —
+    // el backend ignora estos campos en equipos/herramientas (indivisibles).
     // Si se omite cantidadDevuelta, el backend devuelve la totalidad del pendiente y cierra.
     cantidadDevuelta?: number;
     cerrar?: boolean;

@@ -40,11 +40,32 @@ type RowState = {
   observacionesRetorno: string;
   horometroRetorno: string;
   combustibleRetorno: string;
-  // Solo para consumibles: cantidad que regresa al inventario (string para el input).
+  // Para consumibles y piezas de andamio: cantidad que regresa al inventario (string para el input).
   cantidadDevuelta: string;
-  // Si true, el sobrante se da por consumido y el ítem se cierra.
+  // Si true, el sobrante cierra el ítem: se da por consumido (consumible) o por no retornado (pieza).
   cerrar: boolean;
 };
+
+// Consumibles y piezas de andamio se devuelven por cantidad y admiten devolución parcial
+// acumulativa (varias recepciones sobre el mismo ítem); equipos y unidades de herramienta
+// son indivisibles y no llevan estos controles. El pendiente que mostramos es la cantidad
+// total despachada: el endpoint de items pendientes no agrega lo ya devuelto en recepciones
+// previas del mismo ítem todavía abierto, así que en una segunda devolución parcial el valor
+// puede quedar desactualizado. El backend recalcula el pendiente real server-side y responde
+// 422 si se excede, así que esto no compromete la integridad del stock — solo el mensaje.
+function tieneSeguimientoPorCantidad(item: ActaItem): boolean {
+  return !!item.consumible || !!item.piezaTipo;
+}
+
+function calcularPendiente(item: ActaItem): number {
+  if (item.consumible) return item.cantidadConsumible ?? 0;
+  if (item.piezaTipo) return item.cantidadRecibida ?? 0;
+  return 0;
+}
+
+function nombreItemCantidad(item: ActaItem): string {
+  return item.consumible?.nombre ?? item.piezaTipo?.nombre ?? '';
+}
 
 export default function NuevaRecepcionPageWrapper() {
   // useSearchParams requiere Suspense para que Next.js pueda prerenderizar
@@ -185,14 +206,14 @@ function NuevaRecepcionPage() {
         return;
       }
 
-      // Validar que ningún consumible exceda su pendiente antes de enviar al backend.
+      // Validar que ningún consumible o pieza exceda su pendiente antes de enviar al backend.
       for (const r of itemsIncluidos) {
-        if (!r.item.consumible) continue;
+        if (!tieneSeguimientoPorCantidad(r.item)) continue;
         if (r.cantidadDevuelta === '') continue;
-        const pendiente = (r.item.cantidadConsumible ?? 0) - (r.item.cantidadRecibida ?? 0);
+        const pendiente = calcularPendiente(r.item);
         const val = Number(r.cantidadDevuelta);
         if (!Number.isInteger(val) || val < 0 || val > pendiente) {
-          setItemsError(`Cantidad a devolver de "${r.item.consumible.nombre}" debe ser un entero entre 0 y ${pendiente}.`);
+          setItemsError(`Cantidad a devolver de "${nombreItemCantidad(r.item)}" debe ser un entero entre 0 y ${pendiente}.`);
           return;
         }
       }
@@ -205,15 +226,15 @@ function NuevaRecepcionPage() {
         horaRecepcion: data.horaRecepcion || undefined,
         observaciones: data.observaciones || undefined,
         items: itemsIncluidos.map((r) => {
-          const esConsumible = !!r.item.consumible;
+          const conSeguimiento = tieneSeguimientoPorCantidad(r.item);
           return {
             actaEntregaItemId: r.actaEntregaItemId,
             condicionRetorno: r.condicionRetorno,
             observacionesRetorno: r.observacionesRetorno || undefined,
             horometroRetorno: r.horometroRetorno ? Number(r.horometroRetorno) : undefined,
             combustibleRetorno: r.combustibleRetorno || undefined,
-            // Los campos de devolución parcial solo aplican a consumibles.
-            ...(esConsumible && {
+            // Los campos de devolución parcial aplican a consumibles y piezas de andamio.
+            ...(conSeguimiento && {
               cantidadDevuelta: r.cantidadDevuelta !== '' ? Number(r.cantidadDevuelta) : undefined,
               cerrar: r.cerrar || undefined,
             }),
@@ -272,10 +293,10 @@ function NuevaRecepcionPage() {
     form.setValue('cotizacionId', '');
   }
 
-  // Bloquear submit si algún consumible tiene cantidad inválida (evita llamada al backend).
+  // Bloquear submit si algún consumible o pieza tiene cantidad inválida (evita llamada al backend).
   const hayExceso = rows.some((r) => {
-    if (!r.incluido || !r.item.consumible || r.cantidadDevuelta === '') return false;
-    const pendiente = (r.item.cantidadConsumible ?? 0) - (r.item.cantidadRecibida ?? 0);
+    if (!r.incluido || !tieneSeguimientoPorCantidad(r.item) || r.cantidadDevuelta === '') return false;
+    const pendiente = calcularPendiente(r.item);
     const val = Number(r.cantidadDevuelta);
     return !Number.isInteger(val) || val < 0 || val > pendiente;
   });
@@ -445,13 +466,13 @@ function NuevaRecepcionPage() {
                 const empeoro = r.item.condicionSalida != null && COND_RANK[r.condicionRetorno] > COND_RANK[r.item.condicionSalida];
                 const esEquipo = !!r.item.equipo;
                 const esConsumible = !!r.item.consumible;
-                const pendiente = esConsumible
-                  ? (r.item.cantidadConsumible ?? 0) - (r.item.cantidadRecibida ?? 0)
-                  : 0;
+                const esPieza = !!r.item.piezaTipo;
+                const conSeguimiento = esConsumible || esPieza;
+                const pendiente = conSeguimiento ? calcularPendiente(r.item) : 0;
                 const cantDevVal = r.cantidadDevuelta !== '' ? Number(r.cantidadDevuelta) : pendiente;
-                const vuelveInventario = esConsumible ? cantDevVal : 0;
-                const quedaConsumido = esConsumible ? pendiente - cantDevVal : 0;
-                const cantExcede = esConsumible && r.cantidadDevuelta !== '' && (
+                const vuelveInventario = conSeguimiento ? cantDevVal : 0;
+                const quedaSinDevolver = conSeguimiento ? pendiente - cantDevVal : 0;
+                const cantExcede = conSeguimiento && r.cantidadDevuelta !== '' && (
                   !Number.isInteger(Number(r.cantidadDevuelta)) ||
                   Number(r.cantidadDevuelta) < 0 ||
                   Number(r.cantidadDevuelta) > pendiente
@@ -512,11 +533,11 @@ function NuevaRecepcionPage() {
                         />
                       </div>
                     </div>
-                    {/* Controles de devolución parcial — solo para consumibles */}
-                    {esConsumible && (
+                    {/* Controles de devolución parcial — consumibles y piezas de andamio */}
+                    {conSeguimiento && (
                       <div className="mt-3 pt-3 border-t border-bd space-y-2">
                         <div className="text-xs text-tx-2 font-medium">
-                          Saldo pendiente: <span className="font-semibold text-tx">{pendiente}</span> {r.item.consumible?.nombre}
+                          Saldo pendiente: <span className="font-semibold text-tx">{pendiente}</span> {nombreItemCantidad(r.item)}
                         </div>
                         <div className="grid sm:grid-cols-2 gap-2">
                           <div>
@@ -544,7 +565,7 @@ function NuevaRecepcionPage() {
                                 checked={r.cerrar}
                                 onChange={(e) => setRows(prev => prev.map(x => x.actaEntregaItemId === r.actaEntregaItemId ? { ...x, cerrar: e.target.checked } : x))}
                               />
-                              Dar por consumido el resto y cerrar el ítem
+                              {esPieza ? 'Dar por no retornado el resto y cerrar el ítem' : 'Dar por consumido el resto y cerrar el ítem'}
                             </label>
                           </div>
                         </div>
@@ -552,7 +573,7 @@ function NuevaRecepcionPage() {
                           <div className="text-xs text-tx-2">
                             Vuelve a inventario: <span className="font-semibold text-ok">{vuelveInventario}</span>
                             {' · '}
-                            Queda consumido: <span className="font-semibold text-tx">{quedaConsumido}</span>
+                            {esPieza ? 'No retornado' : 'Queda consumido'}: <span className="font-semibold text-tx">{quedaSinDevolver}</span>
                           </div>
                         )}
                       </div>
