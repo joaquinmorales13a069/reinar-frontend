@@ -103,18 +103,20 @@ Dentro de `model ActaEntrega`, después de `periodoRentaFin` (línea ~812):
 
 - [ ] **Step 2: Generar el SQL offline**
 
+**Comparación schema-contra-schema, sin tocar ninguna base de datos.** No usar `--from-migrations` ni `--shadow-database-url`: esa variante necesita una shadow DB para hacer replay de las migraciones y **le hace reset**, así que apuntarla a `DATABASE_URL` destruiría la BD compartida.
+
 ```bash
 cd /Users/joaquinmorales13a06/Desktop/Reinar/server
 mkdir -p prisma/migrations/20260720120000_renovacion_vinculo_acta
+git show HEAD:prisma/schema.prisma > /tmp/schema-anterior.prisma
 pnpm prisma migrate diff \
-  --from-migrations prisma/migrations \
+  --from-schema-datamodel /tmp/schema-anterior.prisma \
   --to-schema-datamodel prisma/schema.prisma \
-  --shadow-database-url "$DATABASE_URL" \
   --script > prisma/migrations/20260720120000_renovacion_vinculo_acta/migration.sql
 cat prisma/migrations/20260720120000_renovacion_vinculo_acta/migration.sql
 ```
 
-Expected: un SQL equivalente a esto (si `migrate diff` no puede correr por falta de shadow DB, escribir el archivo a mano con exactamente este contenido):
+Expected: un SQL equivalente a esto (si el comando falla por cualquier motivo, escribir el archivo a mano con exactamente este contenido — no intentar variantes que toquen una BD):
 
 ```sql
 -- AlterTable
