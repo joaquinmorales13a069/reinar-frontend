@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { FormSection } from '@/components/ui/FormSection';
 import { useProveedores } from '@/hooks/use-proveedores';
+import { fechaSVToIso } from '@/lib/utils';
 import type { DatosCompraDto } from '@/types/api';
 import type { UseFormRegister, FieldErrors } from 'react-hook-form';
 
@@ -44,10 +45,12 @@ export function construirDatosCompra(
     valorUnitarioCompra: values.valorUnitarioCompra,
     numeroFacturaCompra: values.numeroFacturaCompra || undefined,
     proveedorId: values.proveedorId || undefined,
-    // Si el backend espera ISO con hora, agregamos T00:00:00.000Z solo cuando es fecha pura (YYYY-MM-DD)
+    // ingresos-inventario muestra fechaCompra con formatDate (que convierte a
+    // TZ El Salvador) — anclamos a medianoche SV, no UTC, para que una compra
+    // registrada el 20 de julio no se liste como "19 jul.".
     fechaCompra: values.fechaCompra
       ? values.fechaCompra.length === 10
-        ? `${values.fechaCompra}T00:00:00.000Z`
+        ? fechaSVToIso(values.fechaCompra)
         : values.fechaCompra
       : undefined,
     numeroActaInterna: values.numeroActaInterna || undefined,

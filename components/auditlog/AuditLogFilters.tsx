@@ -3,6 +3,7 @@
 
 import { FilterBar } from '@/components/ui/FilterBar';
 import { Icon } from '@/components/ui/Icon';
+import { fechaSVToIso } from '@/lib/utils';
 import {
   ENTIDADES_CONOCIDAS,
   ACCIONES_SUGERIDAS,
@@ -148,12 +149,16 @@ export function aFiltrosBackend(s: FiltrosAuditLogState): { entidad?: string; ac
     const d = calcularDesdePeriodo(s.periodo);
     if (d) out.desde = d;
   } else {
-    if (s.desdeManual) out.desde = new Date(s.desdeManual).toISOString();
+    // Anclamos ambos extremos a TZ El Salvador (no la del dispositivo) para
+    // que el rango filtrado coincida con los días calendario que el usuario
+    // ve en pantalla, sin importar dónde esté físicamente.
+    if (s.desdeManual) out.desde = fechaSVToIso(s.desdeManual);
     if (s.hastaManual) {
-      // Hasta el FINAL del día seleccionado: 23:59:59.999.
-      const d = new Date(s.hastaManual);
-      d.setHours(23, 59, 59, 999);
-      out.hasta = d.toISOString();
+      // Hasta el FINAL del día seleccionado en SV: medianoche SV del día
+      // siguiente menos 1ms. Sumar 24h en ms es exacto porque El Salvador no
+      // observa horario de verano.
+      const inicioSiguiente = new Date(fechaSVToIso(s.hastaManual)).getTime() + 24 * 60 * 60 * 1000;
+      out.hasta = new Date(inicioSiguiente - 1).toISOString();
     }
   }
   return out;

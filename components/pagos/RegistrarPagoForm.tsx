@@ -7,7 +7,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { registrarPagoSchema, type RegistrarPagoForm as Form } from '@/lib/schemas/factura';
 import { useCrearPago } from '@/hooks/use-pagos';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, hoySV } from '@/lib/utils';
 
 const METODOS: { value: Form['metodoPago']; label: string }[] = [
   { value: 'EFECTIVO',       label: 'Efectivo' },
@@ -16,16 +16,6 @@ const METODOS: { value: Form['metodoPago']; label: string }[] = [
   { value: 'TARJETA',        label: 'Tarjeta' },
   { value: 'OTRO',           label: 'Otro' },
 ];
-
-// Fecha de hoy en TZ El Salvador (UTC-6). Convertimos a YYYY-MM-DD para el input date.
-function hoyEnSv(): string {
-  const now = new Date();
-  const sv = new Date(now.toLocaleString('en-US', { timeZone: 'America/El_Salvador' }));
-  const y = sv.getFullYear();
-  const m = String(sv.getMonth() + 1).padStart(2, '0');
-  const d = String(sv.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
 
 // onClose: cerrar form inline (usado por PagosCard del detalle de factura).
 // onSuccess: navegar/refrescar después del éxito (usado por /pagos/nuevo).
@@ -45,7 +35,7 @@ export function RegistrarPagoForm({ facturaId, saldoPendiente, onClose, onSucces
     resolver: zodResolver(registrarPagoSchema),
     defaultValues: {
       monto: new Decimal(saldoPendiente).toFixed(2),
-      fecha: hoyEnSv(),
+      fecha: hoySV(),
       metodoPago: 'TRANSFERENCIA',
     },
   });

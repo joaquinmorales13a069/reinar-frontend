@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Icon } from '@/components/ui/Icon';
 import { useAuthStore } from '@/stores/auth.store';
 import { esAdmin } from '@/lib/ajustes';
+import { hoySV } from '@/lib/utils';
 import { useConfiguracion, useActualizarConfiguracion } from '@/hooks/use-configuracion';
 import {
   configuracionEmpresaSchema,
@@ -88,9 +89,11 @@ export function TabEmpresa() {
   const prefijoFac = watch('prefijoFactura');
   const prefijoAct = watch('prefijoActa');
   // El backend genera números con formato {PREFIJO}{YY}{MM}{NNNNN} (sin guiones)
-  // — ver server/src/lib/numeracion.ts. La vista previa replica ese formato exacto.
-  const ahora = new Date();
-  const sufijoFecha = `${String(ahora.getFullYear()).slice(-2)}${String(ahora.getMonth() + 1).padStart(2, '0')}`;
+  // — ver server/src/lib/numeracion.ts. La vista previa replica ese formato exacto,
+  // anclada a El Salvador (no al dispositivo) para no mostrar un mes distinto
+  // cerca de la medianoche.
+  const hoy = hoySV();
+  const sufijoFecha = `${hoy.slice(2, 4)}${hoy.slice(5, 7)}`;
 
   async function onSubmit(v: ConfiguracionEmpresaForm) {
     const payload: ActualizarConfiguracionDto = {

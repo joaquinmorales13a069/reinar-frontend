@@ -3,6 +3,7 @@
 import { FilterBar } from '@/components/ui/FilterBar';
 import { Icon } from '@/components/ui/Icon';
 import { useClientes } from '@/hooks/use-clientes';
+import { fechaSVToIso } from '@/lib/utils';
 import type { FiltrosPagos, MetodoPago, Cliente } from '@/types/api';
 
 // ANTICIPO aparece como chip filtrable (no creable). Permite auditar los
@@ -41,8 +42,10 @@ export function PagosFilters({ value, onChange }: Props) {
   }
 
   function setFecha(key: 'fechaDesde' | 'fechaHasta', v: string) {
-    // El backend espera ISO datetime. Convertimos a las 00:00 UTC del día.
-    const iso = v ? new Date(v + 'T00:00:00.000Z').toISOString() : undefined;
+    // Los pagos se filtran contra "fecha" anclada al día calendario de El
+    // Salvador — usamos medianoche SV, no UTC, para que el corte no quede
+    // desfasado 6 horas respecto al día que ve el usuario.
+    const iso = v ? fechaSVToIso(v) : undefined;
     onChange({ ...value, [key]: iso, page: 1 });
   }
 

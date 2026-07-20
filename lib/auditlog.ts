@@ -1,6 +1,8 @@
 // Helpers compartidos por la tabla y el drawer de auditlog. No exporta hooks
 // ni componentes — solo datos y funciones puras.
 
+import { fechaSVToIso, hoySV, fechaSVHoyMasDias } from './utils';
+
 // Lista de entidades conocidas que aparecen como `entidad` en los registros
 // de auditoría. Se usa para poblar el <select> del filtro. Si el backend
 // genera una entidad nueva no listada, el filtro como input free-text via
@@ -70,27 +72,27 @@ export function colorPorAccion(accion: string): AccionKind {
   return 'info';
 }
 
-// Helpers de chips de período. Devuelven `desde` como ISO date string (YYYY-MM-DD)
-// para pasarlo al backend, que hace z.coerce.date().
+// Helpers de chips de período. Devuelven `desde` como ISO instant para pasarlo
+// al backend, que hace z.coerce.date(). Todo el cálculo se hace en TZ El
+// Salvador — no en la del dispositivo — para que un usuario fuera de SV
+// filtre exactamente el mismo rango que vería alguien en San Salvador.
 export type Periodo = 'hoy' | 'semana' | 'mes' | null;
 
 export function calcularDesdePeriodo(periodo: Periodo): string | undefined {
   if (!periodo) return undefined;
-  const ahora = new Date();
   if (periodo === 'hoy') {
-    ahora.setHours(0, 0, 0, 0);
-    return ahora.toISOString();
+    return fechaSVToIso(hoySV());
   }
   if (periodo === 'semana') {
+    const hoy = hoySV();
+    const [anio, mes, dia] = hoy.split('-').map(Number);
+    // Date.UTC con los componentes YA leídos en TZ SV (no una reinterpretación
+    // vía la TZ del dispositivo) para obtener el día de la semana correcto.
+    const diaSemana = new Date(Date.UTC(anio, mes - 1, dia)).getUTCDay();
     // Lunes 00:00 — diaSemana=0 (Dom) cuenta como retroceder 6 días.
-    const diaSemana = ahora.getDay();
     const diasDesdeElLunes = diaSemana === 0 ? 6 : diaSemana - 1;
-    ahora.setDate(ahora.getDate() - diasDesdeElLunes);
-    ahora.setHours(0, 0, 0, 0);
-    return ahora.toISOString();
+    return fechaSVToIso(fechaSVHoyMasDias(-diasDesdeElLunes));
   }
-  // mes
-  ahora.setDate(1);
-  ahora.setHours(0, 0, 0, 0);
-  return ahora.toISOString();
+  // mes: primer día del mes actual en TZ SV.
+  return fechaSVToIso(`${hoySV().slice(0, 7)}-01`);
 }
