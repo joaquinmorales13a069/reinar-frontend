@@ -27,7 +27,12 @@ export function ActasVinculadasCard({ factura, puedeEscribir }: Props) {
   // TODAS las facturas si esta query auxiliar cae. Mostrar de más es inofensivo:
   // el backend rechaza con 422 ITEM_YA_EN_OBRA cualquier ítem ya renovado.
   const seConfirmoSinInventarioNuevo = disponibles.isSuccess && disponibles.data.length === 0;
-  const mostrarBoton = puedeEscribir && !seConfirmoSinInventarioNuevo;
+  // Este criterio solo aplica a renovaciones (factura.cotizacion.actaEntregaOrigen
+  // presente): son las únicas donde "sin inventario nuevo" implica que no hace
+  // falta acta. Una factura normal sin cotización de renovación siempre debe
+  // ofrecer el botón — la ausencia de ítems pendientes ahí no significa nada.
+  const esRenovacion = actaOrigen != null;
+  const mostrarBoton = puedeEscribir && !(esRenovacion && seConfirmoSinInventarioNuevo);
 
   const total = actas.length + (actaOrigen ? 1 : 0);
 
