@@ -67,15 +67,11 @@ function extractErrorCode(err: unknown): string | undefined {
 // foco — UX confusa para el operador.
 function ItemRow({
   it,
-  patch,
+  cotizacionId,
   onDelete,
 }: {
   it: CotizacionItem;
-  patch: (
-    item: CotizacionItem,
-    data: EditarItemDto,
-    opts?: { onError?: (msg: string) => void; onSuccess?: () => void },
-  ) => void;
+  cotizacionId: string;
   onDelete: (itemId: string) => void;
 }) {
   const [unidades, setUnidades] = useState(String(it.cantidadUnidades));
@@ -93,6 +89,32 @@ function ItemRow({
   useEffect(() => { setUnidades(String(it.cantidadUnidades)); }, [it.cantidadUnidades]);
   useEffect(() => { setDias(String(it.cantidadDias)); },         [it.cantidadDias]);
   useEffect(() => { setTarifa(String(it.tarifaAplicada)); },     [it.tarifaAplicada]);
+
+  // Un observer de mutación por fila (no uno compartido entre todas las
+  // filas del padre): así los callbacks onError/onSuccess por-llamada no se
+  // pisan cuando dos filas se editan en rápida sucesión. MutationObserver
+  // solo guarda un #mutateOptions por instancia y desconecta la mutación
+  // anterior en vuelo al llamar mutate() de nuevo sobre el mismo observer.
+  const editar = useEditarItemCotizacion();
+
+  function patch(
+    data: EditarItemDto,
+    opts?: { onError?: (msg: string) => void; onSuccess?: () => void },
+  ) {
+    editar.mutate(
+      { cotizacionId, itemId: it.id, data },
+      opts && {
+        onSuccess: () => opts.onSuccess?.(),
+        // El hook ya toastea el resto de errores; acá solo capturamos
+        // CANTIDAD_EXCEDE_ORIGEN para mostrarlo inline en la fila.
+        onError: (err) => {
+          if (extractErrorCode(err) === 'CANTIDAD_EXCEDE_ORIGEN') {
+            opts.onError?.(extractErrorMessage(err, 'No se pudo actualizar la cantidad.'));
+          }
+        },
+      },
+    );
+  }
 
   const unidadesN = parseInt(unidades, 10);
   const diasN     = parseInt(dias, 10);
@@ -113,7 +135,7 @@ function ItemRow({
           className="w-full bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none text-sm"
           defaultValue={it.descripcion}
           onBlur={(e) => {
-            if (e.target.value !== it.descripcion) patch(it, { descripcion: e.target.value });
+            if (e.target.value !== it.descripcion) patch({ descripcion: e.target.value });
           }}
         />
         {it.cotizacionItemOrigenId && (
@@ -155,7 +177,7 @@ function ItemRow({
             onBlur={() => {
               const n = parseInt(unidades, 10) || 1;
               if (n !== it.cantidadUnidades) {
-                patch(it, { cantidadUnidades: n }, {
+                patch({ cantidadUnidades: n }, {
                   onSuccess: () => setErrorCantidad(null),
                   onError: setErrorCantidad,
                 });
@@ -179,7 +201,7 @@ function ItemRow({
             onChange={(e) => setDias(e.target.value)}
             onBlur={() => {
               const n = parseInt(dias, 10) || 1;
-              if (n !== it.cantidadDias) patch(it, { cantidadDias: n });
+              if (n !== it.cantidadDias) patch({ cantidadDias: n });
               else setDias(String(it.cantidadDias));
             }}
           />
@@ -202,7 +224,7 @@ function ItemRow({
               setTarifa(String(it.tarifaAplicada));
               return;
             }
-            patch(it, { tarifaCustom: v });
+            patch({ tarifaCustom: v });
           }}
         />
       </td>
@@ -224,33 +246,12 @@ type Props = { cotizacion: Cotizacion; onBack: () => void; onNext: () => void };
 
 export function Step2Items({ cotizacion, onBack, onNext }: Props) {
   const [modal, setModal] = useState(false);
-  const editar = useEditarItemCotizacion();
   const eliminar = useEliminarItemCotizacion();
 
   // Fallback a [] porque el backend POST /cotizaciones devuelve los escalares
   // sin la relacion items; el seed inicial puede llegar sin el campo si en
   // algun edge case se hidrata con la respuesta cruda del create.
   const items = cotizacion.items ?? [];
-
-  function patch(
-    item: CotizacionItem,
-    data: EditarItemDto,
-    opts?: { onError?: (msg: string) => void; onSuccess?: () => void },
-  ) {
-    editar.mutate(
-      { cotizacionId: cotizacion.id, itemId: item.id, data },
-      opts && {
-        onSuccess: () => opts.onSuccess?.(),
-        // El hook ya toastea el resto de errores; acá solo capturamos
-        // CANTIDAD_EXCEDE_ORIGEN para mostrarlo inline en la fila.
-        onError: (err) => {
-          if (extractErrorCode(err) === 'CANTIDAD_EXCEDE_ORIGEN') {
-            opts.onError?.(extractErrorMessage(err, ''));
-          }
-        },
-      },
-    );
-  }
 
   return (
     <div className="space-y-4">
@@ -291,7 +292,7 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
                 <ItemRow
                   key={it.id}
                   it={it}
-                  patch={patch}
+                  cotizacionId={cotizacion.id}
                   onDelete={(id) => eliminar.mutate({ cotizacionId: cotizacion.id, itemId: id })}
                 />
               ))}
