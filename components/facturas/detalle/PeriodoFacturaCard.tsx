@@ -114,6 +114,12 @@ export function PeriodoFacturaCard({ factura }: { factura: Factura }) {
           </div>
         </>
       )}
+      {factura.cotizacion?.actaEntregaOrigen && (
+        <p className="text-xs text-tx-3 mt-2">
+          Heredado de la renovación · extiende el acta{' '}
+          <span className="font-mono">{factura.cotizacion.actaEntregaOrigen.numeroActa}</span>
+        </p>
+      )}
     </div>
   );
 }
