@@ -83,10 +83,28 @@ export default function ActaDetallePage({ params }: { params: Promise<{ id: stri
               <div className="flex justify-between gap-2"><dt className="text-tx-3">Factura</dt><dd>{acta.factura ? (<Link href={`/facturas/${acta.factura.id}`} className="font-mono text-accent hover:underline">{acta.factura.numeroFactura}</Link>) : (<span className="text-tx-3">Aún sin factura</span>)}</dd></div>
               <div className="flex justify-between gap-2"><dt className="text-tx-3">Bodega origen</dt><dd>{acta.bodegaOrigen.nombre}</dd></div>
               <div className="flex justify-between gap-2"><dt className="text-tx-3">Dirección entrega</dt><dd className="truncate max-w-xs text-right">{acta.direccionEntrega || '—'}</dd></div>
-              {acta.periodoRentaFinOriginal ? (
+              {acta.periodoRentaExtendido ? (
                 // El acta fue extendida por al menos una renovación aprobada: distinguimos
                 // el fin con el que se firmó originalmente del fin vigente tras la extensión.
-                <div className="flex justify-between gap-2"><dt className="text-tx-3">Período renta</dt><dd className="font-mono text-xs text-right">Entregado hasta {formatDate(acta.periodoRentaFinOriginal)}{acta.periodoRentaFin && <span className="text-tx-3"> · vigente hasta {formatDate(acta.periodoRentaFin)}</span>}</dd></div>
+                // periodoRentaFinOriginal puede ser null aun así (actas sin período al
+                // entregar) — en ese caso no hay "entregado hasta" que mostrar, solo el
+                // vigente, con una nota para que el operador entienda por qué falta.
+                <div className="flex justify-between gap-2">
+                  <dt className="text-tx-3">Período renta</dt>
+                  <dd className="font-mono text-xs text-right">
+                    {acta.periodoRentaFinOriginal ? (
+                      <>
+                        Entregado hasta {formatDate(acta.periodoRentaFinOriginal)}
+                        {acta.periodoRentaFin && <span className="text-tx-3"> · vigente hasta {formatDate(acta.periodoRentaFin)}</span>}
+                      </>
+                    ) : (
+                      <>
+                        {acta.periodoRentaFin ? `Vigente hasta ${formatDate(acta.periodoRentaFin)}` : '—'}
+                        <span className="text-tx-3"> (renovado, sin fecha de entrega original)</span>
+                      </>
+                    )}
+                  </dd>
+                </div>
               ) : (
                 (acta.periodoRentaInicio || acta.periodoRentaFin) && (
                   <div className="flex justify-between gap-2"><dt className="text-tx-3">Período renta</dt><dd className="font-mono text-xs">{acta.periodoRentaInicio ? formatDate(acta.periodoRentaInicio) : '—'} — {acta.periodoRentaFin ? formatDate(acta.periodoRentaFin) : '—'}</dd></div>

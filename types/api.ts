@@ -1265,6 +1265,12 @@ export type ActaItem = {
   piezaTipo?:  { id: string; nombre: string } | null;
   cantidadConsumible?: number | null;
   cantidadRecibida?:   number | null;
+  // Pendiente REAL (despachado − ya devuelto en recepciones previas). Solo lo
+  // envía GET .../items-pendientes-devolucion para consumibles y piezas de
+  // andamio — null para equipos/herramientas (indivisibles, sin seguimiento
+  // por cantidad) y undefined en endpoints que no calculan este dato (ej. el
+  // detalle de acta).
+  cantidadPendiente?: number | null;
   condicionSalida?:    CondicionItem | null;
   observacionesSalida?: string | null;
   horometroSalida?:    string | null;
@@ -1329,8 +1335,14 @@ export type Acta = {
   periodoRentaInicio: string | null;
   periodoRentaFin: string | null;
   // Fin del período tal como se entregó y firmó, congelado la primera vez que
-  // una renovación extiende el acta. null = el acta nunca fue extendida.
+  // una renovación extiende el acta. Puede ser null incluso en actas extendidas
+  // (actas sin período registrado al entregar) — por eso no sirve como señal de
+  // "fue extendida"; para eso está periodoRentaExtendido.
   periodoRentaFinOriginal: string | null;
+  // true si al menos una renovación aprobada extendió el período de este acta.
+  // Es la señal correcta de "fue extendida" — periodoRentaFinOriginal puede ser
+  // null tanto por no haberse extendido nunca como por no tener período original.
+  periodoRentaExtendido: boolean;
   usuarioDespacho: { id: string; nombre: string; apellido: string } | null;
   contactoReceptor: { id: string; nombre: string } | null;
   receptorNombre: string | null;

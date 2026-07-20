@@ -48,19 +48,15 @@ type RowState = {
 
 // Consumibles y piezas de andamio se devuelven por cantidad y admiten devolución parcial
 // acumulativa (varias recepciones sobre el mismo ítem); equipos y unidades de herramienta
-// son indivisibles y no llevan estos controles. El pendiente que mostramos es la cantidad
-// total despachada: el endpoint de items pendientes no agrega lo ya devuelto en recepciones
-// previas del mismo ítem todavía abierto, así que en una segunda devolución parcial el valor
-// puede quedar desactualizado. El backend recalcula el pendiente real server-side y responde
-// 422 si se excede, así que esto no compromete la integridad del stock — solo el mensaje.
+// son indivisibles y no llevan estos controles. El backend ya descuenta lo devuelto en
+// recepciones previas (cantidadPendiente), así que en una segunda devolución parcial el
+// límite que ve el operador coincide con el que valida el servidor.
 function tieneSeguimientoPorCantidad(item: ActaItem): boolean {
   return !!item.consumible || !!item.piezaTipo;
 }
 
 function calcularPendiente(item: ActaItem): number {
-  if (item.consumible) return item.cantidadConsumible ?? 0;
-  if (item.piezaTipo) return item.cantidadRecibida ?? 0;
-  return 0;
+  return item.cantidadPendiente ?? 0;
 }
 
 function nombreItemCantidad(item: ActaItem): string {
