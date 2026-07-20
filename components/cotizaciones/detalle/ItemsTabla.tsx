@@ -1,5 +1,6 @@
 import Decimal from 'decimal.js';
 import { Badge } from '@/components/ui/Badge';
+import { Icon } from '@/components/ui/Icon';
 import { formatCurrency } from '@/lib/utils';
 import type { Cotizacion, PeriodoItem, TipoItemCotizacion } from '@/types/api';
 
@@ -38,7 +39,14 @@ export function ItemsTabla({ cotizacion }: { cotizacion: Cotizacion }) {
             <tr key={it.id} className="border-t border-bd">
               <td className="px-3 py-2">
                 <div className="font-medium text-tx">{it.descripcion}</div>
-                <div className="text-2xs text-tx-3 mt-0.5">{TIPO_LABEL[it.tipo]}</div>
+                <div className="text-2xs text-tx-3 mt-0.5 flex items-center gap-1.5">
+                  {TIPO_LABEL[it.tipo]}
+                  {it.cotizacionItemOrigenId && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-bg-sunken text-tx-3">
+                      <Icon name="refresh" size={10} /> Renovado
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="px-3 py-2">
                 {/* Consumibles se venden por unidad — no aplica período de renta. */}

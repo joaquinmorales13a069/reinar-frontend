@@ -47,6 +47,19 @@ const TIPO_LABEL: Record<TipoItemCotizacion, string> = {
   CUSTOM: 'Custom',
 };
 
+// Duplicado intencionalmente (mismo patrón que los hooks use-*.ts): extrae
+// el mensaje de error del backend para mostrarlo inline bajo el input de
+// cantidad cuando el código es CANTIDAD_EXCEDE_ORIGEN.
+function extractErrorMessage(err: unknown, fallback: string): string {
+  const anyErr = err as { response?: { data?: { error?: { message?: string } } } };
+  return anyErr?.response?.data?.error?.message ?? fallback;
+}
+
+function extractErrorCode(err: unknown): string | undefined {
+  const anyErr = err as { response?: { data?: { error?: { code?: string } } } };
+  return anyErr?.response?.data?.error?.code;
+}
+
 // Sub-componente por fila para mantener estado local de los inputs editables.
 // El subtotal mostrado se calcula localmente con previewSubtotal mientras el
 // usuario tipea, y se reemplaza con el valor del backend cuando el cache se
@@ -58,12 +71,21 @@ function ItemRow({
   onDelete,
 }: {
   it: CotizacionItem;
-  patch: (item: CotizacionItem, data: EditarItemDto) => void;
+  patch: (
+    item: CotizacionItem,
+    data: EditarItemDto,
+    opts?: { onError?: (msg: string) => void; onSuccess?: () => void },
+  ) => void;
   onDelete: (itemId: string) => void;
 }) {
   const [unidades, setUnidades] = useState(String(it.cantidadUnidades));
   const [dias, setDias]         = useState(String(it.cantidadDias));
   const [tarifa, setTarifa]     = useState(String(it.tarifaAplicada));
+  // Error de negocio (CANTIDAD_EXCEDE_ORIGEN) del último intento de subir la
+  // cantidad de un ítem renovado. Se limpia apenas el operador vuelve a
+  // tipear (onChange) — un error pegado tras corregir el valor confundiría
+  // más que no mostrarlo.
+  const [errorCantidad, setErrorCantidad] = useState<string | null>(null);
 
   // Cuando el backend confirma un cambio, los valores en `it` cambian; resync
   // los inputs locales si difieren (evita que el operador vea su valor stale
@@ -94,6 +116,11 @@ function ItemRow({
             if (e.target.value !== it.descripcion) patch(it, { descripcion: e.target.value });
           }}
         />
+        {it.cotizacionItemOrigenId && (
+          <span className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-bg-sunken text-tx-3">
+            <Icon name="refresh" size={10} /> Renovado
+          </span>
+        )}
       </td>
       <td className="px-3 py-2">
         {it.tipo === 'CONSUMIBLE' ? (
@@ -121,14 +148,24 @@ function ItemRow({
             min={1}
             className="w-16 text-right font-mono bg-transparent border-b border-transparent hover:border-bd focus:border-accent focus:outline-none"
             value={unidades}
-            onChange={(e) => setUnidades(e.target.value)}
+            onChange={(e) => {
+              setUnidades(e.target.value);
+              setErrorCantidad(null);
+            }}
             onBlur={() => {
               const n = parseInt(unidades, 10) || 1;
-              if (n !== it.cantidadUnidades) patch(it, { cantidadUnidades: n });
-              else setUnidades(String(it.cantidadUnidades));
+              if (n !== it.cantidadUnidades) {
+                patch(it, { cantidadUnidades: n }, {
+                  onSuccess: () => setErrorCantidad(null),
+                  onError: setErrorCantidad,
+                });
+              } else {
+                setUnidades(String(it.cantidadUnidades));
+              }
             }}
           />
         )}
+        {errorCantidad && <p className="text-xs text-danger mt-1">{errorCantidad}</p>}
       </td>
       <td className="px-3 py-2 text-right">
         {it.tipo === 'SERVICIO' || it.tipo === 'CONSUMIBLE' ? (
@@ -195,8 +232,24 @@ export function Step2Items({ cotizacion, onBack, onNext }: Props) {
   // algun edge case se hidrata con la respuesta cruda del create.
   const items = cotizacion.items ?? [];
 
-  function patch(item: CotizacionItem, data: EditarItemDto) {
-    editar.mutate({ cotizacionId: cotizacion.id, itemId: item.id, data });
+  function patch(
+    item: CotizacionItem,
+    data: EditarItemDto,
+    opts?: { onError?: (msg: string) => void; onSuccess?: () => void },
+  ) {
+    editar.mutate(
+      { cotizacionId: cotizacion.id, itemId: item.id, data },
+      opts && {
+        onSuccess: () => opts.onSuccess?.(),
+        // El hook ya toastea el resto de errores; acá solo capturamos
+        // CANTIDAD_EXCEDE_ORIGEN para mostrarlo inline en la fila.
+        onError: (err) => {
+          if (extractErrorCode(err) === 'CANTIDAD_EXCEDE_ORIGEN') {
+            opts.onError?.(extractErrorMessage(err, ''));
+          }
+        },
+      },
+    );
   }
 
   return (
