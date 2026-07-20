@@ -83,8 +83,14 @@ export default function ActaDetallePage({ params }: { params: Promise<{ id: stri
               <div className="flex justify-between gap-2"><dt className="text-tx-3">Factura</dt><dd>{acta.factura ? (<Link href={`/facturas/${acta.factura.id}`} className="font-mono text-accent hover:underline">{acta.factura.numeroFactura}</Link>) : (<span className="text-tx-3">Aún sin factura</span>)}</dd></div>
               <div className="flex justify-between gap-2"><dt className="text-tx-3">Bodega origen</dt><dd>{acta.bodegaOrigen.nombre}</dd></div>
               <div className="flex justify-between gap-2"><dt className="text-tx-3">Dirección entrega</dt><dd className="truncate max-w-xs text-right">{acta.direccionEntrega || '—'}</dd></div>
-              {(acta.periodoRentaInicio || acta.periodoRentaFin) && (
-                <div className="flex justify-between gap-2"><dt className="text-tx-3">Período renta</dt><dd className="font-mono text-xs">{acta.periodoRentaInicio ? formatDate(acta.periodoRentaInicio) : '—'} — {acta.periodoRentaFin ? formatDate(acta.periodoRentaFin) : '—'}</dd></div>
+              {acta.periodoRentaFinOriginal ? (
+                // El acta fue extendida por al menos una renovación aprobada: distinguimos
+                // el fin con el que se firmó originalmente del fin vigente tras la extensión.
+                <div className="flex justify-between gap-2"><dt className="text-tx-3">Período renta</dt><dd className="font-mono text-xs text-right">Entregado hasta {formatDate(acta.periodoRentaFinOriginal)}{acta.periodoRentaFin && <span className="text-tx-3"> · vigente hasta {formatDate(acta.periodoRentaFin)}</span>}</dd></div>
+              ) : (
+                (acta.periodoRentaInicio || acta.periodoRentaFin) && (
+                  <div className="flex justify-between gap-2"><dt className="text-tx-3">Período renta</dt><dd className="font-mono text-xs">{acta.periodoRentaInicio ? formatDate(acta.periodoRentaInicio) : '—'} — {acta.periodoRentaFin ? formatDate(acta.periodoRentaFin) : '—'}</dd></div>
+                )
               )}
             </dl>
           </div>
@@ -115,8 +121,14 @@ export default function ActaDetallePage({ params }: { params: Promise<{ id: stri
               <h3 className="text-sm font-semibold text-tx mb-3">Renovaciones</h3>
               <ul className="space-y-2">
                 {acta.renovaciones.map((r) => (
-                  <li key={r.id} className="flex items-center justify-between gap-2 text-sm">
-                    <Link href={`/cotizaciones/${r.id}`} className="font-mono text-accent hover:underline">{r.numeroCotizacion}</Link>
+                  <li key={r.id} className="flex items-start justify-between gap-2 text-sm">
+                    <div className="flex flex-col gap-0.5">
+                      <Link href={`/cotizaciones/${r.id}`} className="font-mono text-accent hover:underline">{r.numeroCotizacion}</Link>
+                      {/* Puede faltar si la renovación aún no fue aprobada o no trae período. */}
+                      {r.periodoRentaInicio && r.periodoRentaFin && (
+                        <span className="text-xs text-tx-3">{formatDate(r.periodoRentaInicio)} — {formatDate(r.periodoRentaFin)}</span>
+                      )}
+                    </div>
                     <span className="text-xs text-tx-3">{r.estado}{r.factura ? ` · ${r.factura.numeroFactura}` : ''}</span>
                   </li>
                 ))}
