@@ -10,6 +10,7 @@ import { FormSection } from '@/components/ui/FormSection';
 import { Icon } from '@/components/ui/Icon';
 import { useAuthStore } from '@/stores/auth.store';
 import { generarReporte, type FormatoReporte, type TipoReporte } from '@/hooks/use-reportes';
+import { hoySV, fechaSVHoyMasDias } from '@/lib/utils';
 
 const TIPOS_VALIDOS: ReadonlyArray<TipoReporte> = [
   'ingresos', 'cuentas-cobrar', 'cotizaciones', 'equipos',
@@ -40,15 +41,10 @@ const FORMATOS: ReadonlyArray<{ value: FormatoReporte; label: string; icon: 'fil
   { value: 'csv',   label: 'CSV',   icon: 'fileText' },
 ];
 
-// Defaults: últimos 30 días del día actual. Usamos getUTC* para mantener consistencia
-// con el envío a backend (que reinterpretamos como medianoche UTC en use-reportes).
+// Defaults: últimos 30 días hasta hoy, en TZ El Salvador — mismo calendario
+// que generarReporte() usa para anclar desde/hasta (ver hooks/use-reportes.ts).
 function getDefaultRango() {
-  const hoy = new Date();
-  const hace30 = new Date(hoy);
-  hace30.setDate(hoy.getDate() - 30);
-  const toYmd = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  return { desde: toYmd(hace30), hasta: toYmd(hoy) };
+  return { desde: fechaSVHoyMasDias(-30), hasta: hoySV() };
 }
 
 // `top` se modela como string en el form para evitar el split input/output de zod
