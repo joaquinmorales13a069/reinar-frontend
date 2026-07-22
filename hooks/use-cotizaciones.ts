@@ -142,8 +142,13 @@ export function useCambiarEstadoCotizacion() {
       toast.success(msg);
     },
     onError: (err) => {
-      // El backend devuelve 409 CONFLICTO_APROBACION (equipos ya tomados),
-      // CONSUMIBLE_SIN_STOCK o ANDAMIO_SIN_STOCK con mensaje legible — propagarlo.
+      // CONFLICTO_DISPONIBILIDAD (falta de inventario al aprobar) ya se muestra
+      // como banner inline accionable en AccionesEstado — no lo duplicamos con
+      // un toast. El resto de errores (CONFLICTO_APROBACION, CONSUMIBLE_SIN_STOCK,
+      // ANDAMIO_SIN_STOCK, etc.) sí se toastean.
+      const code = (err as { response?: { data?: { error?: { code?: string } } } })
+        ?.response?.data?.error?.code;
+      if (code === 'CONFLICTO_DISPONIBILIDAD') return;
       toast.error(extractErrorMessage(err, 'No se pudo cambiar el estado.'));
     },
   });
