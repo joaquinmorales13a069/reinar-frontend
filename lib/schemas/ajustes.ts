@@ -76,6 +76,10 @@ export const configuracionEmpresaSchema = z.object({
   nombreRemitente: optionalTrimmedString(100),
   emailCopiaInterna: z.string().email('Email inválido').optional().or(z.literal('')),
   porcentajeIvaDefault: z.coerce.number().min(0, 'Mínimo 0').max(100, 'Máximo 100').optional(),
+  // Defaults de FEX (fase 2): recinto queda "sin configurar" (string vacío) hasta
+  // que el admin lo elija; régimen siempre trae un valor visible ('1000.000').
+  recintoFiscalDefault: z.string().optional().or(z.literal('')),
+  regimenExportacionDefault: z.string().optional().or(z.literal('')),
 });
 
 export type ConfiguracionEmpresaForm = z.infer<typeof configuracionEmpresaSchema>;

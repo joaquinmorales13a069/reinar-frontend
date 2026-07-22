@@ -14,6 +14,8 @@ import type {
   CambiarEstadoFacturaDto,
   EmitirDTEDto,
   TipoDTEGenerable,
+  DatosExportacionInput,
+  DatosExportacion,
 } from '@/types/api';
 
 // Helper duplicado intencionalmente — mismo patron que use-cotizaciones.ts.
@@ -168,6 +170,26 @@ export function useAnularDTESoloDTE(id: string) {
     },
     onError: (err) => {
       toast.error(extractErrorMessage(err, 'No se pudo anular el DTE.'));
+    },
+  });
+}
+
+// Guarda los datos de exportación (FEX, fase 2) antes de emitir el DTE. El
+// backend solo devuelve los campos de exportación actualizados (no la factura
+// completa: el tipo DatosExportacion documenta ese select parcial), así que
+// invalidamos en lugar de mergear con setQueryData — el error de validación
+// (recinto/régimen inválidos, transporte incompleto) lo maneja el componente
+// (FE-3), no este hook.
+export function useGuardarDatosExportacion(facturaId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: DatosExportacionInput) =>
+      api.patch<ApiResponse<DatosExportacion>>(`/facturas/${facturaId}/datos-exportacion`, data).then((r) => {
+        if (!r.data.success) throw new Error(r.data.error.message);
+        return r.data.data;
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['factura', facturaId] });
     },
   });
 }
