@@ -52,9 +52,10 @@ export function TabEmpresa() {
       emailRemitente: '', nombreRemitente: '', emailCopiaInterna: '',
       porcentajeIvaDefault: undefined,
       recintoFiscalDefault: '',
-      // '1000.000' (Exportación Definitiva, Régimen Común) es el default visible
-      // hasta que se cargue la configuración real — mismo fallback que DatosExportacionCard.
-      regimenExportacionDefault: '1000.000',
+      // 'EX-1.1000.000' (Exportación Definitiva, Régimen Común) es el default
+      // visible hasta que se cargue la configuración real — mismo fallback que
+      // DatosExportacionCard, en el formato que exige FacturaLlama en taxRegimen.
+      regimenExportacionDefault: 'EX-1.1000.000',
     },
   });
 
@@ -83,7 +84,7 @@ export function TabEmpresa() {
     porcentajeIvaDefault: d!.porcentajeIvaDefault != null ? Number(d!.porcentajeIvaDefault) : undefined,
     recintoFiscalDefault: d!.recintoFiscalDefault ?? '',
     // Sin valor guardado aún: se muestra el régimen más común como default visible.
-    regimenExportacionDefault: d!.regimenExportacionDefault ?? '1000.000',
+    regimenExportacionDefault: d!.regimenExportacionDefault ?? 'EX-1.1000.000',
   });
 
   useEffect(() => {
