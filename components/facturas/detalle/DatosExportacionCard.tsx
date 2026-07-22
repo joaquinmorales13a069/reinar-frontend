@@ -23,6 +23,20 @@ const inputErr = `${inputBase} border-danger`;
 
 type BackendError = { message?: string; details?: { field: string; message: string }[] };
 
+// Campos realmente renderizados por el form — usado para distinguir un
+// detail que setError puede aplicar de uno que no (ver handleError).
+const CAMPOS_DATOS_EXPORTACION: readonly (keyof DatosExportacionForm)[] = [
+  'recintoFiscal',
+  'regimenExportacion',
+  'incoterms',
+  'flete',
+  'seguro',
+  'transporteConductor',
+  'transporteDocConductor',
+  'transportePlaca',
+  'transporteModalidad',
+];
+
 // Tarjeta de datos de exportación (FEX, fase 2) — solo se monta cuando
 // factura.tipoDTE === 'FEX' (lo decide la página de detalle).
 export function DatosExportacionCard({ factura, puedeEscribir }: Props) {
@@ -87,8 +101,22 @@ export function DatosExportacionCard({ factura, puedeEscribir }: Props) {
     const anyErr = err as { response?: { data?: { error?: BackendError } } };
     const e = anyErr.response?.data?.error;
     const details = e?.details ?? [];
-    details.forEach((d) => setError(d.field as keyof DatosExportacionForm, { message: d.message }));
-    if (!details.length) toast.error(e?.message ?? 'No se pudieron guardar los datos de exportación.');
+    let aplicoAlgunCampo = false;
+    details.forEach((d) => {
+      if ((CAMPOS_DATOS_EXPORTACION as readonly string[]).includes(d.field)) {
+        setError(d.field as keyof DatosExportacionForm, { message: d.message });
+        aplicoAlgunCampo = true;
+      }
+    });
+    // Si ningún detail mapeó a un campo del form (ej. el backend manda
+    // `field: 'general'` para un issue con path vacío) el usuario no ve nada
+    // inline, así que hace falta el toast. También cubrimos err.message plano:
+    // cuando el hook lanza `new Error(...)` (HTTP 200 con success:false) no
+    // hay `err.response.data.error`, y sin este fallback se perdía el mensaje
+    // real detrás de un texto genérico.
+    if (!aplicoAlgunCampo) {
+      toast.error(e?.message ?? (err as Error)?.message ?? 'No se pudieron guardar los datos de exportación.');
+    }
   }
 
   async function onSubmit(values: DatosExportacionForm) {

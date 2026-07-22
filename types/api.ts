@@ -1230,6 +1230,25 @@ export type DatosExportacionInput = {
   transporteModalidad?: string;
 };
 
+// Shape devuelta por PATCH /facturas/:id/datos-exportacion — el backend
+// (guardarDatosExportacion en facturas.service.ts) hace un `select` parcial de
+// 10 campos, NO una Factura completa (falta cliente/cotizacion/pagos/etc.).
+// Tiparlo aparte evita que un futuro setQueryData(['factura', id], data)
+// instale una Factura incompleta y rompa la página de detalle.
+export type DatosExportacion = Pick<
+  Factura,
+  | 'id'
+  | 'recintoFiscal'
+  | 'regimenExportacion'
+  | 'incoterms'
+  | 'flete'
+  | 'seguro'
+  | 'transporteConductor'
+  | 'transporteDocConductor'
+  | 'transportePlaca'
+  | 'transporteModalidad'
+>;
+
 export type CrearPagoDto = {
   monto: string;
   fecha: string;
