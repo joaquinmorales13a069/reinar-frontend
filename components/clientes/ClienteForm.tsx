@@ -14,12 +14,14 @@ import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { useCliente, useCrearCliente, useEditarCliente, useCambiarEstadoCliente } from '@/hooks/use-clientes';
 import { DEPARTAMENTOS_SV, DISTRITOS_SV, getMunicipiosByDept, getDistritosByMuniDept } from '@/lib/sv-geo';
 import { SECTORES_CAT019, ACTIVIDADES_ECONOMICAS_SV } from '@/lib/cat019';
+import { PAISES, PAISES_CODIGOS } from '@/lib/paises';
 import { PhoneInputField } from '@/components/ui/PhoneInputField';
 import {
   formatDocumento,
   validarDocumento,
   TIPOS_DOCUMENTO_PARTICULAR,
   TIPOS_DOCUMENTO_EMPRESA,
+  TIPOS_DOCUMENTO_INTERNACIONAL,
   LABEL_TIPO_DOCUMENTO,
   PLACEHOLDER_POR_TIPO,
   MAXLENGTH_POR_TIPO,
@@ -30,7 +32,7 @@ import {
 import { DIAS_SEMANA, LABEL_DIA_CORTO, type DiaSemana } from '@/lib/dias-semana';
 
 const schema = z.object({
-  tipo: z.enum(['EMPRESA', 'PARTICULAR']),
+  tipo: z.enum(['EMPRESA', 'PARTICULAR', 'INTERNACIONAL']),
   razonSocial: z.string().optional(),
   nombreComercial: z.string().optional(),
   sector: z.string().optional(),
@@ -41,8 +43,8 @@ const schema = z.object({
   tipoDocumento: z.enum(['DUI', 'NIT', 'PASAPORTE', 'CARNET_RESIDENTE', 'OTRO']).optional().or(z.literal('')),
   numeroDocumento: z.string().optional(),
   ncr: z.string().optional(),
-  departamento: z.string().min(1, 'El departamento es obligatorio.'),
-  municipio: z.string().min(1),
+  departamento: z.string().optional(),
+  municipio: z.string().optional(),
   distrito: z.string().optional(),
   complemento: z.string().optional(),
   telefono: z.string().optional(),
@@ -51,15 +53,45 @@ const schema = z.object({
   estado: z.enum(['ACTIVO', 'INACTIVO', 'PROSPECTO']),
   manejaQuedan: z.boolean(),
   diasRecepcionQuedan: z.array(z.enum(DIAS_SEMANA)),
+  tipoPersona: z.enum(['NATURAL', 'JURIDICA']).optional().or(z.literal('')),
+  codPais: z.string().optional(),
+  tamanoContribuyente: z.enum(['GRANDE', 'MEDIANO', 'OTROS']).optional().or(z.literal('')),
 }).superRefine((d, ctx) => {
   if (d.tipo === 'EMPRESA') {
     if (!d.razonSocial?.trim())
       ctx.addIssue({ code: 'custom', path: ['razonSocial'], message: 'La razón social es obligatoria.' });
     if (d.tipoDocumento && d.tipoDocumento !== 'DUI' && d.tipoDocumento !== 'NIT')
       ctx.addIssue({ code: 'custom', path: ['tipoDocumento'], message: 'EMPRESA solo acepta DUI o NIT.' });
-  } else {
+  } else if (d.tipo === 'PARTICULAR') {
     if (!d.nombre?.trim())
       ctx.addIssue({ code: 'custom', path: ['nombre'], message: 'El nombre es obligatorio.' });
+  } else {
+    // INTERNACIONAL: todos los datos del recipient FEX son obligatorios al crear.
+    if (!d.tipoPersona)
+      ctx.addIssue({ code: 'custom', path: ['tipoPersona'], message: 'Seleccioná persona natural o jurídica.' });
+    if (d.tipoPersona === 'NATURAL' && !d.nombre?.trim())
+      ctx.addIssue({ code: 'custom', path: ['nombre'], message: 'El nombre es obligatorio.' });
+    if (d.tipoPersona === 'JURIDICA' && !d.razonSocial?.trim())
+      ctx.addIssue({ code: 'custom', path: ['razonSocial'], message: 'La razón social es obligatoria.' });
+    if (!d.codPais || !PAISES_CODIGOS.has(d.codPais))
+      ctx.addIssue({ code: 'custom', path: ['codPais'], message: 'Seleccioná el país.' });
+    if (!d.complemento?.trim())
+      ctx.addIssue({ code: 'custom', path: ['complemento'], message: 'La dirección es obligatoria.' });
+    if ((d.complemento ?? '').length > 300)
+      ctx.addIssue({ code: 'custom', path: ['complemento'], message: 'Máximo 300 caracteres.' });
+    if (!d.actividadEconomica)
+      ctx.addIssue({ code: 'custom', path: ['actividadEconomica'], message: 'La actividad económica es obligatoria.' });
+    if (!d.tipoDocumento)
+      ctx.addIssue({ code: 'custom', path: ['tipoDocumento'], message: 'El documento es obligatorio.' });
+    if (!d.email?.trim())
+      ctx.addIssue({ code: 'custom', path: ['email'], message: 'El correo es obligatorio (recibe el DTE).' });
+  }
+  // Dirección SV: obligatoria solo para clientes nacionales.
+  if (d.tipo !== 'INTERNACIONAL') {
+    if (!d.departamento?.trim())
+      ctx.addIssue({ code: 'custom', path: ['departamento'], message: 'El departamento es obligatorio.' });
+    if (!d.municipio?.trim())
+      ctx.addIssue({ code: 'custom', path: ['municipio'], message: 'El municipio es obligatorio.' });
   }
   const tipoDocRaw = d.tipoDocumento as string | undefined;
   const tipoDoc = tipoDocRaw && tipoDocRaw !== '' ? d.tipoDocumento : undefined;
@@ -92,6 +124,7 @@ const DEFAULTS: FormData = {
   estado: 'ACTIVO',
   manejaQuedan: false,
   diasRecepcionQuedan: [],
+  tipoPersona: '', codPais: '', tamanoContribuyente: '',
 };
 
 // Clases reutilizables para inputs/selects/textareas
@@ -119,6 +152,7 @@ export function ClienteForm({ id }: { id?: string }) {
   const sector = watch('sector');
   const manejaQuedan = watch('manejaQuedan');
   const diasSeleccionados = watch('diasRecepcionQuedan');
+  const tipoPersona = watch('tipoPersona');
 
   function toggleDia(dia: DiaSemana) {
     const actual = diasSeleccionados ?? [];
@@ -128,7 +162,7 @@ export function ClienteForm({ id }: { id?: string }) {
       { shouldDirty: true },
     );
   }
-  const munis = getMunicipiosByDept(departamento);
+  const munis = getMunicipiosByDept(departamento ?? '');
   // Sin dept+muni → muestra los 262 distritos; solo dept → filtra por dept; ambos → filtra por ambos.
   const distritos = !departamento
     ? DISTRITOS_SV
@@ -237,7 +271,7 @@ export function ClienteForm({ id }: { id?: string }) {
       <form onSubmit={handleSubmit(onSubmit)}>
         <FormSection title="Tipo de cliente">
           <div className="flex p-0.5 rounded-lg border border-bd bg-bg-sunken w-fit">
-            {(['EMPRESA', 'PARTICULAR'] as const).map((t) => (
+            {(['EMPRESA', 'PARTICULAR', 'INTERNACIONAL'] as const).map((t) => (
               <div
                 key={t}
                 className={`px-4 py-1.5 rounded-md text-sm cursor-pointer select-none transition-all ${
@@ -245,13 +279,13 @@ export function ClienteForm({ id }: { id?: string }) {
                 }`}
                 onClick={() => setValue('tipo', t)}
               >
-                {t === 'EMPRESA' ? 'Empresa' : 'Particular'}
+                {t === 'EMPRESA' ? 'Empresa' : t === 'PARTICULAR' ? 'Particular' : 'Internacional'}
               </div>
             ))}
           </div>
         </FormSection>
 
-        <FormSection title={tipo === 'EMPRESA' ? 'Datos de la empresa' : 'Datos personales'}>
+        <FormSection title={tipo === 'EMPRESA' ? 'Datos de la empresa' : tipo === 'PARTICULAR' ? 'Datos personales' : 'Datos del cliente internacional'}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {tipo === 'EMPRESA' ? (
               <>
@@ -357,7 +391,7 @@ export function ClienteForm({ id }: { id?: string }) {
                   {!sector && <p className="text-xs text-tx-3 mt-0.5">Seleccioná un sector para filtrar las actividades.</p>}
                 </div>
               </>
-            ) : (
+            ) : tipo === 'PARTICULAR' ? (
               <>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-tx-2">Nombre <span className="text-danger">*</span></label>
@@ -426,133 +460,292 @@ export function ClienteForm({ id }: { id?: string }) {
                   {errors.ncr && <p className="text-xs text-danger mt-0.5">{errors.ncr.message}</p>}
                 </div>
               </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                  <label className="text-xs font-medium text-tx-2">Tipo de persona <span className="text-danger">*</span></label>
+                  <div className="flex p-0.5 rounded-lg border border-bd bg-bg-sunken w-fit">
+                    {(['NATURAL', 'JURIDICA'] as const).map((p) => (
+                      <div
+                        key={p}
+                        className={`px-4 py-1.5 rounded-md text-sm cursor-pointer select-none transition-all ${
+                          tipoPersona === p ? 'bg-surface text-tx font-medium shadow-sm' : 'text-tx-2 hover:text-tx'
+                        }`}
+                        onClick={() => setValue('tipoPersona', p)}
+                      >
+                        {p === 'NATURAL' ? 'Persona natural' : 'Persona jurídica'}
+                      </div>
+                    ))}
+                  </div>
+                  {errors.tipoPersona && <p className="text-xs text-danger mt-0.5">{errors.tipoPersona.message}</p>}
+                </div>
+
+                {tipoPersona === 'JURIDICA' ? (
+                  <>
+                    <div className="flex flex-col gap-1 sm:col-span-2">
+                      <label className="text-xs font-medium text-tx-2">Razón social <span className="text-danger">*</span></label>
+                      <input className={errors.razonSocial ? inputErr : inputOk} {...register('razonSocial')} placeholder="Constructora Maya, S.A." />
+                      {errors.razonSocial && <p className="text-xs text-danger mt-0.5">{errors.razonSocial.message}</p>}
+                    </div>
+                    <div className="flex flex-col gap-1 sm:col-span-2">
+                      <label className="text-xs font-medium text-tx-2">Nombre comercial</label>
+                      <input className={inputOk} {...register('nombreComercial')} placeholder="Nombre con el que se conoce comúnmente" />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-medium text-tx-2">Nombre <span className="text-danger">*</span></label>
+                      <input className={errors.nombre ? inputErr : inputOk} {...register('nombre')} placeholder="Carlos Andrés" />
+                      {errors.nombre && <p className="text-xs text-danger mt-0.5">{errors.nombre.message}</p>}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-medium text-tx-2">Apellido</label>
+                      <input className={inputOk} {...register('apellido')} placeholder="Reyes Molina" />
+                    </div>
+                  </>
+                )}
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">Tipo de documento <span className="text-danger">*</span></label>
+                  <select
+                    className={errors.tipoDocumento ? inputErr : inputOk}
+                    {...register('tipoDocumento')}
+                    onChange={(e) => {
+                      void register('tipoDocumento').onChange(e);
+                      setValue('numeroDocumento', '');
+                    }}
+                  >
+                    <option value="">— Seleccionar —</option>
+                    {TIPOS_DOCUMENTO_INTERNACIONAL.map((t) => (
+                      <option key={t} value={t}>{LABEL_TIPO_DOCUMENTO[t]}</option>
+                    ))}
+                  </select>
+                  {errors.tipoDocumento && <p className="text-xs text-danger mt-0.5">{errors.tipoDocumento.message}</p>}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">Número del documento <span className="text-danger">*</span></label>
+                  <input
+                    className={`${errors.numeroDocumento ? inputErr : inputOk} ${monoBase}`}
+                    inputMode={tipoDocumentoValue === 'DUI' || tipoDocumentoValue === 'NIT' ? 'numeric' : 'text'}
+                    maxLength={tipoDocumentoValue && tipoDocumentoValue !== '' ? MAXLENGTH_POR_TIPO[tipoDocumentoValue as TipoDocumentoCliente] : 25}
+                    placeholder={tipoDocumentoValue && tipoDocumentoValue !== '' ? PLACEHOLDER_POR_TIPO[tipoDocumentoValue as TipoDocumentoCliente] : 'Seleccioná un tipo primero'}
+                    disabled={!tipoDocumentoValue}
+                    {...numeroDocReg}
+                    onChange={(e) => {
+                      if (tipoDocumentoValue && tipoDocumentoValue !== '') {
+                        e.target.value = formatDocumento(tipoDocumentoValue as TipoDocumentoCliente, e.target.value);
+                      }
+                      void numeroDocReg.onChange(e);
+                    }}
+                  />
+                  {errors.numeroDocumento && <p className="text-xs text-danger mt-0.5">{errors.numeroDocumento.message}</p>}
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">Sector</label>
+                  <select
+                    className={inputOk}
+                    {...sectorRest}
+                    onChange={(e) => {
+                      onSectorChange(e);
+                      setValue('actividadEconomica', '');
+                    }}
+                  >
+                    <option value="">— Seleccionar —</option>
+                    {SECTORES_CAT019.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">Actividad económica (CAT-019) <span className="text-danger">*</span></label>
+                  <select className={errors.actividadEconomica ? inputErr : inputOk} {...register('actividadEconomica')}>
+                    <option value="">— Seleccionar actividad —</option>
+                    {sector ? (
+                      actividadesFiltradas.map((a) => (
+                        <option key={a.codigo} value={a.codigo}>{a.codigo} — {a.descripcion}</option>
+                      ))
+                    ) : (
+                      SECTORES_CAT019.map((s) => {
+                        const acts = ACTIVIDADES_ECONOMICAS_SV.filter((a) => a.sector === s);
+                        if (!acts.length) return null;
+                        return (
+                          <optgroup key={s} label={s}>
+                            {acts.map((a) => (
+                              <option key={a.codigo} value={a.codigo}>{a.codigo} — {a.descripcion}</option>
+                            ))}
+                          </optgroup>
+                        );
+                      })
+                    )}
+                  </select>
+                  {errors.actividadEconomica
+                    ? <p className="text-xs text-danger mt-0.5">{errors.actividadEconomica.message}</p>
+                    : !sector && <p className="text-xs text-tx-3 mt-0.5">Seleccioná un sector para filtrar las actividades.</p>}
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-tx-2">Tamaño de contribuyente</label>
+                  <select className={inputOk} {...register('tamanoContribuyente')}>
+                    <option value="">— Sin especificar —</option>
+                    <option value="GRANDE">Grande</option>
+                    <option value="MEDIANO">Mediano</option>
+                    <option value="OTROS">Otros</option>
+                  </select>
+                </div>
+              </>
             )}
           </div>
         </FormSection>
 
-        <FormSection title="Facturación">
-          <label className="flex items-center gap-2 cursor-pointer text-sm">
-            <input
-              type="checkbox"
-              {...register('manejaQuedan')}
-              className="h-4 w-4 rounded border-bd accent-accent cursor-pointer"
-            />
-            <span className="text-tx">Maneja factura QUEDAN</span>
-            <span
-              className="text-xs text-tx-3"
-              title="Pre-marca el toggle QUEDAN al generar facturas para este cliente"
-            >
-              (?)
-            </span>
-          </label>
-
-          {manejaQuedan && (
-            <div className="mt-3">
-              <span className="block text-xs font-medium text-tx-2 mb-1.5">
-                Días en que recibe facturas
+        {tipo !== 'INTERNACIONAL' && (
+          <FormSection title="Facturación">
+            <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <input
+                type="checkbox"
+                {...register('manejaQuedan')}
+                className="h-4 w-4 rounded border-bd accent-accent cursor-pointer"
+              />
+              <span className="text-tx">Maneja factura QUEDAN</span>
+              <span
+                className="text-xs text-tx-3"
+                title="Pre-marca el toggle QUEDAN al generar facturas para este cliente"
+              >
+                (?)
               </span>
-              <div className="flex flex-wrap gap-1.5">
-                {DIAS_SEMANA.map((dia) => {
-                  const activo = (diasSeleccionados ?? []).includes(dia);
-                  return (
-                    <button
-                      key={dia}
-                      type="button"
-                      onClick={() => toggleDia(dia)}
-                      aria-pressed={activo}
-                      className={
-                        activo
-                          ? 'px-3 py-1.5 rounded-full text-xs font-semibold bg-accent text-navy transition-colors'
-                          : 'px-3 py-1.5 rounded-full text-xs font-medium border border-bd text-tx-2 hover:bg-bg-sunken transition-colors'
-                      }
-                    >
-                      {LABEL_DIA_CORTO[dia]}
-                    </button>
-                  );
-                })}
+            </label>
+
+            {manejaQuedan && (
+              <div className="mt-3">
+                <span className="block text-xs font-medium text-tx-2 mb-1.5">
+                  Días en que recibe facturas
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {DIAS_SEMANA.map((dia) => {
+                    const activo = (diasSeleccionados ?? []).includes(dia);
+                    return (
+                      <button
+                        key={dia}
+                        type="button"
+                        onClick={() => toggleDia(dia)}
+                        aria-pressed={activo}
+                        className={
+                          activo
+                            ? 'px-3 py-1.5 rounded-full text-xs font-semibold bg-accent text-navy transition-colors'
+                            : 'px-3 py-1.5 rounded-full text-xs font-medium border border-bd text-tx-2 hover:bg-bg-sunken transition-colors'
+                        }
+                      >
+                        {LABEL_DIA_CORTO[dia]}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-tx-3 mt-1.5">
+                  Se usa para advertir al programar la entrega de facturas QUEDAN.
+                </p>
               </div>
-              <p className="text-xs text-tx-3 mt-1.5">
-                Se usa para advertir al programar la entrega de facturas QUEDAN.
-              </p>
-            </div>
-          )}
-        </FormSection>
+            )}
+          </FormSection>
+        )}
 
         <FormSection title="Dirección">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-tx-2">Departamento <span className="text-danger">*</span></label>
-              <select
-                className={errors.departamento ? inputErr : inputOk}
-                {...deptRest}
-                onChange={(e) => {
-                  onDeptChange(e);
-                  setValue('municipio', '');
-                  setValue('distrito', '');
-                }}
-              >
-                <option value="">— Seleccionar —</option>
-                {DEPARTAMENTOS_SV.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-              </select>
-              {errors.departamento && <p className="text-xs text-danger mt-0.5">{errors.departamento.message}</p>}
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-tx-2">Municipio</label>
-              <select
-                className={inputOk}
-                {...muniRest}
-                onChange={(e) => {
-                  onMuniChange(e);
-                  setValue('distrito', '');
-                }}
-              >
-                <option value="">— Seleccionar —</option>
-                {munis.map((m) => <option key={`${m.department}-${m.value}`} value={m.value}>{m.label}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-tx-2">Distrito</label>
-              {/* Clave compuesta dept|muni|value en el <option> porque el código de distrito
-                  no es único globalmente — el mismo valor existe en distintos municipios. */}
-              <select
-                className={inputOk}
-                value={
-                  departamento && municipio && watch('distrito')
-                    ? `${departamento}|${municipio}|${watch('distrito')}`
-                    : ''
-                }
-                onChange={(e) => {
-                  const composite = e.target.value;
-                  if (!composite) { setValue('distrito', ''); return; }
-                  const [dept, muni, code] = composite.split('|');
-                  setValue('distrito', code);
-                  if (dept !== departamento) {
-                    // El cambio de departamento causa un re-render que actualiza las opciones
-                    // de municipio en el DOM. Guardamos el municipio en un ref y lo aplicamos
-                    // en el useEffect que se ejecuta después de ese re-render.
-                    pendingMuniRef.current = muni;
-                    setValue('departamento', dept);
-                  } else if (muni !== municipio) {
-                    setValue('municipio', muni);
+          {tipo !== 'INTERNACIONAL' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-tx-2">Departamento <span className="text-danger">*</span></label>
+                <select
+                  className={errors.departamento ? inputErr : inputOk}
+                  {...deptRest}
+                  onChange={(e) => {
+                    onDeptChange(e);
+                    setValue('municipio', '');
+                    setValue('distrito', '');
+                  }}
+                >
+                  <option value="">— Seleccionar —</option>
+                  {DEPARTAMENTOS_SV.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+                </select>
+                {errors.departamento && <p className="text-xs text-danger mt-0.5">{errors.departamento.message}</p>}
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-tx-2">Municipio</label>
+                <select
+                  className={inputOk}
+                  {...muniRest}
+                  onChange={(e) => {
+                    onMuniChange(e);
+                    setValue('distrito', '');
+                  }}
+                >
+                  <option value="">— Seleccionar —</option>
+                  {munis.map((m) => <option key={`${m.department}-${m.value}`} value={m.value}>{m.label}</option>)}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-tx-2">Distrito</label>
+                {/* Clave compuesta dept|muni|value en el <option> porque el código de distrito
+                    no es único globalmente — el mismo valor existe en distintos municipios. */}
+                <select
+                  className={inputOk}
+                  value={
+                    departamento && municipio && watch('distrito')
+                      ? `${departamento}|${municipio}|${watch('distrito')}`
+                      : ''
                   }
-                }}
-              >
-                <option value="">— Seleccionar —</option>
-                {distritos.map((d) => (
-                  <option
-                    key={`${d.department}-${d.municipality}-${d.value}`}
-                    value={`${d.department}|${d.municipality}|${d.value}`}
-                  >
-                    {d.label}
-                  </option>
-                ))}
-              </select>
+                  onChange={(e) => {
+                    const composite = e.target.value;
+                    if (!composite) { setValue('distrito', ''); return; }
+                    const [dept, muni, code] = composite.split('|');
+                    setValue('distrito', code);
+                    if (dept !== departamento) {
+                      // El cambio de departamento causa un re-render que actualiza las opciones
+                      // de municipio en el DOM. Guardamos el municipio en un ref y lo aplicamos
+                      // en el useEffect que se ejecuta después de ese re-render.
+                      pendingMuniRef.current = muni;
+                      setValue('departamento', dept);
+                    } else if (muni !== municipio) {
+                      setValue('municipio', muni);
+                    }
+                  }}
+                >
+                  <option value="">— Seleccionar —</option>
+                  {distritos.map((d) => (
+                    <option
+                      key={`${d.department}-${d.municipality}-${d.value}`}
+                      value={`${d.department}|${d.municipality}|${d.value}`}
+                    >
+                      {d.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1 sm:col-span-3">
+                <label className="text-xs font-medium text-tx-2">Complemento (dirección detallada)</label>
+                <textarea className={`${inputOk} resize-y`} {...register('complemento')} placeholder="Colonia, calle, número, referencia…" rows={2} />
+              </div>
             </div>
-            <div className="flex flex-col gap-1 sm:col-span-3">
-              <label className="text-xs font-medium text-tx-2">Complemento (dirección detallada)</label>
-              <textarea className={`${inputOk} resize-y`} {...register('complemento')} placeholder="Colonia, calle, número, referencia…" rows={2} />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-medium text-tx-2">País <span className="text-danger">*</span></label>
+                <select className={errors.codPais ? inputErr : inputOk} {...register('codPais')}>
+                  <option value="">— Seleccionar país —</option>
+                  {PAISES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                </select>
+                {errors.codPais && <p className="text-xs text-danger mt-0.5">{errors.codPais.message}</p>}
+              </div>
+              <div className="flex flex-col gap-1 sm:col-span-2">
+                <label className="text-xs font-medium text-tx-2">Dirección <span className="text-danger">*</span></label>
+                <textarea
+                  className={`${errors.complemento ? inputErr : inputOk} resize-y`}
+                  {...register('complemento')}
+                  placeholder="Calle, número, ciudad, estado/provincia…"
+                  rows={2}
+                  maxLength={300}
+                />
+                {errors.complemento && <p className="text-xs text-danger mt-0.5">{errors.complemento.message}</p>}
+              </div>
             </div>
-          </div>
+          )}
         </FormSection>
 
         <FormSection title="Contacto">
@@ -563,7 +756,7 @@ export function ClienteForm({ id }: { id?: string }) {
               {errors.telefono && <p className="text-xs text-danger mt-0.5">{errors.telefono.message}</p>}
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-tx-2">Correo electrónico</label>
+              <label className="text-xs font-medium text-tx-2">Correo electrónico {tipo === 'INTERNACIONAL' && <span className="text-danger">*</span>}</label>
               <input className={errors.email ? inputErr : inputOk} type="email" {...register('email')} placeholder="contacto@empresa.sv" />
               {errors.email && <p className="text-xs text-danger mt-0.5">{errors.email.message}</p>}
             </div>
