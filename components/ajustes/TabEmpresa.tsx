@@ -15,6 +15,8 @@ import {
   configuracionEmpresaSchema,
   type ConfiguracionEmpresaForm,
 } from '@/lib/schemas/ajustes';
+import { CAT027 } from '@/lib/cat027';
+import { CAT028 } from '@/lib/cat028';
 import type { ActualizarConfiguracionDto } from '@/types/api';
 
 const inputBase = 'w-full px-3 py-2 text-sm rounded-md border bg-surface text-tx placeholder:text-tx-3 focus:outline-none focus:border-accent transition-colors';
@@ -49,6 +51,10 @@ export function TabEmpresa() {
       prefijoCotizacion: '', prefijoFactura: '', prefijoActa: '',
       emailRemitente: '', nombreRemitente: '', emailCopiaInterna: '',
       porcentajeIvaDefault: undefined,
+      recintoFiscalDefault: '',
+      // '1000.000' (Exportación Definitiva, Régimen Común) es el default visible
+      // hasta que se cargue la configuración real — mismo fallback que DatosExportacionCard.
+      regimenExportacionDefault: '1000.000',
     },
   });
 
@@ -75,6 +81,9 @@ export function TabEmpresa() {
     nombreRemitente: d!.nombreRemitente ?? '',
     emailCopiaInterna: d!.emailCopiaInterna ?? '',
     porcentajeIvaDefault: d!.porcentajeIvaDefault != null ? Number(d!.porcentajeIvaDefault) : undefined,
+    recintoFiscalDefault: d!.recintoFiscalDefault ?? '',
+    // Sin valor guardado aún: se muestra el régimen más común como default visible.
+    regimenExportacionDefault: d!.regimenExportacionDefault ?? '1000.000',
   });
 
   useEffect(() => {
@@ -114,6 +123,8 @@ export function TabEmpresa() {
       nombreRemitente: clean(v.nombreRemitente),
       emailCopiaInterna: clean(v.emailCopiaInterna),
       porcentajeIvaDefault: v.porcentajeIvaDefault,
+      recintoFiscalDefault: clean(v.recintoFiscalDefault),
+      regimenExportacionDefault: clean(v.regimenExportacionDefault),
     };
     await actualizar.mutateAsync(payload);
   }
@@ -218,6 +229,39 @@ export function TabEmpresa() {
           <PrefijoField name="prefijoCotizacion" label="Cotizaciones" register={register} errors={errors} puedeEditar={puedeEditar} valor={prefijoCot} sufijoFecha={sufijoFecha} />
           <PrefijoField name="prefijoFactura"    label="Facturas"     register={register} errors={errors} puedeEditar={puedeEditar} valor={prefijoFac} sufijoFecha={sufijoFecha} />
           <PrefijoField name="prefijoActa"       label="Actas"        register={register} errors={errors} puedeEditar={puedeEditar} valor={prefijoAct} sufijoFecha={sufijoFecha} />
+        </div>
+      </FormSection>
+
+      <FormSection title="Exportación (FEX)">
+        {/* Precargan el card de datos de exportación de facturas FEX — ver DatosExportacionCard. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>Recinto fiscal por defecto</label>
+            <select
+              disabled={!puedeEditar}
+              className={errors.recintoFiscalDefault ? inputErr : (puedeEditar ? inputOk : inputReadonly)}
+              {...register('recintoFiscalDefault')}
+            >
+              <option value="">— Sin configurar —</option>
+              {CAT027.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+            {errors.recintoFiscalDefault && <p className={errorCls}>{errors.recintoFiscalDefault.message}</p>}
+          </div>
+          <div>
+            <label className={labelCls}>Régimen de exportación por defecto</label>
+            <select
+              disabled={!puedeEditar}
+              className={errors.regimenExportacionDefault ? inputErr : (puedeEditar ? inputOk : inputReadonly)}
+              {...register('regimenExportacionDefault')}
+            >
+              {CAT028.map((r) => (
+                <option key={r.value} value={r.value}>{r.value} — {r.label}</option>
+              ))}
+            </select>
+            {errors.regimenExportacionDefault && <p className={errorCls}>{errors.regimenExportacionDefault.message}</p>}
+          </div>
         </div>
       </FormSection>
 
