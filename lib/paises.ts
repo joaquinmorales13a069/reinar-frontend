@@ -37,12 +37,16 @@ const nombreRegion = new Intl.DisplayNames(['es'], { type: 'region' })
 export type Pais = { value: string; label: string }
 
 export const PAISES: Pais[] = CODIGOS_PAIS_ISO
-  .map((c) => ({ value: c as string, label: nombreRegion.of(c) ?? c }))
+  .map((c) => ({ value: c, label: nombreRegion.of(c) ?? c }))
   .sort((a, b) => a.label.localeCompare(b.label, 'es'))
 
 export const PAISES_CODIGOS: ReadonlySet<string> = new Set<string>(CODIGOS_PAIS_ISO)
 
 export function resolverPais(code?: string | null): string {
   if (!code) return ''
+  // Solo resolvemos códigos ISO conocidos; Intl.DisplayNames.of() lanza
+  // RangeError con valores malformados, así que un código fuera del catálogo
+  // se devuelve crudo en vez de romper el render (SSR).
+  if (!PAISES_CODIGOS.has(code)) return code
   return nombreRegion.of(code) ?? code
 }
