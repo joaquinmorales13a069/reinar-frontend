@@ -1007,12 +1007,14 @@ export type EstadoDTE =
 export type TipoDTE = 'FC' | 'CCF' | 'SUJETO_EXCLUIDO' | 'FEX';
 
 // FSE (SUJETO_EXCLUIDO) pasó a ser documento de compras (módulo /fse) — el
-// flujo de ventas solo puede emitir FC/CCF. TipoDTE (lectura) conserva el
-// tercer valor para que facturas históricas con FSE sigan mostrando su badge.
-export type TipoDTEEmitible = 'FC' | 'CCF';
+// flujo de ventas solo puede emitir FC/CCF/FEX. TipoDTE (lectura) conserva
+// SUJETO_EXCLUIDO para que facturas históricas con FSE sigan mostrando su badge.
+// Fase 2: FEX ya se puede emitir (antes solo se podía asignar al generar).
+export type TipoDTEEmitible = 'FC' | 'CCF' | 'FEX';
 
-// FEX es asignable al GENERAR la factura de un cliente internacional, pero su
-// emisión queda bloqueada hasta la fase 2 — por eso no entra en TipoDTEEmitible.
+// FEX es asignable al GENERAR la factura de un cliente internacional. Queda
+// igual a TipoDTEEmitible (fase 2) — se mantienen como tipos separados porque
+// documentan momentos distintos del flujo (generar vs. emitir).
 export type TipoDTEGenerable = 'FC' | 'CCF' | 'FEX';
 
 // El backend tambien acepta ANTICIPO, pero solo lo asigna el servicio de
@@ -1136,6 +1138,19 @@ export type Factura = {
   // Folio del talonario físico manual — respaldo del PDF cuando no hay actas
   // despachadas con folio.
   numeroActaFisicoManual: string | null;
+  // Datos de exportación (FEX, fase 2) — solo aplican cuando tipoDTE = 'FEX'.
+  // Editables mientras estadoDTE sea PENDIENTE o RECHAZADO (ver
+  // guardarDatosExportacion en el backend). flete/seguro son Decimal
+  // serializados como string — usar decimal.js, no parseFloat.
+  recintoFiscal?: string | null;
+  regimenExportacion?: string | null;
+  incoterms?: string | null;
+  flete?: string | null;
+  seguro?: string | null;
+  transporteConductor?: string | null;
+  transporteDocConductor?: string | null;
+  transportePlaca?: string | null;
+  transporteModalidad?: string | null;
   createdAt: string;
   updatedAt: string;
   cliente: Cliente;
@@ -1198,6 +1213,21 @@ export type CambiarEstadoFacturaDto = {
 
 export type EmitirDTEDto = {
   tipoDTE: TipoDTEEmitible;
+};
+
+// Payload de PATCH /facturas/:id/datos-exportacion (FEX, fase 2). flete y
+// seguro van como number — el backend los convierte a Decimal. Si se declara
+// algún dato de transporte, el backend exige los 4 juntos (ver datosExportacionSchema).
+export type DatosExportacionInput = {
+  recintoFiscal: string;
+  regimenExportacion: string;
+  incoterms?: string;
+  flete?: number;
+  seguro?: number;
+  transporteConductor?: string;
+  transporteDocConductor?: string;
+  transportePlaca?: string;
+  transporteModalidad?: string;
 };
 
 export type CrearPagoDto = {
@@ -1770,6 +1800,10 @@ export type ConfiguracionEmpresa = {
   // El backend serializa porcentajeIvaDefault como string Decimal —
   // convertir con Number(...) o new Decimal(...) antes de operar.
   porcentajeIvaDefault: string;
+  // Defaults de FEX (fase 2) para precargar el card de datos de exportación —
+  // ahorran reingresar el mismo recinto/régimen en cada factura de exportación.
+  recintoFiscalDefault?: string | null;
+  regimenExportacionDefault?: string | null;
   updatedAt: string;
 };
 
@@ -1794,6 +1828,9 @@ export type ActualizarConfiguracionDto = {
   emailCopiaInterna?: string;
   // porcentajeIvaDefault va como number en el DTO (el backend lo convierte a Decimal).
   porcentajeIvaDefault?: number;
+  // Defaults de FEX (fase 2) — validados contra CAT-027/CAT-028 en el backend.
+  recintoFiscalDefault?: string;
+  regimenExportacionDefault?: string;
 };
 
 export type ConfiguracionReportes = {
