@@ -51,6 +51,9 @@ type Props = {
   // reemitir y se muestra el hint que dirige al card de período. Solo aplica
   // a kind 'factura'.
   faltaPeriodo?: boolean;
+  // FEX (fase 2): sin recinto fiscal / régimen no se puede emitir — se
+  // completan en el card «Datos de exportación». Análogo a faltaPeriodo.
+  faltanDatosExportacion?: boolean;
 };
 
 const TIPO_INFO: Record<TipoDTE, { label: string; desc: string }> = {
@@ -119,16 +122,18 @@ export function DteSection(props: Props) {
     </p>
   ) : null;
 
-  // Mensaje de bloqueo: FEX (fase 1, aún sin emisión) y SUJETO_EXCLUIDO
-  // histórico (FSE, movido al módulo de Compras) comparten emisionBloqueada
-  // pero tienen motivos distintos — se distingue por doc.tipoDTE.
-  const mensajeBloqueo =
-    doc.tipoDTE === 'FEX'
-      ? 'La Factura de Exportación aún no se puede emitir desde aquí: estará disponible próximamente.'
-      : 'Los FSE ahora se gestionan desde el módulo de Compras.';
+  // FEX (fase 2): ya se emite desde ventas, pero exige recinto/régimen — el
+  // hint dirige al card «Datos de exportación» en vez de bloquear la emisión.
+  const hintDatosExportacion = props.faltanDatosExportacion ? (
+    <p className="mt-3 text-xs text-warn">
+      Completá los datos de exportación antes de emitir — usá el card «Datos de exportación» de esta página.
+    </p>
+  ) : null;
 
+  // emisionBloqueada solo aplica a SUJETO_EXCLUIDO histórico (FSE, movido al
+  // módulo de Compras) — FEX (fase 2) ya emite y usa faltanDatosExportacion.
   const bloqueoBlock = props.emisionBloqueada ? (
-    <p className="mt-3 text-xs text-tx-3">{mensajeBloqueo}</p>
+    <p className="mt-3 text-xs text-tx-3">Los FSE ahora se gestionan desde el módulo de Compras.</p>
   ) : null;
 
   const confirmAnularTipoBlock = confirmAnularTipo ? (
@@ -279,6 +284,7 @@ export function DteSection(props: Props) {
             <span>Este documento aún no ha sido enviado al Ministerio de Hacienda.</span>
           </div>
           {hintPeriodo}
+          {hintDatosExportacion}
           {emitirError && (
             <div className="mt-2 flex items-start gap-2 bg-danger-soft text-danger rounded-md px-3 py-2 text-sm">
               <Icon name="alertTriangle" size={14} />
@@ -291,7 +297,7 @@ export function DteSection(props: Props) {
               type="button"
               className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => setConfirmEmit(true)}
-              disabled={isEmitiendo || props.faltaPeriodo}
+              disabled={isEmitiendo || props.faltaPeriodo || props.faltanDatosExportacion}
             >
               <Icon name="send" size={14} /> Emitir DTE
             </button>
@@ -403,12 +409,13 @@ Descripción: ${descripcion ?? '—'}${observaciones.length > 0 ? '\n\nObservaci
           })()}
           {bloqueoBlock}
           {hintPeriodo}
+          {hintDatosExportacion}
           {isOperador && !props.emisionBloqueada && (
             <button
               type="button"
               className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium bg-accent text-navy hover:bg-accent-dim disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => props.onReemitir?.()}
-              disabled={isEmitiendo || props.faltaPeriodo}
+              disabled={isEmitiendo || props.faltaPeriodo || props.faltanDatosExportacion}
             >
               <Icon name="refresh" size={14} /> {kind === 'nota' ? 'Corregir y re-emitir nota' : 'Corregir y re-emitir'}
             </button>

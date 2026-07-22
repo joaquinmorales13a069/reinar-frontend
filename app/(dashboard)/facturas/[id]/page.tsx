@@ -9,6 +9,7 @@ import { Spinner } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FacturaEstadoBadge } from '@/components/facturas/FacturaEstadoBadge';
 import { ClienteFechasCard } from '@/components/facturas/detalle/ClienteFechasCard';
+import { DatosExportacionCard } from '@/components/facturas/detalle/DatosExportacionCard';
 import { ObservacionesCard } from '@/components/facturas/detalle/ObservacionesCard';
 import { EntregaQuedanCard } from '@/components/facturas/detalle/EntregaQuedanCard';
 import { ItemsFacturadosCard } from '@/components/facturas/detalle/ItemsFacturadosCard';
@@ -76,8 +77,14 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
   const puedeEscribir = user && user.rol !== 'VISUALIZADOR';
   // Sin período de renta el backend rechaza la emisión (422) — bloqueamos antes.
   const faltaPeriodo = !factura.periodoRentaInicio || !factura.periodoRentaFin;
-  // FEX (fase 1) y SUJETO_EXCLUIDO histórico no se emiten desde ventas.
-  const emisionBloqueada = factura.tipoDTE === 'SUJETO_EXCLUIDO' || factura.tipoDTE === 'FEX';
+  // SUJETO_EXCLUIDO histórico (FSE) no se emite desde ventas — se gestiona en
+  // Compras. FEX (fase 2) ya no se bloquea: emite, pero exige datos de
+  // exportación (ver faltanDatosExportacion) antes de poder emitir.
+  const emisionBloqueada = factura.tipoDTE === 'SUJETO_EXCLUIDO';
+  // El backend rechaza la emisión FEX sin recinto/régimen (422) — bloqueamos
+  // antes, igual que faltaPeriodo. Solo aplica cuando ya hay tipo FEX asignado.
+  const faltanDatosExportacion =
+    factura.tipoDTE === 'FEX' && (!factura.recintoFiscal || !factura.regimenExportacion);
 
   // Subtitle: nombre del cliente vía el helper canónico (tipo-aware: EMPRESA ->
   // razonSocial, PARTICULAR -> nombre+apellido, INTERNACIONAL -> razonSocial o
@@ -194,6 +201,9 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             <AjustarEstadoCard factura={factura} onClose={() => setAjusteOpen(false)} />
           )}
           <ClienteFechasCard factura={factura} />
+          {factura.tipoDTE === 'FEX' && (
+            <DatosExportacionCard factura={factura} puedeEscribir={!!puedeEscribir} />
+          )}
           <ObservacionesCard factura={factura} puedeEscribir={!!puedeEscribir} />
           {factura.esQuedan && (
             <EntregaQuedanCard factura={factura} puedeEscribir={!!puedeEscribir} />
@@ -209,8 +219,8 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             isSincronizando={sincronizarDTE.isPending}
             isDescargandoPdf={descargandoPdfDte}
             onAsignarTipo={(t) => { void emitirCon(t); }}
-            // Históricos con tipoDTE SUJETO_EXCLUIDO (FSE) y FEX (fase 1) no se
-            // pueden (re)emitir desde ventas — el backend tampoco lo acepta.
+            // Históricos con tipoDTE SUJETO_EXCLUIDO (FSE) no se pueden (re)emitir
+            // desde ventas — el backend tampoco lo acepta. FEX sí emite (fase 2).
             onEmitir={() => {
               if (factura.tipoDTE && !emisionBloqueada) void emitirCon(factura.tipoDTE as TipoDTEEmitible);
             }}
@@ -219,6 +229,7 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             }}
             emisionBloqueada={emisionBloqueada}
             faltaPeriodo={faltaPeriodo}
+            faltanDatosExportacion={faltanDatosExportacion}
             onSincronizar={() => { void sincronizarDTE.mutateAsync(id); }}
             onAnular={() => router.push(`/facturas/${id}/anular-dte`)}
             onAnularSoloDTE={(motivo) => { void anularParaCambiarTipo(motivo); }}

@@ -37,3 +37,43 @@ export const registrarPagoSchema = z.object({
   notas: z.string().max(200, 'Máximo 200 caracteres').optional(),
 });
 export type RegistrarPagoForm = z.infer<typeof registrarPagoSchema>;
+
+// ── Datos de exportación (FEX, fase 2) ──────────────────────────────────
+// Espejo de datosExportacionSchema del backend (facturas.schemas.ts): recinto
+// y régimen obligatorios contra catálogo; transporte se exige completo (los
+// 4 datos del conductor) o vacío. flete/seguro llegan como '' desde el input
+// numérico cuando el usuario no los completa — el preprocess los normaliza a
+// undefined antes de que z.coerce.number() intente convertirlos (si no,
+// Number('') da 0 en vez de "sin dato").
+const montoOpcional = z.preprocess(
+  (v) => (v === '' || v === undefined || v === null ? undefined : v),
+  z.coerce.number().min(0, 'No puede ser negativo').optional(),
+);
+
+export const datosExportacionSchema = z
+  .object({
+    recintoFiscal: z.string().min(1, 'Seleccioná el recinto fiscal'),
+    regimenExportacion: z.string().min(1, 'Seleccioná el régimen'),
+    incoterms: z.string().optional(),
+    flete: montoOpcional,
+    seguro: montoOpcional,
+    transporteConductor: z.string().optional(),
+    transporteDocConductor: z.string().optional(),
+    transportePlaca: z.string().optional(),
+    transporteModalidad: z.string().optional(),
+  })
+  .superRefine((d, ctx) => {
+    const algunTransporte =
+      d.transporteConductor || d.transporteDocConductor || d.transportePlaca || d.transporteModalidad;
+    if (algunTransporte) {
+      if (!d.transporteConductor)
+        ctx.addIssue({ code: 'custom', path: ['transporteConductor'], message: 'Nombre del conductor requerido' });
+      if (!d.transporteDocConductor)
+        ctx.addIssue({ code: 'custom', path: ['transporteDocConductor'], message: 'Documento del conductor requerido' });
+      if (!d.transportePlaca)
+        ctx.addIssue({ code: 'custom', path: ['transportePlaca'], message: 'Placas requeridas' });
+      if (!d.transporteModalidad)
+        ctx.addIssue({ code: 'custom', path: ['transporteModalidad'], message: 'Modalidad requerida' });
+    }
+  });
+export type DatosExportacionForm = z.infer<typeof datosExportacionSchema>;
