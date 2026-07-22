@@ -59,7 +59,10 @@ export function TabHerramienta({ cotizacionId, onAdded }: TabChildProps) {
       ) : (
         <div className="border border-bd rounded-md max-h-64 overflow-y-auto">
           {(herrQ.data?.data ?? []).map((h) => {
-            const disp = h.unidadesDisponibles ?? 0;
+            // Disponibilidad EFECTIVA (resta compromisos de cotizaciones
+            // aprobadas sin despachar) — lo mismo que valida la aprobación, así
+            // no se agrega una herramienta que luego no se puede aprobar.
+            const disp = h.disponibles ?? h.unidadesDisponibles ?? 0;
             const total = h.totalUnidades ?? 0;
             const isActive = selected?.id === h.id;
             const sinStock = disp === 0;

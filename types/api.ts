@@ -371,6 +371,10 @@ export type HerramientaTipo = {
   // hace destructure de `_count` y `unidades` y los reemplaza por estos dos.
   totalUnidades?: number;
   unidadesDisponibles?: number;
+  // Disponibilidad EFECTIVA (física − comprometida por cotizaciones aprobadas
+  // sin despachar), presente en el LIST y el detalle. Es lo que valida la
+  // aprobación; usarla para decidir si se puede rentar, no unidadesDisponibles.
+  disponibles?: number;
 };
 
 export type HerramientaUnidad = {

@@ -158,8 +158,17 @@ function TipoDetalleClient({ id }: { id: string }) {
         </div>
 
         <div className="rounded-lg border border-bd bg-surface p-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 gap-2">
             <h3 className="font-semibold text-tx">Unidades ({unidades.length})</h3>
+            {/* Disponibilidad efectiva: unidades físicas menos las comprometidas
+                por cotizaciones aprobadas sin despachar. Es lo que se puede
+                rentar hoy, y coincide con lo que valida la aprobación. */}
+            {typeof tipo.disponibles === 'number' && (
+              <Badge
+                status={`Disponibles para rentar: ${tipo.disponibles}`}
+                kind={tipo.disponibles > 0 ? 'ok' : 'warn'}
+              />
+            )}
           </div>
 
           {unidades.length > 0 && (
