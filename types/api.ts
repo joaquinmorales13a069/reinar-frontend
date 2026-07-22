@@ -64,7 +64,7 @@ import type { TipoDocumentoCliente } from '@/lib/format-documentos';
 
 export type Cliente = {
   id: string;
-  tipo: 'EMPRESA' | 'PARTICULAR';
+  tipo: 'EMPRESA' | 'PARTICULAR' | 'INTERNACIONAL';
   razonSocial?: string;
   nombreComercial?: string;
   nombre?: string;
@@ -72,11 +72,15 @@ export type Cliente = {
   tipoDocumento?: 'DUI' | 'NIT' | 'PASAPORTE' | 'CARNET_RESIDENTE' | 'OTRO' | null;
   numeroDocumento?: string | null;
   ncr?: string;
+  // Datos de exportación (solo tipo INTERNACIONAL) — recipient del FEX.
+  tipoPersona?: 'NATURAL' | 'JURIDICA' | null;
+  codPais?: string | null;
+  tamanoContribuyente?: 'GRANDE' | 'MEDIANO' | 'OTROS' | null;
   ocupacion?: string;
   sector?: string;
   actividadEconomica?: string;
-  departamento: string;
-  municipio: string;
+  departamento?: string | null;
+  municipio?: string | null;
   distrito?: string;
   complemento?: string;
   telefono?: string;
@@ -100,7 +104,9 @@ export type Contacto = {
   id: string;
   clienteId: string;
   cliente?: {
-    tipo?: 'EMPRESA' | 'PARTICULAR';
+    // Incluye INTERNACIONAL para que ClienteCard (ContactoDetalle) pueda rutear
+    // el nombre por el helper canónico `nombreCliente()` sin angostar el tipo.
+    tipo?: 'EMPRESA' | 'PARTICULAR' | 'INTERNACIONAL';
     razonSocial?: string;
     nombre?: string;
     apellido?: string;
@@ -744,7 +750,7 @@ export type TipoItemCotizacion =
 
 export type PeriodoItem = 'DIA' | 'SEMANA' | 'QUINCENA' | 'MES' | 'CUSTOM';
 
-export type TipoDocumentoFiscal = 'CF' | 'CCF' | 'SUJETO_EXCLUIDO';
+export type TipoDocumentoFiscal = 'CF' | 'CCF' | 'SUJETO_EXCLUIDO' | 'FEX';
 
 export type CondicionesPago = 'CONTADO' | 'CREDITO' | 'OTRO';
 
@@ -998,12 +1004,16 @@ export type EstadoDTE =
   | 'RECHAZADO'
   | 'ANULADO';
 
-export type TipoDTE = 'FC' | 'CCF' | 'SUJETO_EXCLUIDO';
+export type TipoDTE = 'FC' | 'CCF' | 'SUJETO_EXCLUIDO' | 'FEX';
 
 // FSE (SUJETO_EXCLUIDO) pasó a ser documento de compras (módulo /fse) — el
 // flujo de ventas solo puede emitir FC/CCF. TipoDTE (lectura) conserva el
 // tercer valor para que facturas históricas con FSE sigan mostrando su badge.
 export type TipoDTEEmitible = 'FC' | 'CCF';
+
+// FEX es asignable al GENERAR la factura de un cliente internacional, pero su
+// emisión queda bloqueada hasta la fase 2 — por eso no entra en TipoDTEEmitible.
+export type TipoDTEGenerable = 'FC' | 'CCF' | 'FEX';
 
 // El backend tambien acepta ANTICIPO, pero solo lo asigna el servicio de
 // cotizaciones al aprobar — la UI no lo expone como opcion al registrar pago.

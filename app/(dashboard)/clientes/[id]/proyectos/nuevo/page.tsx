@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { useCliente } from '@/hooks/use-clientes';
 import { useAuthStore } from '@/stores/auth.store';
 import { puedeEjecutarProyecto } from '@/lib/proyectos';
+import { nombreCliente } from '@/lib/utils';
 
 export default function NuevoProyectoPage({
   params,
@@ -43,9 +44,7 @@ export default function NuevoProyectoPage({
   }
   if (cliente.estado !== 'ACTIVO') return null;
 
-  const nombreVisible = cliente.tipo === 'EMPRESA'
-    ? cliente.razonSocial ?? '—'
-    : [cliente.nombre, cliente.apellido].filter(Boolean).join(' ') || '—';
+  const nombreVisible = nombreCliente(cliente);
 
   return (
     <ProyectoForm

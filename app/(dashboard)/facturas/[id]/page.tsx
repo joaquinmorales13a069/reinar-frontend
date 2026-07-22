@@ -31,6 +31,8 @@ import {
   descargarFacturaJsonDTE,
 } from '@/hooks/use-facturas';
 import { useAuthStore } from '@/stores/auth.store';
+// Alias para no chocar con el const local `nombreCliente` usado en el JSX.
+import { nombreCliente as nombreClienteDe } from '@/lib/utils';
 import type { TipoDTEEmitible } from '@/types/api';
 
 export default function FacturaDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -74,12 +76,13 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
   const puedeEscribir = user && user.rol !== 'VISUALIZADOR';
   // Sin período de renta el backend rechaza la emisión (422) — bloqueamos antes.
   const faltaPeriodo = !factura.periodoRentaInicio || !factura.periodoRentaFin;
+  // FEX (fase 1) y SUJETO_EXCLUIDO histórico no se emiten desde ventas.
+  const emisionBloqueada = factura.tipoDTE === 'SUJETO_EXCLUIDO' || factura.tipoDTE === 'FEX';
 
-  // Subtitle: nombre del cliente segun tipo (EMPRESA -> razonSocial, PARTICULAR -> nombre+apellido).
-  const nombreCliente =
-    factura.cliente.tipo === 'EMPRESA'
-      ? factura.cliente.razonSocial ?? '—'
-      : [factura.cliente.nombre, factura.cliente.apellido].filter(Boolean).join(' ') || '—';
+  // Subtitle: nombre del cliente vía el helper canónico (tipo-aware: EMPRESA ->
+  // razonSocial, PARTICULAR -> nombre+apellido, INTERNACIONAL -> razonSocial o
+  // nombre+apellido), para no divergir de como lo muestra ClienteFechasCard.
+  const nombreCliente = nombreClienteDe(factura.cliente);
 
   async function emitirCon(tipo: TipoDTEEmitible) {
     setEmitirError(null);
@@ -206,15 +209,15 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             isSincronizando={sincronizarDTE.isPending}
             isDescargandoPdf={descargandoPdfDte}
             onAsignarTipo={(t) => { void emitirCon(t); }}
-            // Históricos con tipoDTE SUJETO_EXCLUIDO (FSE) ya no se pueden
-            // (re)emitir desde ventas — el backend tampoco lo acepta (Task 7).
+            // Históricos con tipoDTE SUJETO_EXCLUIDO (FSE) y FEX (fase 1) no se
+            // pueden (re)emitir desde ventas — el backend tampoco lo acepta.
             onEmitir={() => {
-              if (factura.tipoDTE && factura.tipoDTE !== 'SUJETO_EXCLUIDO') void emitirCon(factura.tipoDTE);
+              if (factura.tipoDTE && !emisionBloqueada) void emitirCon(factura.tipoDTE as TipoDTEEmitible);
             }}
             onReemitir={() => {
-              if (factura.tipoDTE && factura.tipoDTE !== 'SUJETO_EXCLUIDO') void emitirCon(factura.tipoDTE);
+              if (factura.tipoDTE && !emisionBloqueada) void emitirCon(factura.tipoDTE as TipoDTEEmitible);
             }}
-            emisionBloqueada={factura.tipoDTE === 'SUJETO_EXCLUIDO'}
+            emisionBloqueada={emisionBloqueada}
             faltaPeriodo={faltaPeriodo}
             onSincronizar={() => { void sincronizarDTE.mutateAsync(id); }}
             onAnular={() => router.push(`/facturas/${id}/anular-dte`)}

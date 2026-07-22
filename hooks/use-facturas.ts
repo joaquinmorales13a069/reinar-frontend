@@ -13,7 +13,7 @@ import type {
   ActualizarFacturaDto,
   CambiarEstadoFacturaDto,
   EmitirDTEDto,
-  TipoDTEEmitible,
+  TipoDTEGenerable,
 } from '@/types/api';
 
 // Helper duplicado intencionalmente — mismo patron que use-cotizaciones.ts.
@@ -177,7 +177,7 @@ export function useAnularDTESoloDTE(id: string) {
 // El tipoDTE para cotizacion->factura excluye NC (las notas de credito se
 // crean contra una factura existente, no contra una cotizacion).
 export type GenerarFacturaInput = {
-  tipoDTE: TipoDTEEmitible;
+  tipoDTE: TipoDTEGenerable;
   contactoFacturacionId?: string;
   condicionPago: 'CONTADO' | 'CREDITO';
   // Requerida solo para CREDITO sin QUEDAN; CONTADO vence solo (+24h) y en

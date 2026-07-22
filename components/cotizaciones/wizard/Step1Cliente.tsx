@@ -21,7 +21,7 @@ import type { Cotizacion } from '@/types/api';
 // el embebido en `Cotizacion.cliente`, donde son `string | null`.
 type ClienteResumen = {
   id: string;
-  tipo: 'EMPRESA' | 'PARTICULAR';
+  tipo: 'EMPRESA' | 'PARTICULAR' | 'INTERNACIONAL';
   razonSocial?: string | null;
   nombre?: string | null;
   apellido?: string | null;
@@ -68,7 +68,7 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
   // Estado del picker de cliente. busq + filtroTipo se aplican al query del
   // listado dentro del dropdown. pickerAbierto controla el panel desplegable.
   const [busq, setBusq] = useState('');
-  const [filtroTipo, setFiltroTipo] = useState<'TODOS' | 'EMPRESA' | 'PARTICULAR'>('TODOS');
+  const [filtroTipo, setFiltroTipo] = useState<'TODOS' | 'EMPRESA' | 'PARTICULAR' | 'INTERNACIONAL'>('TODOS');
   const [pickerAbierto, setPickerAbierto] = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
 
@@ -174,7 +174,7 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
                     />
                   </div>
                   <div className="flex gap-2">
-                    {(['TODOS', 'EMPRESA', 'PARTICULAR'] as const).map((tipo) => (
+                    {(['TODOS', 'EMPRESA', 'PARTICULAR', 'INTERNACIONAL'] as const).map((tipo) => (
                       <button
                         key={tipo}
                         type="button"
@@ -185,7 +185,7 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
                             : 'text-tx-2 border-bd hover:bg-bg-sunken'
                         }`}
                       >
-                        {tipo === 'TODOS' ? 'Todos' : tipo === 'EMPRESA' ? 'Empresa' : 'Particular'}
+                        {tipo === 'TODOS' ? 'Todos' : tipo === 'EMPRESA' ? 'Empresa' : tipo === 'PARTICULAR' ? 'Particular' : 'Internacional'}
                       </button>
                     ))}
                   </div>
@@ -229,8 +229,8 @@ export function Step1Cliente({ cotizacion, onCreated, onUpdated }: Props) {
                             )}
                           </div>
                           <Badge
-                            status={c.tipo === 'EMPRESA' ? 'Empresa' : 'Particular'}
-                            kind={c.tipo === 'EMPRESA' ? 'info' : 'neutral'}
+                            status={c.tipo === 'EMPRESA' ? 'Empresa' : c.tipo === 'PARTICULAR' ? 'Particular' : 'Internacional'}
+                            kind={c.tipo === 'EMPRESA' ? 'info' : c.tipo === 'PARTICULAR' ? 'neutral' : 'accent'}
                           />
                         </div>
                       </button>

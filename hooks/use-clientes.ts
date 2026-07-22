@@ -8,7 +8,7 @@ type ClientesParams = {
   page?: number;
   limit?: number;
   busqueda?: string;
-  tipo?: 'EMPRESA' | 'PARTICULAR' | null;
+  tipo?: 'EMPRESA' | 'PARTICULAR' | 'INTERNACIONAL' | null;
   estado?: 'ACTIVO' | 'INACTIVO' | 'PROSPECTO' | null;
   sector?: string | null;
   activo?: boolean;

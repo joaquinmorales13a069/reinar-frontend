@@ -57,6 +57,7 @@ const TIPO_INFO: Record<TipoDTE, { label: string; desc: string }> = {
   FC:              { label: 'FC — Factura Consumidor',          desc: 'Para consumidores finales sin NIT.' },
   CCF:             { label: 'CCF — Comprobante Crédito Fiscal', desc: 'Para contribuyentes con NIT y NCR.' },
   SUJETO_EXCLUIDO: { label: 'FSE — Sujeto Excluido',            desc: 'Para sujetos no contribuyentes del IVA.' },
+  FEX:             { label: 'FEX', desc: 'Factura de Exportación' },
 };
 
 // Cada tipo de DTE exige campos distintos del cliente; el backend rechaza
@@ -116,6 +117,18 @@ export function DteSection(props: Props) {
     <p className="mt-3 text-xs text-warn">
       Registrá el período de renta antes de emitir el DTE — usá el card «Período de renta» de esta página.
     </p>
+  ) : null;
+
+  // Mensaje de bloqueo: FEX (fase 1, aún sin emisión) y SUJETO_EXCLUIDO
+  // histórico (FSE, movido al módulo de Compras) comparten emisionBloqueada
+  // pero tienen motivos distintos — se distingue por doc.tipoDTE.
+  const mensajeBloqueo =
+    doc.tipoDTE === 'FEX'
+      ? 'La Factura de Exportación aún no se puede emitir desde aquí: estará disponible próximamente.'
+      : 'Los FSE ahora se gestionan desde el módulo de Compras.';
+
+  const bloqueoBlock = props.emisionBloqueada ? (
+    <p className="mt-3 text-xs text-tx-3">{mensajeBloqueo}</p>
   ) : null;
 
   const confirmAnularTipoBlock = confirmAnularTipo ? (
@@ -272,11 +285,7 @@ export function DteSection(props: Props) {
               <span>{emitirError}</span>
             </div>
           )}
-          {props.emisionBloqueada && (
-            <p className="mt-3 text-xs text-tx-3">
-              Los FSE ahora se gestionan desde el módulo de Compras.
-            </p>
-          )}
+          {bloqueoBlock}
           {isOperador && !props.emisionBloqueada && !confirmEmit && (
             <button
               type="button"
@@ -392,11 +401,7 @@ Descripción: ${descripcion ?? '—'}${observaciones.length > 0 ? '\n\nObservaci
               </div>
             );
           })()}
-          {props.emisionBloqueada && (
-            <p className="mt-3 text-xs text-tx-3">
-              Los FSE ahora se gestionan desde el módulo de Compras.
-            </p>
-          )}
+          {bloqueoBlock}
           {hintPeriodo}
           {isOperador && !props.emisionBloqueada && (
             <button

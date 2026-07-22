@@ -16,8 +16,15 @@ import { CotizacionStatusBadge } from '@/components/cotizaciones/CotizacionStatu
 import { formatCurrency, formatDate } from '@/lib/utils';
 import Decimal from 'decimal.js';
 import { resolverDepartamento, resolverMunicipio, resolverDistrito } from '@/lib/sv-geo';
+import { resolverPais } from '@/lib/paises';
 import { LABEL_TIPO_DOCUMENTO } from '@/lib/format-documentos';
 import { LABEL_DIA } from '@/lib/dias-semana';
+
+const LABEL_TAMANO_CONTRIBUYENTE: Record<'GRANDE' | 'MEDIANO' | 'OTROS', string> = {
+  GRANDE: 'Grande',
+  MEDIANO: 'Mediano',
+  OTROS: 'Otros',
+};
 
 const btnSec = 'inline-flex items-center gap-2 px-4 py-2 rounded-md border border-bd text-tx-2 bg-surface text-sm font-medium hover:bg-bg-sunken transition-colors';
 const btnPri = 'inline-flex items-center gap-2 px-4 py-2 rounded-md bg-accent text-navy text-sm font-semibold hover:bg-accent-dim transition-colors';
@@ -65,9 +72,7 @@ export function ClienteDetalle({ id }: { id: string }) {
   if (isLoading) return <div className="flex justify-center p-12"><Spinner /></div>;
   if (isError || !cliente) return <div className="p-8 text-center text-sm text-tx-2">No se pudo cargar el cliente.</div>;
 
-  const displayName = cliente.tipo === 'PARTICULAR'
-    ? [cliente.nombre, cliente.apellido].filter(Boolean).join(' ') || '—'
-    : cliente.razonSocial ?? '—';
+  const displayName = cliente.razonSocial ?? ([cliente.nombre, cliente.apellido].filter(Boolean).join(' ') || '—');
 
   return (
     <div>
@@ -76,8 +81,8 @@ export function ClienteDetalle({ id }: { id: string }) {
         subtitle={
           <div className="flex flex-wrap items-center gap-2 mt-1">
             <Badge
-              status={cliente.tipo === 'EMPRESA' ? 'Empresa' : 'Particular'}
-              kind={cliente.tipo === 'EMPRESA' ? 'info' : 'neutral'}
+              status={cliente.tipo === 'EMPRESA' ? 'Empresa' : cliente.tipo === 'PARTICULAR' ? 'Particular' : 'Internacional'}
+              kind={cliente.tipo === 'EMPRESA' ? 'info' : cliente.tipo === 'PARTICULAR' ? 'neutral' : 'accent'}
             />
             <Badge status={cliente.estado} />
             <span className="font-mono text-xs text-tx-3">· {cliente.id}</span>
@@ -118,7 +123,7 @@ export function ClienteDetalle({ id }: { id: string }) {
                   <DetailRow label="Sector" value={cliente.sector ?? <span className="text-tx-muted">—</span>} />
                   <DetailRow label="Actividad económica" value={cliente.actividadEconomica ?? <span className="text-tx-muted">—</span>} />
                 </>
-              ) : (
+              ) : cliente.tipo === 'PARTICULAR' ? (
                 <>
                   <DetailRow label="Nombre" value={cliente.nombre} />
                   <DetailRow label="Apellido" value={cliente.apellido ?? <span className="text-tx-muted">—</span>} />
@@ -130,15 +135,41 @@ export function ClienteDetalle({ id }: { id: string }) {
                   )}
                   <DetailRow label="Ocupación" value={cliente.ocupacion ?? <span className="text-tx-muted">—</span>} />
                 </>
+              ) : (
+                <>
+                  <DetailRow
+                    label="Tipo de persona"
+                    value={cliente.tipoPersona === 'JURIDICA' ? 'Jurídica' : cliente.tipoPersona === 'NATURAL' ? 'Natural' : <span className="text-tx-muted">—</span>}
+                  />
+                  {cliente.tipoDocumento && cliente.numeroDocumento && (
+                    <DetailRow
+                      label={LABEL_TIPO_DOCUMENTO[cliente.tipoDocumento]}
+                      value={<span className="font-mono">{cliente.numeroDocumento}</span>}
+                    />
+                  )}
+                  <DetailRow
+                    label="Tamaño de contribuyente"
+                    value={cliente.tamanoContribuyente ? LABEL_TAMANO_CONTRIBUYENTE[cliente.tamanoContribuyente] : <span className="text-tx-muted">—</span>}
+                  />
+                </>
               )}
             </dl>
           </Card>
           <Card title="Dirección">
             <dl className="m-0">
-              <DetailRow label="Departamento" value={resolverDepartamento(cliente.departamento)} />
-              <DetailRow label="Municipio" value={resolverMunicipio(cliente.municipio, cliente.departamento)} />
-              <DetailRow label="Distrito" value={resolverDistrito(cliente.distrito, cliente.municipio, cliente.departamento)} />
-              <DetailRow label="Complemento" value={cliente.complemento ?? <span className="text-tx-muted">—</span>} />
+              {cliente.tipo === 'INTERNACIONAL' ? (
+                <>
+                  <DetailRow label="País" value={resolverPais(cliente.codPais)} />
+                  <DetailRow label="Dirección" value={cliente.complemento ?? '—'} />
+                </>
+              ) : (
+                <>
+                  <DetailRow label="Departamento" value={resolverDepartamento(cliente.departamento ?? '')} />
+                  <DetailRow label="Municipio" value={resolverMunicipio(cliente.municipio ?? '', cliente.departamento ?? '')} />
+                  <DetailRow label="Distrito" value={resolverDistrito(cliente.distrito, cliente.municipio ?? '', cliente.departamento ?? '')} />
+                  <DetailRow label="Complemento" value={cliente.complemento ?? <span className="text-tx-muted">—</span>} />
+                </>
+              )}
             </dl>
           </Card>
           <Card title="Facturación">

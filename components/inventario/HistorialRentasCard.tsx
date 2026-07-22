@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { Badge } from '@/components/ui/Badge';
-import { formatDate } from '@/lib/utils';
+import { formatDate, nombreCliente } from '@/lib/utils';
 import type { HistorialRentaItem } from '@/types/api';
 
 // Reusable entre detalle de equipo y detalle de unidad de herramienta.
@@ -23,14 +23,6 @@ const PERIODO_LABEL: Record<string, string> = {
   MES: 'Mes',
   CUSTOM: 'Custom',
 };
-
-// EMPRESA usa razonSocial; PARTICULAR arma con nombre + apellido. Fallback
-// a "—" para clientes mal cargados. Mismo patron que en cotizaciones y
-// facturas.
-function nombreCliente(c: HistorialRentaItem['cliente']): string {
-  if (c.tipo === 'EMPRESA') return c.razonSocial ?? '—';
-  return [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
-}
 
 export function HistorialRentasCard({ data, isLoading }: Props) {
   return (

@@ -13,6 +13,7 @@ import { useContacto, useToggleActivoContacto } from '@/hooks/use-contactos';
 import { useAuthStore } from '@/stores/auth.store';
 import { resolverDepartamento } from '@/lib/sv-geo';
 import { LABEL_TIPO_DOCUMENTO } from '@/lib/format-documentos';
+import { nombreCliente } from '@/lib/utils';
 import type { Contacto } from '@/types/api';
 
 type ClienteResumen = NonNullable<Contacto['cliente']>;
@@ -27,19 +28,20 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 function ClienteCard({ cliente }: { clienteId: string; cliente: ClienteResumen }) {
-  const esEmpresa = cliente.tipo === 'EMPRESA';
-  const displayName = esEmpresa
-    ? (cliente.razonSocial ?? '—')
-    : [cliente.nombre, cliente.apellido].filter(Boolean).join(' ') || '—';
-  const tipoLabel = esEmpresa ? 'EMPRESA' : 'PARTICULAR';
-  const ciudad = resolverDepartamento(cliente.departamento);
+  const displayName = nombreCliente(cliente);
+  // Etiqueta = tipo real (no solo EMPRESA/PARTICULAR) para no mostrar
+  // "PARTICULAR" en una jurídica internacional. Sin tipoPersona disponible en
+  // este resumen, INTERNACIONAL usa el ícono de edificio por default.
+  const tipoLabel = cliente.tipo ?? 'PARTICULAR';
+  const esBuilding = cliente.tipo === 'EMPRESA' || cliente.tipo === 'INTERNACIONAL';
+  const ciudad = resolverDepartamento(cliente.departamento ?? '');
 
   return (
     <div>
       {/* Encabezado del cliente */}
       <div className="flex items-center gap-3 p-3 rounded-lg bg-bg-sunken mb-1">
         <div className="w-11 h-11 rounded-lg bg-navy flex items-center justify-center shrink-0">
-          <Icon name={esEmpresa ? 'building' : 'user'} size={20} className="text-white" />
+          <Icon name={esBuilding ? 'building' : 'user'} size={20} className="text-white" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-bold text-tx leading-snug truncate">{displayName}</div>
