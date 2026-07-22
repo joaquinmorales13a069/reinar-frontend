@@ -21,13 +21,19 @@ import type { Cliente } from '@/types/api';
 
 // Para clientes EMPRESA mostramos razonSocial; para PARTICULAR concatenamos
 // nombre+apellido. razonSocial puede venir vacio aun en EMPRESA por datos
-// historicos, por eso hay fallback al nombre comercial / nombre.
+// historicos, por eso hay fallback al nombre comercial / nombre. INTERNACIONAL
+// puede ser juridica (comparte los fallbacks de EMPRESA) o natural (nombre +
+// apellido, como PARTICULAR).
 function nombreCliente(cliente: Cliente): string {
   if (cliente.tipo === 'EMPRESA') {
     return cliente.razonSocial?.trim() || cliente.nombreComercial?.trim() || cliente.nombre?.trim() || '—';
   }
+  if (cliente.tipo === 'PARTICULAR') {
+    const partes = [cliente.nombre, cliente.apellido].filter(Boolean).join(' ').trim();
+    return partes || '—';
+  }
   const partes = [cliente.nombre, cliente.apellido].filter(Boolean).join(' ').trim();
-  return partes || '—';
+  return cliente.razonSocial?.trim() || cliente.nombreComercial?.trim() || partes || '—';
 }
 
 export default function AnularDtePage({ params }: { params: Promise<{ id: string }> }) {

@@ -3,8 +3,8 @@
 import { FilterBar } from '@/components/ui/FilterBar';
 import { Icon } from '@/components/ui/Icon';
 import { useClientes } from '@/hooks/use-clientes';
-import { fechaSVToIso } from '@/lib/utils';
-import type { FiltrosPagos, MetodoPago, Cliente } from '@/types/api';
+import { fechaSVToIso, nombreCliente } from '@/lib/utils';
+import type { FiltrosPagos, MetodoPago } from '@/types/api';
 
 // ANTICIPO aparece como chip filtrable (no creable). Permite auditar los
 // depósitos generados internamente al aprobar cotizaciones.
@@ -12,11 +12,6 @@ const METODOS: MetodoPago[] = ['EFECTIVO', 'TRANSFERENCIA', 'CHEQUE', 'TARJETA',
 
 function metodoLabel(m: MetodoPago): string {
   return m[0] + m.slice(1).toLowerCase();
-}
-
-function nombreCliente(c: Cliente): string {
-  if (c.tipo === 'EMPRESA') return c.razonSocial ?? '—';
-  return [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
 }
 
 type Props = {

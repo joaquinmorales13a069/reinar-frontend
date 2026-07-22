@@ -12,16 +12,8 @@ import { FacturaEstadoBadge } from '@/components/facturas/FacturaEstadoBadge';
 import { PagoDetallePanel } from './PagoDetallePanel';
 import { EditarPagoForm } from './EditarPagoForm';
 import { useEliminarPago } from '@/hooks/use-pagos';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency, formatDate, nombreCliente } from '@/lib/utils';
 import type { PagoListItem } from '@/types/api';
-
-// Mismo helper que FacturasTabla — duplicación intencional para no extraer
-// 6 líneas a un util compartido. EMPRESA usa razonSocial; PARTICULAR usa
-// nombre + apellido. "—" si falta el dato base.
-function nombreCliente(c: PagoListItem['factura']['cliente']): string {
-  if (c.tipo === 'EMPRESA') return c.razonSocial ?? '—';
-  return [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
-}
 
 type Props = {
   pagos: PagoListItem[];

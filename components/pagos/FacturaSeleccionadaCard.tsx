@@ -3,13 +3,8 @@
 import Link from 'next/link';
 import { Icon } from '@/components/ui/Icon';
 import { FacturaEstadoBadge } from '@/components/facturas/FacturaEstadoBadge';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, nombreCliente } from '@/lib/utils';
 import type { FacturaListItem } from '@/types/api';
-
-function nombreCliente(c: FacturaListItem['cliente']): string {
-  if (c.tipo === 'EMPRESA') return c.razonSocial ?? '—';
-  return [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
-}
 
 type Props = {
   factura: FacturaListItem;

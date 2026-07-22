@@ -143,9 +143,9 @@ export function ClientesList() {
                     <div className="font-mono text-xs text-tx-3 mt-0.5">{c.numeroDocumento ?? '—'}</div>
                   </td>
                   <td className={`${tdCls} hidden lg:table-cell text-tx-2 text-xs`}>
-                    {c.tipo === 'EMPRESA'
-                      ? (c.actividadEconomica ? (getActividadByCodigo(c.actividadEconomica)?.descripcion ?? c.actividadEconomica) : <span className="text-tx-3">—</span>)
-                      : (c.ocupacion ?? <span className="text-tx-3">—</span>)}
+                    {c.tipo === 'PARTICULAR'
+                      ? (c.ocupacion ?? <span className="text-tx-3">—</span>)
+                      : (c.actividadEconomica ? (getActividadByCodigo(c.actividadEconomica)?.descripcion ?? c.actividadEconomica) : <span className="text-tx-3">—</span>)}
                   </td>
                   <td className={`${tdCls} hidden md:table-cell text-tx-2`}>
                     {c.tipo === 'INTERNACIONAL' ? resolverPais(c.codPais) : resolverDepartamento(c.departamento ?? '')}

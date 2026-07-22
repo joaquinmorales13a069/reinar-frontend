@@ -4,13 +4,8 @@ import { useMemo, useState } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import { Spinner } from '@/components/ui/Spinner';
 import { FacturaEstadoBadge } from '@/components/facturas/FacturaEstadoBadge';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, nombreCliente } from '@/lib/utils';
 import type { FacturaListItem } from '@/types/api';
-
-function nombreCliente(c: FacturaListItem['cliente']): string {
-  if (c.tipo === 'EMPRESA') return c.razonSocial ?? '—';
-  return [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
-}
 
 type Props = {
   facturas: FacturaListItem[];
