@@ -108,21 +108,19 @@ export function getInitials(nombre: string): string {
     .join('');
 }
 
-// Resuelve el nombre del cliente para mostrar — EMPRESA usa razonSocial,
-// PARTICULAR arma nombre + apellido. Devuelve '—' si ningún campo está poblado.
+// Resuelve el nombre del cliente para mostrar — razón social si existe (EMPRESA
+// y jurídicas INTERNACIONAL la tienen), si no arma nombre + apellido (PARTICULAR
+// y naturales INTERNACIONAL). Devuelve '—' si ningún campo está poblado.
 // Fuente única para no divergir entre selectores, tablas y tarjetas de detalle.
-// Cuando el shape no trae `tipo` (algunos listados solo devuelven los 3 campos
-// planos) usamos la presencia de razonSocial como proxy, ya que en la práctica
-// solo los clientes EMPRESA lo tienen poblado.
+// No depende de `tipo` — la presencia de razonSocial ya determina la rama, lo
+// que cubre el caso INTERNACIONAL sin necesitar el campo.
 export function nombreCliente(cliente: {
-  tipo?: 'EMPRESA' | 'PARTICULAR' | null;
+  tipo?: 'EMPRESA' | 'PARTICULAR' | 'INTERNACIONAL' | null;
   razonSocial?: string | null;
   nombre?: string | null;
   apellido?: string | null;
 }): string {
-  const esEmpresa = cliente.tipo != null ? cliente.tipo === 'EMPRESA' : !!cliente.razonSocial;
-  if (esEmpresa) return cliente.razonSocial ?? '—';
-  return [cliente.nombre, cliente.apellido].filter(Boolean).join(' ') || '—';
+  return (cliente.razonSocial ?? [cliente.nombre, cliente.apellido].filter(Boolean).join(' ')) || '—';
 }
 
 // Número que ve el cliente: sin el sufijo interno de variante (-B..-Z) que

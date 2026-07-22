@@ -14,9 +14,10 @@ import { Icon } from '@/components/ui/Icon';
 import { useClientes } from '@/hooks/use-clientes';
 import { useAuthStore } from '@/stores/auth.store';
 import { resolverDepartamento } from '@/lib/sv-geo';
+import { resolverPais } from '@/lib/paises';
 import { SECTORES_CAT019, getActividadByCodigo } from '@/lib/cat019';
 
-type TipoFilter = 'EMPRESA' | 'PARTICULAR' | null;
+type TipoFilter = 'EMPRESA' | 'PARTICULAR' | 'INTERNACIONAL' | null;
 type EstadoFilter = 'ACTIVO' | 'INACTIVO' | 'PROSPECTO' | null;
 
 const btnPri = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-accent text-navy text-xs font-semibold hover:bg-accent-dim transition-colors';
@@ -41,7 +42,7 @@ export function ClientesList() {
     sector: filterSector,
   });
 
-  function toggleTipo(t: 'EMPRESA' | 'PARTICULAR') {
+  function toggleTipo(t: 'EMPRESA' | 'PARTICULAR' | 'INTERNACIONAL') {
     setFilterTipo((prev) => (prev === t ? null : t));
     setPage(1);
   }
@@ -76,6 +77,7 @@ export function ClientesList() {
           chips={[
             { label: 'Empresas',     active: filterTipo === 'EMPRESA',     onToggle: () => toggleTipo('EMPRESA') },
             { label: 'Particulares', active: filterTipo === 'PARTICULAR',  onToggle: () => toggleTipo('PARTICULAR') },
+            { label: 'Internacionales', active: filterTipo === 'INTERNACIONAL', onToggle: () => toggleTipo('INTERNACIONAL') },
             { label: 'Activos',      active: filterEstado === 'ACTIVO',    onToggle: () => toggleEstado('ACTIVO') },
             { label: 'Inactivos',    active: filterEstado === 'INACTIVO',  onToggle: () => toggleEstado('INACTIVO') },
             { label: 'Prospectos',   active: filterEstado === 'PROSPECTO', onToggle: () => toggleEstado('PROSPECTO') },
@@ -130,15 +132,13 @@ export function ClientesList() {
                   <td className={`${tdCls} font-mono text-tx-3 text-xs`}>{(page - 1) * 10 + i + 1}</td>
                   <td className={`${tdCls} hidden sm:table-cell`}>
                     <Badge
-                      status={c.tipo === 'EMPRESA' ? 'Empresa' : 'Particular'}
-                      kind={c.tipo === 'EMPRESA' ? 'info' : 'neutral'}
+                      status={c.tipo === 'EMPRESA' ? 'Empresa' : c.tipo === 'PARTICULAR' ? 'Particular' : 'Internacional'}
+                      kind={c.tipo === 'EMPRESA' ? 'info' : c.tipo === 'PARTICULAR' ? 'neutral' : 'accent'}
                     />
                   </td>
                   <td className={tdCls}>
                     <div className="font-medium">
-                      {c.tipo === 'EMPRESA'
-                        ? (c.razonSocial ?? '—')
-                        : [c.nombre, c.apellido].filter(Boolean).join(' ') || '—'}
+                      {c.razonSocial ?? ([c.nombre, c.apellido].filter(Boolean).join(' ') || '—')}
                     </div>
                     <div className="font-mono text-xs text-tx-3 mt-0.5">{c.numeroDocumento ?? '—'}</div>
                   </td>
@@ -147,7 +147,9 @@ export function ClientesList() {
                       ? (c.actividadEconomica ? (getActividadByCodigo(c.actividadEconomica)?.descripcion ?? c.actividadEconomica) : <span className="text-tx-3">—</span>)
                       : (c.ocupacion ?? <span className="text-tx-3">—</span>)}
                   </td>
-                  <td className={`${tdCls} hidden md:table-cell text-tx-2`}>{resolverDepartamento(c.departamento)}</td>
+                  <td className={`${tdCls} hidden md:table-cell text-tx-2`}>
+                    {c.tipo === 'INTERNACIONAL' ? resolverPais(c.codPais) : resolverDepartamento(c.departamento ?? '')}
+                  </td>
                   <td className={`${tdCls} hidden md:table-cell font-mono text-tx-2`}>{c.telefono ?? <span className="text-tx-3">—</span>}</td>
                   <td className={tdCls}><Badge status={c.estado} /></td>
                   <td className={tdCls}>

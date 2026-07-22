@@ -50,6 +50,9 @@ export type TipoDocumentoCliente = 'DUI' | 'NIT' | 'PASAPORTE' | 'CARNET_RESIDEN
 
 export const TIPOS_DOCUMENTO_PARTICULAR = ['DUI', 'NIT', 'PASAPORTE', 'CARNET_RESIDENTE', 'OTRO'] as const satisfies readonly TipoDocumentoCliente[];
 export const TIPOS_DOCUMENTO_EMPRESA   = ['NIT', 'DUI'] as const satisfies readonly TipoDocumentoCliente[];
+// INTERNACIONAL acepta los 5 tipos (un receptor de zona franca puede tener NIT
+// salvadoreño); PASAPORTE y OTRO primero por ser los más comunes en el exterior.
+export const TIPOS_DOCUMENTO_INTERNACIONAL: TipoDocumentoCliente[] = ['PASAPORTE', 'OTRO', 'NIT', 'DUI', 'CARNET_RESIDENTE'];
 
 export const LABEL_TIPO_DOCUMENTO: Record<TipoDocumentoCliente, string> = {
   DUI: 'DUI',

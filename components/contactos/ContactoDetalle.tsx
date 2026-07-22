@@ -32,7 +32,7 @@ function ClienteCard({ cliente }: { clienteId: string; cliente: ClienteResumen }
     ? (cliente.razonSocial ?? '—')
     : [cliente.nombre, cliente.apellido].filter(Boolean).join(' ') || '—';
   const tipoLabel = esEmpresa ? 'EMPRESA' : 'PARTICULAR';
-  const ciudad = resolverDepartamento(cliente.departamento);
+  const ciudad = resolverDepartamento(cliente.departamento ?? '');
 
   return (
     <div>

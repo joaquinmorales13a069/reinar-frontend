@@ -13,13 +13,12 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { FacturaDescargasMenu } from './FacturaDescargasMenu';
 import type { FacturaListItem } from '@/types/api';
 
-// EMPRESA usa razonSocial; PARTICULAR arma con nombre + apellido. Fallback a
-// "—" si falta el dato base, para no romper la tabla con clientes mal cargados.
-// Misma logica que CotizacionesTabla.nombreCliente — la duplicamos a proposito
-// para no extraer un util de 6 lineas a un archivo compartido.
+// Razón social si existe (EMPRESA y jurídicas INTERNACIONAL la tienen); si no,
+// arma nombre + apellido. Fallback a "—" si falta el dato base, para no romper
+// la tabla con clientes mal cargados. Misma logica que CotizacionesTabla.nombreCliente
+// — la duplicamos a proposito para no extraer un util de 6 lineas a un archivo compartido.
 function nombreCliente(c: FacturaListItem['cliente']): string {
-  if (c.tipo === 'EMPRESA') return c.razonSocial ?? '—';
-  return [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
+  return c.razonSocial ?? ([c.nombre, c.apellido].filter(Boolean).join(' ') || '—');
 }
 
 type Props = {

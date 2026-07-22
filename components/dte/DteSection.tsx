@@ -57,6 +57,7 @@ const TIPO_INFO: Record<TipoDTE, { label: string; desc: string }> = {
   FC:              { label: 'FC — Factura Consumidor',          desc: 'Para consumidores finales sin NIT.' },
   CCF:             { label: 'CCF — Comprobante Crédito Fiscal', desc: 'Para contribuyentes con NIT y NCR.' },
   SUJETO_EXCLUIDO: { label: 'FSE — Sujeto Excluido',            desc: 'Para sujetos no contribuyentes del IVA.' },
+  FEX:             { label: 'FEX', desc: 'Factura de Exportación' },
 };
 
 // Cada tipo de DTE exige campos distintos del cliente; el backend rechaza

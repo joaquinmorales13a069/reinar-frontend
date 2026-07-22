@@ -21,7 +21,7 @@ import type { Cotizacion } from '@/types/api';
 // el embebido en `Cotizacion.cliente`, donde son `string | null`.
 type ClienteResumen = {
   id: string;
-  tipo: 'EMPRESA' | 'PARTICULAR';
+  tipo: 'EMPRESA' | 'PARTICULAR' | 'INTERNACIONAL';
   razonSocial?: string | null;
   nombre?: string | null;
   apellido?: string | null;

@@ -10,11 +10,11 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { descargarCotizacionPdf } from '@/hooks/use-cotizaciones';
 import type { CotizacionListItem } from '@/types/api';
 
-// EMPRESA tiene el nombre en razonSocial; PARTICULAR lo arma con nombre + apellido.
-// Fallback a "—" si falta el dato base, para no romper la tabla con clientes mal cargados.
+// Razón social si existe (EMPRESA y jurídicas INTERNACIONAL la tienen); si no,
+// arma nombre + apellido. Fallback a "—" si falta el dato base, para no romper
+// la tabla con clientes mal cargados.
 function nombreCliente(c: CotizacionListItem['cliente']): string {
-  if (c.tipo === 'EMPRESA') return c.razonSocial ?? '—';
-  return [c.nombre, c.apellido].filter(Boolean).join(' ') || '—';
+  return c.razonSocial ?? ([c.nombre, c.apellido].filter(Boolean).join(' ') || '—');
 }
 
 type Props = {

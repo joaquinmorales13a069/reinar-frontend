@@ -209,10 +209,12 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             // Históricos con tipoDTE SUJETO_EXCLUIDO (FSE) ya no se pueden
             // (re)emitir desde ventas — el backend tampoco lo acepta (Task 7).
             onEmitir={() => {
-              if (factura.tipoDTE && factura.tipoDTE !== 'SUJETO_EXCLUIDO') void emitirCon(factura.tipoDTE);
+              // FEX aún no se emite (fase 2) — no es TipoDTEEmitible; el bloqueo
+              // de UI para FEX vive en el detalle de factura (fuera de alcance).
+              if (factura.tipoDTE && factura.tipoDTE !== 'SUJETO_EXCLUIDO' && factura.tipoDTE !== 'FEX') void emitirCon(factura.tipoDTE);
             }}
             onReemitir={() => {
-              if (factura.tipoDTE && factura.tipoDTE !== 'SUJETO_EXCLUIDO') void emitirCon(factura.tipoDTE);
+              if (factura.tipoDTE && factura.tipoDTE !== 'SUJETO_EXCLUIDO' && factura.tipoDTE !== 'FEX') void emitirCon(factura.tipoDTE);
             }}
             emisionBloqueada={factura.tipoDTE === 'SUJETO_EXCLUIDO'}
             faltaPeriodo={faltaPeriodo}

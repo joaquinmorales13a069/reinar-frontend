@@ -76,9 +76,7 @@ function PipelineCard({ cot, onClick }: { cot: CotizacionListItem; onClick: () =
     >
       <div className="font-mono text-xs font-medium text-tx">{cot.numeroCotizacion}</div>
       <div className="text-sm text-tx mt-0.5 truncate">
-        {cot.cliente.tipo === 'EMPRESA'
-          ? cot.cliente.razonSocial ?? '—'
-          : [cot.cliente.nombre, cot.cliente.apellido].filter(Boolean).join(' ') || '—'}
+        {cot.cliente.razonSocial ?? ([cot.cliente.nombre, cot.cliente.apellido].filter(Boolean).join(' ') || '—')}
       </div>
       <div className="flex items-center justify-between mt-1.5">
         <span className="font-mono text-sm font-semibold text-tx">{formatCurrency(cot.total)}</span>

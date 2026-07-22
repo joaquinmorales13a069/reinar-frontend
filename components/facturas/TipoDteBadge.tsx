@@ -5,6 +5,7 @@ const META: Record<TipoDTE, { label: string; kind: 'neutral' | 'info' | 'accent'
   FC:              { label: 'FC',  kind: 'info' },
   CCF:             { label: 'CCF', kind: 'neutral' },
   SUJETO_EXCLUIDO: { label: 'FSE', kind: 'neutral' },
+  FEX:             { label: 'FEX', kind: 'accent' },
 };
 
 export function TipoDteBadge({ tipo }: { tipo: TipoDTE }) {
