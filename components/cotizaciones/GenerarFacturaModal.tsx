@@ -29,6 +29,13 @@ interface Props {
 const inputBase =
   'w-full px-3 py-2 text-sm rounded-md border bg-surface text-tx placeholder:text-tx-3 focus:outline-none focus:border-accent transition-colors border-bd';
 
+// FEX es fijo para internacionales (regla "solo FEX"); para nacionales se
+// sugiere CCF (empresa) o FC (particular) y el operador puede cambiarlo.
+function sugerirDTE(tipo: Cliente['tipo']): 'FC' | 'CCF' | 'FEX' {
+  if (tipo === 'INTERNACIONAL') return 'FEX';
+  return tipo === 'EMPRESA' ? 'CCF' : 'FC';
+}
+
 export function GenerarFacturaModal({
   cotizacionId,
   cliente,
@@ -38,13 +45,7 @@ export function GenerarFacturaModal({
   const router = useRouter();
   const generar = useGenerarFactura(cotizacionId);
 
-  // Pre-seleccion: las EMPRESAS suelen requerir CCF (credito fiscal) para
-  // reclamar IVA; PARTICULAR cobra como consumidor final (FC). El operador
-  // puede cambiarlo si el caso lo amerita.
-  const [tipoDTE, setTipoDTE] =
-    useState<'FC' | 'CCF'>(
-      cliente.tipo === 'EMPRESA' ? 'CCF' : 'FC',
-    );
+  const [tipoDTE, setTipoDTE] = useState<'FC' | 'CCF' | 'FEX'>(sugerirDTE(cliente.tipo));
   const [contactoFacturacionId, setContactoFacturacionId] = useState<
     string | null
   >(null);
@@ -159,16 +160,26 @@ export function GenerarFacturaModal({
             <label className="text-xs font-medium text-tx-2">
               Tipo de documento fiscal <span className="text-danger">*</span>
             </label>
-            <select
-              value={tipoDTE}
-              onChange={(e) =>
-                setTipoDTE(e.target.value as 'FC' | 'CCF')
-              }
-              className={inputBase}
-            >
-              <option value="FC">FC — Factura de Consumidor Final</option>
-              <option value="CCF">CCF — Crédito Fiscal</option>
-            </select>
+            {tipoDTE === 'FEX' ? (
+              <div className="px-3 py-2 rounded-md border border-bd bg-bg-sunken">
+                <span className="text-sm font-medium text-tx font-mono">FEX — Factura de Exportación</span>
+                <p className="text-xs text-tx-3 mt-0.5">
+                  Cliente internacional: solo admite Factura de Exportación. La emisión del
+                  DTE estará disponible próximamente; la factura se genera sin emitir.
+                </p>
+              </div>
+            ) : (
+              <select
+                value={tipoDTE}
+                onChange={(e) =>
+                  setTipoDTE(e.target.value as 'FC' | 'CCF')
+                }
+                className={inputBase}
+              >
+                <option value="FC">FC — Factura de Consumidor Final</option>
+                <option value="CCF">CCF — Crédito Fiscal</option>
+              </select>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -198,9 +209,9 @@ export function GenerarFacturaModal({
                     // El contacto del cliente anterior no aplica al nuevo receptor.
                     setContactoFacturacionId(null);
                     // El tercero puede tener un tipo distinto al cliente de la
-                    // cotización (ej. PARTICULAR facturado a una EMPRESA) — se
-                    // re-sugiere el DTE según el tercero. Sigue siendo editable.
-                    setTipoDTE(tipo === 'EMPRESA' ? 'CCF' : 'FC');
+                    // cotización (ej. PARTICULAR facturado a una EMPRESA, o un
+                    // INTERNACIONAL) — se re-sugiere el DTE según el tercero.
+                    setTipoDTE(sugerirDTE(tipo));
                   }}
                   filter={(c) => c.id !== cliente.id}
                 />
@@ -211,7 +222,7 @@ export function GenerarFacturaModal({
                     setReceptorClienteId(null);
                     // Volver al cliente de la cotización: resetear contacto y re-sugerir DTE.
                     setContactoFacturacionId(null);
-                    setTipoDTE(cliente.tipo === 'EMPRESA' ? 'CCF' : 'FC');
+                    setTipoDTE(sugerirDTE(cliente.tipo));
                   }}
                   className="self-start text-xs text-tx-3 hover:text-tx transition-colors"
                 >

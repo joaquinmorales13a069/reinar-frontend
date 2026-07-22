@@ -74,6 +74,8 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
   const puedeEscribir = user && user.rol !== 'VISUALIZADOR';
   // Sin período de renta el backend rechaza la emisión (422) — bloqueamos antes.
   const faltaPeriodo = !factura.periodoRentaInicio || !factura.periodoRentaFin;
+  // FEX (fase 1) y SUJETO_EXCLUIDO histórico no se emiten desde ventas.
+  const emisionBloqueada = factura.tipoDTE === 'SUJETO_EXCLUIDO' || factura.tipoDTE === 'FEX';
 
   // Subtitle: nombre del cliente segun tipo (EMPRESA -> razonSocial, PARTICULAR -> nombre+apellido).
   const nombreCliente =
@@ -206,17 +208,15 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
             isSincronizando={sincronizarDTE.isPending}
             isDescargandoPdf={descargandoPdfDte}
             onAsignarTipo={(t) => { void emitirCon(t); }}
-            // Históricos con tipoDTE SUJETO_EXCLUIDO (FSE) ya no se pueden
-            // (re)emitir desde ventas — el backend tampoco lo acepta (Task 7).
+            // Históricos con tipoDTE SUJETO_EXCLUIDO (FSE) y FEX (fase 1) no se
+            // pueden (re)emitir desde ventas — el backend tampoco lo acepta.
             onEmitir={() => {
-              // FEX aún no se emite (fase 2) — no es TipoDTEEmitible; el bloqueo
-              // de UI para FEX vive en el detalle de factura (fuera de alcance).
-              if (factura.tipoDTE && factura.tipoDTE !== 'SUJETO_EXCLUIDO' && factura.tipoDTE !== 'FEX') void emitirCon(factura.tipoDTE);
+              if (factura.tipoDTE && !emisionBloqueada) void emitirCon(factura.tipoDTE as TipoDTEEmitible);
             }}
             onReemitir={() => {
-              if (factura.tipoDTE && factura.tipoDTE !== 'SUJETO_EXCLUIDO' && factura.tipoDTE !== 'FEX') void emitirCon(factura.tipoDTE);
+              if (factura.tipoDTE && !emisionBloqueada) void emitirCon(factura.tipoDTE as TipoDTEEmitible);
             }}
-            emisionBloqueada={factura.tipoDTE === 'SUJETO_EXCLUIDO'}
+            emisionBloqueada={emisionBloqueada}
             faltaPeriodo={faltaPeriodo}
             onSincronizar={() => { void sincronizarDTE.mutateAsync(id); }}
             onAnular={() => router.push(`/facturas/${id}/anular-dte`)}

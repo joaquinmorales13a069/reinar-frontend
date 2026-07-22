@@ -119,6 +119,18 @@ export function DteSection(props: Props) {
     </p>
   ) : null;
 
+  // Mensaje de bloqueo: FEX (fase 1, aún sin emisión) y SUJETO_EXCLUIDO
+  // histórico (FSE, movido al módulo de Compras) comparten emisionBloqueada
+  // pero tienen motivos distintos — se distingue por doc.tipoDTE.
+  const mensajeBloqueo =
+    doc.tipoDTE === 'FEX'
+      ? 'La Factura de Exportación aún no se puede emitir desde aquí: estará disponible próximamente.'
+      : 'Los FSE ahora se gestionan desde el módulo de Compras.';
+
+  const bloqueoBlock = props.emisionBloqueada ? (
+    <p className="mt-3 text-xs text-tx-3">{mensajeBloqueo}</p>
+  ) : null;
+
   const confirmAnularTipoBlock = confirmAnularTipo ? (
     <div className="mt-3 rounded-md border border-bd bg-bg-sunken p-3 space-y-2">
       <div className="text-sm font-medium text-tx">Anular el DTE para cambiar de tipo</div>
@@ -273,11 +285,7 @@ export function DteSection(props: Props) {
               <span>{emitirError}</span>
             </div>
           )}
-          {props.emisionBloqueada && (
-            <p className="mt-3 text-xs text-tx-3">
-              Los FSE ahora se gestionan desde el módulo de Compras.
-            </p>
-          )}
+          {bloqueoBlock}
           {isOperador && !props.emisionBloqueada && !confirmEmit && (
             <button
               type="button"
@@ -393,11 +401,7 @@ Descripción: ${descripcion ?? '—'}${observaciones.length > 0 ? '\n\nObservaci
               </div>
             );
           })()}
-          {props.emisionBloqueada && (
-            <p className="mt-3 text-xs text-tx-3">
-              Los FSE ahora se gestionan desde el módulo de Compras.
-            </p>
-          )}
+          {bloqueoBlock}
           {hintPeriodo}
           {isOperador && !props.emisionBloqueada && (
             <button
