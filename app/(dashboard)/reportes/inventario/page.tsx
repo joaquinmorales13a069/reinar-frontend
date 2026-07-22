@@ -17,6 +17,7 @@ import {
   type InventarioBodegaResumen,
   type FormatoExportInventario,
 } from '@/hooks/use-reporte-inventario';
+import { nombreCliente } from '@/lib/utils';
 import type { FiltrosReporteInventario, EstadoResumen } from '@/types/api';
 
 const cardCls = 'rounded-lg border border-bd bg-surface p-4';
@@ -161,7 +162,7 @@ export default function ReporteInventarioPage() {
             <option value="">Todos los clientes</option>
             {(clientesData?.data ?? []).map((c) => (
               <option key={c.id} value={c.id}>
-                {c.tipo === 'EMPRESA' ? (c.razonSocial ?? c.nombreComercial ?? '—') : `${c.nombre ?? ''} ${c.apellido ?? ''}`.trim()}
+                {nombreCliente(c)}
               </option>
             ))}
           </select>

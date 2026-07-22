@@ -104,7 +104,9 @@ export type Contacto = {
   id: string;
   clienteId: string;
   cliente?: {
-    tipo?: 'EMPRESA' | 'PARTICULAR';
+    // Incluye INTERNACIONAL para que ClienteCard (ContactoDetalle) pueda rutear
+    // el nombre por el helper canónico `nombreCliente()` sin angostar el tipo.
+    tipo?: 'EMPRESA' | 'PARTICULAR' | 'INTERNACIONAL';
     razonSocial?: string;
     nombre?: string;
     apellido?: string;

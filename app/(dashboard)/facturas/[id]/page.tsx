@@ -31,6 +31,8 @@ import {
   descargarFacturaJsonDTE,
 } from '@/hooks/use-facturas';
 import { useAuthStore } from '@/stores/auth.store';
+// Alias para no chocar con el const local `nombreCliente` usado en el JSX.
+import { nombreCliente as nombreClienteDe } from '@/lib/utils';
 import type { TipoDTEEmitible } from '@/types/api';
 
 export default function FacturaDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -77,11 +79,10 @@ export default function FacturaDetallePage({ params }: { params: Promise<{ id: s
   // FEX (fase 1) y SUJETO_EXCLUIDO histórico no se emiten desde ventas.
   const emisionBloqueada = factura.tipoDTE === 'SUJETO_EXCLUIDO' || factura.tipoDTE === 'FEX';
 
-  // Subtitle: nombre del cliente segun tipo (EMPRESA -> razonSocial, PARTICULAR -> nombre+apellido).
-  const nombreCliente =
-    factura.cliente.tipo === 'EMPRESA'
-      ? factura.cliente.razonSocial ?? '—'
-      : [factura.cliente.nombre, factura.cliente.apellido].filter(Boolean).join(' ') || '—';
+  // Subtitle: nombre del cliente vía el helper canónico (tipo-aware: EMPRESA ->
+  // razonSocial, PARTICULAR -> nombre+apellido, INTERNACIONAL -> razonSocial o
+  // nombre+apellido), para no divergir de como lo muestra ClienteFechasCard.
+  const nombreCliente = nombreClienteDe(factura.cliente);
 
   async function emitirCon(tipo: TipoDTEEmitible) {
     setEmitirError(null);
