@@ -164,8 +164,8 @@ export function GenerarFacturaModal({
               <div className="px-3 py-2 rounded-md border border-bd bg-bg-sunken">
                 <span className="text-sm font-medium text-tx font-mono">FEX — Factura de Exportación</span>
                 <p className="text-xs text-tx-3 mt-0.5">
-                  Cliente internacional: solo admite Factura de Exportación. La emisión del
-                  DTE estará disponible próximamente; la factura se genera sin emitir.
+                  Cliente internacional: solo admite Factura de Exportación. Tras generar
+                  la factura, completá los datos de exportación en su detalle para emitir el DTE.
                 </p>
               </div>
             ) : (

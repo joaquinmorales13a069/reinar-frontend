@@ -1,5 +1,6 @@
-// CAT-027 Recinto Fiscal (MH). El `value` es el código que FacturaLlama espera
-// en taxArea del payload FEX. Debe coincidir con server/src/lib/cat027.ts.
+// CAT-027 Recinto Fiscal. El `value` es el código que FacturaLlama acepta en
+// `taxArea` del FEX. Son los 44 recintos que admite FacturaLlama (excluye
+// 40/41/42/43 de los 48 MH). Debe coincidir con server/src/lib/cat027.ts.
 export type RecintoFiscal = { value: string; label: string }
 
 export const CAT027: RecintoFiscal[] = [
@@ -37,10 +38,6 @@ export const CAT027: RecintoFiscal[] = [
   { value: '37', label: 'Z.F. Sam-Li' },
   { value: '38', label: 'Z.F. San José' },
   { value: '39', label: 'Z.F. Las Mercedes' },
-  { value: '40', label: 'Z.F. EMCO' },
-  { value: '41', label: 'Z.F. Gigante' },
-  { value: '42', label: 'Z.F. NOVABES' },
-  { value: '43', label: 'Z.F. INHDELVA' },
   { value: '71', label: 'Aldesa' },
   { value: '72', label: 'Agdosa Merliot' },
   { value: '73', label: 'Bodesa' },
