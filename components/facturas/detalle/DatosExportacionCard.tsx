@@ -62,9 +62,10 @@ export function DatosExportacionCard({ factura, puedeEscribir }: Props) {
     resolver: zodResolver(datosExportacionSchema) as never,
     defaultValues: {
       recintoFiscal: factura.recintoFiscal ?? '',
-      // '1000.000' (Exportación Definitiva, Régimen Común) es el fallback final
-      // cuando ni la factura ni la configuración de empresa traen un default.
-      regimenExportacion: factura.regimenExportacion ?? '1000.000',
+      // 'EX-1.1000.000' (Exportación Definitiva, Régimen Común) es el fallback
+      // final cuando ni la factura ni la configuración traen un default. Es el
+      // formato que exige FacturaLlama en taxRegimen (no el código MH crudo).
+      regimenExportacion: factura.regimenExportacion ?? 'EX-1.1000.000',
       incoterms: factura.incoterms ?? '',
       flete: factura.flete != null ? Number(factura.flete) : undefined,
       seguro: factura.seguro != null ? Number(factura.seguro) : undefined,
@@ -204,6 +205,9 @@ export function DatosExportacionCard({ factura, puedeEscribir }: Props) {
                   <option key={i.value} value={i.value}>{i.label}</option>
                 ))}
               </select>
+              <p className="text-xs text-tx-3 mt-0.5">
+                Incoterm, flete, seguro y transporte solo aplican a exportación de bienes; en servicios se omiten.
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
