@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -13,9 +13,10 @@ import { FormSection } from '@/components/ui/FormSection';
 import { ConfirmRow } from '@/components/ui/ConfirmRow';
 import { useCliente, useCrearCliente, useEditarCliente, useCambiarEstadoCliente } from '@/hooks/use-clientes';
 import { DEPARTAMENTOS_SV, DISTRITOS_SV, getMunicipiosByDept, getDistritosByMuniDept } from '@/lib/sv-geo';
-import { SECTORES_CAT019, ACTIVIDADES_ECONOMICAS_SV } from '@/lib/cat019';
+import { SECTORES_CAT019 } from '@/lib/cat019';
 import { PAISES, PAISES_CODIGOS } from '@/lib/paises';
 import { PhoneInputField } from '@/components/ui/PhoneInputField';
+import { ActividadEconomicaSelect } from '@/components/ui/ActividadEconomicaSelect';
 import {
   formatDocumento,
   validarDocumento,
@@ -169,11 +170,6 @@ export function ClienteForm({ id }: { id?: string }) {
     : !municipio
       ? DISTRITOS_SV.filter((d) => d.department === departamento)
       : getDistritosByMuniDept(departamento, municipio);
-
-  // Actividades filtradas según el sector seleccionado; sin sector muestra todas.
-  const actividadesFiltradas = sector
-    ? ACTIVIDADES_ECONOMICAS_SV.filter((a) => a.sector === sector)
-    : ACTIVIDADES_ECONOMICAS_SV;
 
   const { onChange: onDeptChange, ...deptRest } = register('departamento');
   const { onChange: onMuniChange, ...muniRest } = register('municipio');
@@ -364,31 +360,24 @@ export function ClienteForm({ id }: { id?: string }) {
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-tx-2">Actividad económica (CAT-019)</label>
-                  <select className={inputOk} {...register('actividadEconomica')}>
-                    <option value="">— Seleccionar actividad —</option>
-                    {sector ? (
-                      actividadesFiltradas.map((a) => (
-                        <option key={a.codigo} value={a.codigo}>
-                          {a.codigo} — {a.descripcion}
-                        </option>
-                      ))
-                    ) : (
-                      SECTORES_CAT019.map((s) => {
-                        const acts = ACTIVIDADES_ECONOMICAS_SV.filter((a) => a.sector === s);
-                        if (!acts.length) return null;
-                        return (
-                          <optgroup key={s} label={s}>
-                            {acts.map((a) => (
-                              <option key={a.codigo} value={a.codigo}>
-                                {a.codigo} — {a.descripcion}
-                              </option>
-                            ))}
-                          </optgroup>
-                        );
-                      })
+                  <Controller
+                    control={control}
+                    name="actividadEconomica"
+                    render={({ field }) => (
+                      <ActividadEconomicaSelect
+                        value={field.value ?? ''}
+                        sector={sector}
+                        hasError={!!errors.actividadEconomica}
+                        onChange={(act) => {
+                          field.onChange(act?.codigo ?? '');
+                          // El catálogo ya determina el sector de cada actividad: lo rellenamos
+                          // para que el usuario no tenga que elegirlo aparte.
+                          if (act) setValue('sector', act.sector, { shouldDirty: true });
+                        }}
+                      />
                     )}
-                  </select>
-                  {!sector && <p className="text-xs text-tx-3 mt-0.5">Seleccioná un sector para filtrar las actividades.</p>}
+                  />
+                  {!sector && <p className="text-xs text-tx-3 mt-0.5">Buscá por código o descripción; el sector se completa solo.</p>}
                 </div>
               </>
             ) : tipo === 'PARTICULAR' ? (
@@ -558,29 +547,26 @@ export function ClienteForm({ id }: { id?: string }) {
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-medium text-tx-2">Actividad económica (CAT-019) <span className="text-danger">*</span></label>
-                  <select className={errors.actividadEconomica ? inputErr : inputOk} {...register('actividadEconomica')}>
-                    <option value="">— Seleccionar actividad —</option>
-                    {sector ? (
-                      actividadesFiltradas.map((a) => (
-                        <option key={a.codigo} value={a.codigo}>{a.codigo} — {a.descripcion}</option>
-                      ))
-                    ) : (
-                      SECTORES_CAT019.map((s) => {
-                        const acts = ACTIVIDADES_ECONOMICAS_SV.filter((a) => a.sector === s);
-                        if (!acts.length) return null;
-                        return (
-                          <optgroup key={s} label={s}>
-                            {acts.map((a) => (
-                              <option key={a.codigo} value={a.codigo}>{a.codigo} — {a.descripcion}</option>
-                            ))}
-                          </optgroup>
-                        );
-                      })
+                  <Controller
+                    control={control}
+                    name="actividadEconomica"
+                    render={({ field }) => (
+                      <ActividadEconomicaSelect
+                        value={field.value ?? ''}
+                        sector={sector}
+                        hasError={!!errors.actividadEconomica}
+                        onChange={(act) => {
+                          field.onChange(act?.codigo ?? '');
+                          // El catálogo ya determina el sector de cada actividad: lo rellenamos
+                          // para que el usuario no tenga que elegirlo aparte.
+                          if (act) setValue('sector', act.sector, { shouldDirty: true });
+                        }}
+                      />
                     )}
-                  </select>
+                  />
                   {errors.actividadEconomica
                     ? <p className="text-xs text-danger mt-0.5">{errors.actividadEconomica.message}</p>
-                    : !sector && <p className="text-xs text-tx-3 mt-0.5">Seleccioná un sector para filtrar las actividades.</p>}
+                    : !sector && <p className="text-xs text-tx-3 mt-0.5">Buscá por código o descripción; el sector se completa solo.</p>}
                 </div>
 
                 <div className="flex flex-col gap-1">

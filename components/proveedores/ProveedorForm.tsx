@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { FormSection } from '@/components/ui/FormSection';
 import { Icon } from '@/components/ui/Icon';
 import { PhoneInputField } from '@/components/ui/PhoneInputField';
+import { ActividadEconomicaSelect } from '@/components/ui/ActividadEconomicaSelect';
 import {
   proveedorCrearSchema,
   proveedorEditarSchema,
@@ -21,7 +22,7 @@ import {
   getMunicipiosByDept,
   getDistritosByMuniDept,
 } from '@/lib/sv-geo';
-import { SECTORES_CAT019, ACTIVIDADES_ECONOMICAS_SV } from '@/lib/cat019';
+import { SECTORES_CAT019, getActividadByCodigo } from '@/lib/cat019';
 import {
   formatDocumento,
   TIPOS_DOCUMENTO_PARTICULAR,
@@ -58,9 +59,12 @@ export function ProveedorForm(props: Props) {
   const router = useRouter();
   const crear = useCrearProveedor();
   const editar = useEditarProveedor();
-  // Filtro auxiliar de UI (no se envía al backend) para acotar el <select> de
-  // actividad económica por sector — mismo patrón que ClienteForm.
-  const [sector, setSector] = useState('');
+  // Filtro auxiliar de UI (no se envía al backend) para acotar el buscador de
+  // actividad económica por sector — mismo patrón que ClienteForm. Al editar
+  // lo derivamos de la actividad guardada para que el filtro arranque coherente.
+  const [sector, setSector] = useState(
+    () => getActividadByCodigo(props.proveedor?.actividadEconomica ?? '')?.sector ?? '',
+  );
 
   const {
     register,
@@ -107,10 +111,6 @@ export function ProveedorForm(props: Props) {
     : !municipio
       ? DISTRITOS_SV.filter((d) => d.department === departamento)
       : getDistritosByMuniDept(departamento, municipio);
-
-  const actividadesFiltradas = sector
-    ? ACTIVIDADES_ECONOMICAS_SV.filter((a) => a.sector === sector)
-    : ACTIVIDADES_ECONOMICAS_SV;
 
   const { onChange: onDeptChange, ...deptRest } = register('departamento');
   const { onChange: onMuniChange, ...muniRest } = register('municipio');
@@ -355,31 +355,24 @@ export function ProveedorForm(props: Props) {
 
           <div>
             <label className={labelCls}>Actividad económica (CAT-019)</label>
-            <select className={inputOk} {...register('actividadEconomica')}>
-              <option value="">— Seleccionar actividad —</option>
-              {sector ? (
-                actividadesFiltradas.map((a) => (
-                  <option key={a.codigo} value={a.codigo}>
-                    {a.codigo} — {a.descripcion}
-                  </option>
-                ))
-              ) : (
-                SECTORES_CAT019.map((s) => {
-                  const acts = ACTIVIDADES_ECONOMICAS_SV.filter((a) => a.sector === s);
-                  if (!acts.length) return null;
-                  return (
-                    <optgroup key={s} label={s}>
-                      {acts.map((a) => (
-                        <option key={a.codigo} value={a.codigo}>
-                          {a.codigo} — {a.descripcion}
-                        </option>
-                      ))}
-                    </optgroup>
-                  );
-                })
+            <Controller
+              control={control}
+              name="actividadEconomica"
+              render={({ field }) => (
+                <ActividadEconomicaSelect
+                  value={field.value ?? ''}
+                  sector={sector}
+                  hasError={!!errors.actividadEconomica}
+                  onChange={(act) => {
+                    field.onChange(act?.codigo ?? '');
+                    // El catálogo ya determina el sector de cada actividad: lo rellenamos
+                    // para que el usuario no tenga que elegirlo aparte.
+                    if (act) setSector(act.sector);
+                  }}
+                />
               )}
-            </select>
-            {!sector && <p className="text-xs text-tx-3 mt-0.5">Seleccioná un sector para filtrar las actividades.</p>}
+            />
+            {!sector && <p className="text-xs text-tx-3 mt-0.5">Buscá por código o descripción; el sector se completa solo.</p>}
           </div>
 
           <div>
