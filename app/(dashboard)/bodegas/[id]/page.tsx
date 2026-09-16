@@ -65,6 +65,9 @@ export default function BodegaDetallePage({
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+        {/* Columna izquierda: Información seguida de Zonas. Zonas debajo de
+            Información para mantener juntas las propiedades estructurales de
+            la bodega en pantallas grandes (en mobile siguen apilándose). */}
         <div className="flex flex-col gap-4">
           <div className="rounded-lg border border-bd bg-surface p-4">
             <h3 className="text-sm font-semibold mb-3">Información</h3>
@@ -83,9 +86,7 @@ export default function BodegaDetallePage({
               </div>
             </dl>
           </div>
-        </div>
 
-        <div className="flex flex-col gap-4">
           <div className="rounded-lg border border-bd bg-surface overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-bd">
               <h3 className="text-sm font-semibold text-tx">
@@ -138,7 +139,11 @@ export default function BodegaDetallePage({
               </table>
             )}
           </div>
+        </div>
 
+        {/* Columna derecha: Inventario asignado (puede ser larga, tiene scroll
+            interno propio). */}
+        <div className="flex flex-col gap-4">
           <InventarioAsignadoCard bodegaId={bodega.id} />
         </div>
       </div>

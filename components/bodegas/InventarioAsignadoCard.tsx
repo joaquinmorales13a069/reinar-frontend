@@ -63,6 +63,11 @@ export function InventarioAsignadoCard({ bodegaId }: { bodegaId: string }) {
         </h3>
       </div>
 
+      {/* Cuerpo scrolleable: la lista puede crecer mucho con inventario real,
+          así que limitamos la altura a 24rem (max-h-96) y scrolleamos. El
+          header queda fuera del scroll para que siempre sea visible. */}
+      <div className="max-h-96 overflow-y-auto">
+
       {/* Equipos */}
       {data.equipos.length > 0 && (
         <Section
@@ -142,6 +147,7 @@ export function InventarioAsignadoCard({ bodegaId }: { bodegaId: string }) {
           </table>
         </Section>
       )}
+      </div>
     </div>
   );
 }
