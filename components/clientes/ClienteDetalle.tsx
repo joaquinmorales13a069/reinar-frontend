@@ -17,6 +17,7 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import Decimal from 'decimal.js';
 import { resolverDepartamento, resolverMunicipio, resolverDistrito } from '@/lib/sv-geo';
 import { resolverPais } from '@/lib/paises';
+import { getActividadByCodigo } from '@/lib/cat019';
 import { LABEL_TIPO_DOCUMENTO } from '@/lib/format-documentos';
 import { LABEL_DIA } from '@/lib/dias-semana';
 
@@ -121,7 +122,19 @@ export function ClienteDetalle({ id }: { id: string }) {
                   )}
                   <DetailRow label="NCR" value={<span className="font-mono">{cliente.ncr ?? '—'}</span>} />
                   <DetailRow label="Sector" value={cliente.sector ?? <span className="text-tx-muted">—</span>} />
-                  <DetailRow label="Actividad económica" value={cliente.actividadEconomica ?? <span className="text-tx-muted">—</span>} />
+                  <DetailRow
+                    label="Actividad económica"
+                    value={
+                      cliente.actividadEconomica ? (
+                        <>
+                          {getActividadByCodigo(cliente.actividadEconomica)?.descripcion ?? cliente.actividadEconomica}{' '}
+                          <span className="font-mono text-xs text-tx-3">({cliente.actividadEconomica})</span>
+                        </>
+                      ) : (
+                        <span className="text-tx-muted">—</span>
+                      )
+                    }
+                  />
                 </>
               ) : cliente.tipo === 'PARTICULAR' ? (
                 <>
